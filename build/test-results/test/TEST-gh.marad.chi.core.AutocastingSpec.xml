@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="gh.marad.chi.core.AutocastingSpec" tests="3" skipped="0" failures="0" errors="0" timestamp="2023-11-16T06:14:53" hostname="POLPC11643" time="0.003">
+  <properties/>
+  <testcase name="should allow upcasting numbers" classname="gh.marad.chi.core.AutocastingSpec" time="0.002"/>
+  <testcase name="canCastTo should not allow downcasting" classname="gh.marad.chi.core.AutocastingSpec" time="0.0"/>
+  <testcase name="should allow downcasting numbers" classname="gh.marad.chi.core.AutocastingSpec" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

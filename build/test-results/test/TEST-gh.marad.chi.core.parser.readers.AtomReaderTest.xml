@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="gh.marad.chi.core.parser.readers.AtomReaderTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2023-11-16T06:14:54" hostname="POLPC11643" time="0.013">
+  <properties/>
+  <testcase name="reading simple string()" classname="gh.marad.chi.core.parser.readers.AtomReaderTest" time="0.001"/>
+  <testcase name="reading simple string interpolation()" classname="gh.marad.chi.core.parser.readers.AtomReaderTest" time="0.0"/>
+  <testcase name="should parse an int()" classname="gh.marad.chi.core.parser.readers.AtomReaderTest" time="0.0"/>
+  <testcase name="should parse a boolean true()" classname="gh.marad.chi.core.parser.readers.AtomReaderTest" time="0.001"/>
+  <testcase name="read bracketed interpolation()" classname="gh.marad.chi.core.parser.readers.AtomReaderTest" time="0.001"/>
+  <testcase name="should parse an empty string()" classname="gh.marad.chi.core.parser.readers.AtomReaderTest" time="0.002"/>
+  <testcase name="should parse a float()" classname="gh.marad.chi.core.parser.readers.AtomReaderTest" time="0.001"/>
+  <testcase name="should parse a string()" classname="gh.marad.chi.core.parser.readers.AtomReaderTest" time="0.0"/>
+  <testcase name="should parse a boolean false()" classname="gh.marad.chi.core.parser.readers.AtomReaderTest" time="0.0"/>
+  <testcase name="allow to escape the quote sign()" classname="gh.marad.chi.core.parser.readers.AtomReaderTest" time="0.001"/>
+  <testcase name="allow to escape the dollar sign()" classname="gh.marad.chi.core.parser.readers.AtomReaderTest" time="0.001"/>
+  <testcase name="should handle escape characters()" classname="gh.marad.chi.core.parser.readers.AtomReaderTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

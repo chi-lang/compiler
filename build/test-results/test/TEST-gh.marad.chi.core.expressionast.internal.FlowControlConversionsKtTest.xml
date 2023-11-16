@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="gh.marad.chi.core.expressionast.internal.FlowControlConversionsKtTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2023-11-16T06:14:54" hostname="POLPC11643" time="0.01">
+  <properties/>
+  <testcase name="generate continue()" classname="gh.marad.chi.core.expressionast.internal.FlowControlConversionsKtTest" time="0.001"/>
+  <testcase name="generate if-else series from when syntax()" classname="gh.marad.chi.core.expressionast.internal.FlowControlConversionsKtTest" time="0.002"/>
+  <testcase name="else case is optional in when()" classname="gh.marad.chi.core.expressionast.internal.FlowControlConversionsKtTest" time="0.001"/>
+  <testcase name="generate simple if expression without else branch()" classname="gh.marad.chi.core.expressionast.internal.FlowControlConversionsKtTest" time="0.001"/>
+  <testcase name="generate group expression()" classname="gh.marad.chi.core.expressionast.internal.FlowControlConversionsKtTest" time="0.001"/>
+  <testcase name="generate break()" classname="gh.marad.chi.core.expressionast.internal.FlowControlConversionsKtTest" time="0.001"/>
+  <testcase name="generate while()" classname="gh.marad.chi.core.expressionast.internal.FlowControlConversionsKtTest" time="0.001"/>
+  <testcase name="generate else branch()" classname="gh.marad.chi.core.expressionast.internal.FlowControlConversionsKtTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" tests="19" skipped="0" failures="0" errors="0" timestamp="2023-11-16T06:14:54" hostname="POLPC11643" time="0.074">
+  <properties/>
+  <testcase name="parsing not operator()" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.0"/>
+  <testcase name="should respect arithmetic operator precedence()" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.002"/>
+  <testcase name="[1] +" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.021"/>
+  <testcase name="[2] -" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.003"/>
+  <testcase name="[3] *" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.001"/>
+  <testcase name="[4] /" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.002"/>
+  <testcase name="[5] %" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.002"/>
+  <testcase name="[6] &amp;&amp;" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.001"/>
+  <testcase name="[7] &lt;" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.0"/>
+  <testcase name="[8] &lt;=" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.001"/>
+  <testcase name="[9] &gt;" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.001"/>
+  <testcase name="[10] &gt;=" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.001"/>
+  <testcase name="[11] ==" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.001"/>
+  <testcase name="[12] !=" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.001"/>
+  <testcase name="[13] ||" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.002"/>
+  <testcase name="[14] &amp;" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.001"/>
+  <testcase name="[15] |" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.0"/>
+  <testcase name="[16] &gt;&gt;" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.001"/>
+  <testcase name="[17] &lt;&lt;" classname="gh.marad.chi.core.parser.readers.ArithmeticLogicReaderTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

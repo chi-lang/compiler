@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="gh.marad.chi.core.modules.PackageSpec" tests="3" skipped="0" failures="0" errors="0" timestamp="2023-11-16T06:14:54" hostname="POLPC11643" time="0.001">
+  <properties/>
+  <testcase name="should set current module and package and define name there" classname="gh.marad.chi.core.modules.PackageSpec" time="0.0"/>
+  <testcase name="should not allow empty module name" classname="gh.marad.chi.core.modules.PackageSpec" time="0.0"/>
+  <testcase name="should not allow empty package name" classname="gh.marad.chi.core.modules.PackageSpec" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="gh.marad.chi.core.expressionast.internal.VariablesConversionsKtTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2023-11-16T06:14:54" hostname="POLPC11643" time="0.007">
+  <properties/>
+  <testcase name="should generate variable access through package name()" classname="gh.marad.chi.core.expressionast.internal.VariablesConversionsKtTest" time="0.001"/>
+  <testcase name="should generate field access with type defined in other module()" classname="gh.marad.chi.core.expressionast.internal.VariablesConversionsKtTest" time="0.001"/>
+  <testcase name="convert local variable read()" classname="gh.marad.chi.core.expressionast.internal.VariablesConversionsKtTest" time="0.001"/>
+  <testcase name="convert variable read from other module()" classname="gh.marad.chi.core.expressionast.internal.VariablesConversionsKtTest" time="0.001"/>
+  <testcase name="should generate field access()" classname="gh.marad.chi.core.expressionast.internal.VariablesConversionsKtTest" time="0.001"/>
+  <testcase name="convert variable read from another package in the same module()" classname="gh.marad.chi.core.expressionast.internal.VariablesConversionsKtTest" time="0.0"/>
+  <testcase name="generate index operator()" classname="gh.marad.chi.core.expressionast.internal.VariablesConversionsKtTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

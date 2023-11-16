@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="gh.marad.chi.core.parser.readers.PackageReaderTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2023-11-16T06:14:54" hostname="POLPC11643" time="0.004">
+  <properties/>
+  <testcase name="can parse empty package()" classname="gh.marad.chi.core.parser.readers.PackageReaderTest" time="0.001"/>
+  <testcase name="can parse empty module()" classname="gh.marad.chi.core.parser.readers.PackageReaderTest" time="0.001"/>
+  <testcase name="parse package definition()" classname="gh.marad.chi.core.parser.readers.PackageReaderTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

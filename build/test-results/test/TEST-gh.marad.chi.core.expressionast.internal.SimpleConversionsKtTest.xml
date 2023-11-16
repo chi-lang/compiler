@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="gh.marad.chi.core.expressionast.internal.SimpleConversionsKtTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2023-11-16T06:14:54" hostname="POLPC11643" time="0.01">
+  <properties/>
+  <testcase name="converting null package definition should produce null value()" classname="gh.marad.chi.core.expressionast.internal.SimpleConversionsKtTest" time="0.0"/>
+  <testcase name="code interpolations should be converted and cast to string()" classname="gh.marad.chi.core.expressionast.internal.SimpleConversionsKtTest" time="0.001"/>
+  <testcase name="block conversion()" classname="gh.marad.chi.core.expressionast.internal.SimpleConversionsKtTest" time="0.001"/>
+  <testcase name="convert not()" classname="gh.marad.chi.core.expressionast.internal.SimpleConversionsKtTest" time="0.001"/>
+  <testcase name="string text in interpolation should be converted to simple string atom()" classname="gh.marad.chi.core.expressionast.internal.SimpleConversionsKtTest" time="0.0"/>
+  <testcase name="package definition conversion()" classname="gh.marad.chi.core.expressionast.internal.SimpleConversionsKtTest" time="0.001"/>
+  <testcase name="convert cast()" classname="gh.marad.chi.core.expressionast.internal.SimpleConversionsKtTest" time="0.001"/>
+  <testcase name="convert binary operator()" classname="gh.marad.chi.core.expressionast.internal.SimpleConversionsKtTest" time="0.001"/>
+  <testcase name="generating interpolated string()" classname="gh.marad.chi.core.expressionast.internal.SimpleConversionsKtTest" time="0.001"/>
+  <testcase name="generating simple atoms()" classname="gh.marad.chi.core.expressionast.internal.SimpleConversionsKtTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

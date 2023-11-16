@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="gh.marad.chi.core.weaveexpr.WeaveExprSpec" tests="4" skipped="0" failures="0" errors="0" timestamp="2023-11-16T06:14:54" hostname="POLPC11643" time="0.016">
+  <properties/>
+  <testcase name="converting chain to expressions()" classname="gh.marad.chi.core.weaveexpr.WeaveExprSpec" time="0.005"/>
+  <testcase name="converting to expression()" classname="gh.marad.chi.core.weaveexpr.WeaveExprSpec" time="0.004"/>
+  <testcase name="parsing weave chain()" classname="gh.marad.chi.core.weaveexpr.WeaveExprSpec" time="0.005"/>
+  <testcase name="simple parsing weave with placeholder()" classname="gh.marad.chi.core.weaveexpr.WeaveExprSpec" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

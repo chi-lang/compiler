@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="gh.marad.chi.core.parser.readers.WhenReaderTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2023-11-16T06:14:54" hostname="POLPC11643" time="0.006">
+  <properties/>
+  <testcase name="parsing when expression()" classname="gh.marad.chi.core.parser.readers.WhenReaderTest" time="0.004"/>
+  <testcase name="parse when expression with blocks()" classname="gh.marad.chi.core.parser.readers.WhenReaderTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

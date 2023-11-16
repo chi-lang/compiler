@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="gh.marad.chi.core.analyzer.FnTypeCheckingSpec" tests="4" skipped="0" failures="0" errors="0" timestamp="2023-11-16T06:14:54" hostname="POLPC11643" time="0.001">
+  <properties/>
+  <testcase name="should not return errors on valid function definition" classname="gh.marad.chi.core.analyzer.FnTypeCheckingSpec" time="0.0"/>
+  <testcase name="should check for missing return value only if function expects the return type" classname="gh.marad.chi.core.analyzer.FnTypeCheckingSpec" time="0.0"/>
+  <testcase name="should check that block return type matches what function expects" classname="gh.marad.chi.core.analyzer.FnTypeCheckingSpec" time="0.0"/>
+  <testcase name="should also check types for expressions in function body" classname="gh.marad.chi.core.analyzer.FnTypeCheckingSpec" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
