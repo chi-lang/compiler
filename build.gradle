@@ -54,12 +54,15 @@ generateGrammarSource {
 }
 
 compileJava {
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_1_9
+    targetCompatibility = JavaVersion.VERSION_1_9
 }
 
 compileKotlin {
     dependsOn(generateGrammarSource)
-    targetCompatibility = JavaVersion.VERSION_17
+    kotlinOptions {
+        jvmTarget = '9'
+    }
 }
 
 compileTestKotlin {
