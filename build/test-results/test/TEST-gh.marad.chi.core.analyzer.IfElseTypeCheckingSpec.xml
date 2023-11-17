@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="gh.marad.chi.core.analyzer.IfElseTypeCheckingSpec" tests="2" skipped="0" failures="0" errors="0" timestamp="2023-11-16T06:14:54" hostname="POLPC11643" time="0.0">
-  <properties/>
-  <testcase name="if-else type is unit when branch types differ (or 'else' branch is missing)" classname="gh.marad.chi.core.analyzer.IfElseTypeCheckingSpec" time="0.0"/>
-  <testcase name="conditions should be boolean type" classname="gh.marad.chi.core.analyzer.IfElseTypeCheckingSpec" time="0.0"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

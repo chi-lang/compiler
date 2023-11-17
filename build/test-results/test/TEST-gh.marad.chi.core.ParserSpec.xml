@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="gh.marad.chi.core.ParserSpec" tests="2" skipped="0" failures="0" errors="0" timestamp="2023-11-16T06:14:54" hostname="POLPC11643" time="0.0">
-  <properties/>
-  <testcase name="should read lambda function invocation expression" classname="gh.marad.chi.core.ParserSpec" time="0.0"/>
-  <testcase name="should read nested function invocations" classname="gh.marad.chi.core.ParserSpec" time="0.0"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
