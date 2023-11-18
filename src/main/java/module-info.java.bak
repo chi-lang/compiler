@@ -1,3 +1,5 @@
+// This file is temporarily disabled since building proper 
+// Java 9 module with Kotlin requires some more configuration
 open module gh.marad.chi.compiler {
     requires java.base;
     requires transitive kotlin.stdlib;
