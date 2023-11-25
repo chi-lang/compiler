@@ -15,6 +15,7 @@ fun convertEffectDefinition(ctx: ConversionContext, ast: ParseEffectDefinition):
         moduleName = ctx.currentModule,
         packageName = ctx.currentPackage,
         name = ast.name,
+        public = ast.public,
         genericTypeParameters = typeParameters,
         parameters = ast.formalArguments.map {
             FnParam(

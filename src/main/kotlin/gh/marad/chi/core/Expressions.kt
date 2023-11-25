@@ -266,6 +266,7 @@ data class EffectDefinition(
     val moduleName: String,
     val packageName: String,
     val name: String,
+    val public: Boolean,
     val genericTypeParameters: List<GenericTypeParameter>,
     val parameters: List<FnParam>,
     val returnType: Type,
