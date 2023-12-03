@@ -108,7 +108,7 @@ data class FieldAccess(
         get() {
             val recvType = receiver.type
             return if (recvType is CompositeType) recvType.memberType(fieldName) ?: Type.undefined
-            else TODO("Can't find '$fieldName' field type. Expected composite type but was $recvType in ${sourceSection?.getCode()}")
+            else Type.undefined
         }
 }
 
@@ -173,7 +173,7 @@ data class FnCall(
             val functionType: FnType = when (val fnType = function.type) {
                 is FnType -> fnType
                 is OverloadedFnType -> fnType.getType(parameters.map { it.type }) ?: return Type.undefined
-                else -> return Type.undefined
+                else -> return fnType
             }
             return resolveGenericType(
                 functionType,

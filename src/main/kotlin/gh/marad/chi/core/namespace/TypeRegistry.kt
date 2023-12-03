@@ -26,6 +26,16 @@ class TypeRegistry {
         it.withVariant(variants[it.simpleName]?.find { variant -> variant.variantName == variantName })
     }
 
+    @Suppress("unused")
+    fun defineVariantType(variantType: VariantType, variants: List<VariantType.Variant>) {
+        types[variantType.simpleName] = variantType
+        this.variants[variantType.simpleName] = variants
+        variants.forEach {
+            typeByVariantName[it.variantName] = variantType
+        }
+        variantType.variant = variants.singleOrNull()
+    }
+
     fun defineTypes(
         moduleName: String,
         packageName: String,
