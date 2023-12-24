@@ -71,6 +71,18 @@ fun convertFieldAccess(ctx: ConversionContext, ast: ParseFieldAccess): Expressio
     }
 
     val receiver = generateExpressionAst(ctx, ast.receiver)
+    val scope = ctx.namespace.getOrCreatePackage(receiver.type.moduleName, receiver.type.packageName).scope
+    if (scope.containsSymbol(ast.memberName)) {
+        return VariableAccess(
+            isModuleLocal = receiver.type.moduleName == ctx.currentModule,
+            moduleName = receiver.type.moduleName,
+            packageName = receiver.type.packageName,
+            definitionScope = scope,
+            name = ast.memberName,
+            sourceSection = ast.memberSection
+        )
+    }
+
     return FieldAccess(
         receiver,
         ast.memberName,
