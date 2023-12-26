@@ -521,18 +521,6 @@ public interface ChiParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitIf_expr(ChiParser.If_exprContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link ChiParser#then_expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitThen_expr(ChiParser.Then_exprContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link ChiParser#else_expr}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitElse_expr(ChiParser.Else_exprContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link ChiParser#bool}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

@@ -136,10 +136,7 @@ stringPart
     | ID_INTERP
     | ENTER_EXPR expression RBRACE;
 
-if_expr : IF '(' condition=expression ')' then_expr (NEWLINE? ELSE else_expr)? ;
-//condition : expression ;
-then_expr : block | expression ;
-else_expr : block | expression ;
+if_expr : IF condition=expression then_expr=block (NEWLINE? ELSE else_expr=block)? ;
 
 bool : TRUE | FALSE ;
 

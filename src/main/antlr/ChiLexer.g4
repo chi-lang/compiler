@@ -11,7 +11,7 @@ IF : 'if';
 ELSE : 'else';
 AS : 'as';
 WHILE : 'while';
-FOR : 'FOR';
+FOR : 'for';
 PACKAGE : 'package';
 IMPORT : 'import';
 DATA : 'data';
