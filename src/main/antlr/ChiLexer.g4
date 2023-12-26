@@ -80,7 +80,7 @@ FALSE : 'false' ;
 NUMBER : DIGIT+ ('.' DIGIT+)? ;
 ID : LETTER (LETTER | DIGIT | '_')* ;
 fragment EOL : ('\r'? '\n' | '\r');
-NEWLINE : EOL;
+NEWLINE : EOL -> skip;
 WS : [ \t]+ -> skip;
 
 SINGLE_LINE_COMMENT : '//' ~[\r\n]* EOL -> skip ;

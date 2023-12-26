@@ -3,3 +3,4 @@ build/
 .gradle/
 src/main/gen
 src/main/antlr/gen
+src/main/java/gh/marad/chi/core/antlr
