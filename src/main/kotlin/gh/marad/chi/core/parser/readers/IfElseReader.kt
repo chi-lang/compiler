@@ -10,9 +10,17 @@ internal object IfElseReader {
         ParseIfElse(
             condition = ctx.condition.accept(parser),
             thenBody = ctx.then_expr.accept(parser),
-            elseBody = ctx.else_expr?.accept(parser),
+            elseBody = ctx.else_expr?.let { readElse(parser, source, it) },
             section = getSection(source, ctx)
         )
+
+    private fun readElse(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.If_expr_elseContext): ParseAst {
+        return if (ctx.block() != null) {
+            ctx.block().accept(parser)
+        } else {
+            ctx.if_expr().accept(parser)
+        }
+    }
 }
 
 data class ParseIfElse(
