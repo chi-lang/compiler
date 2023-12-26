@@ -25,10 +25,11 @@ internal fun parseProgram(source: String, namespace: GlobalCompilationNamespace)
     parser.addErrorListener(errorListener)
     val chiSource = ChiSource(source)
     val visitor = ParserVisitor(chiSource)
-    val parsedProgram = ProgramReader.read(visitor, chiSource, parser.program())
+    val parseResult = parser.program()
     val program = if (errorListener.getMessages().isNotEmpty()) {
         Program(emptyList())
     } else {
+        val parsedProgram = ProgramReader.read(visitor, chiSource, parseResult)
         val block = generateExpressionsFromParsedProgram(parsedProgram, namespace)
         Program(block.body)
     }
