@@ -240,7 +240,14 @@ fun checkTypes(expr: Expression, messages: MutableList<Message>) {
 
     fun checkFn(expr: Fn) {
         val expected = expr.returnType
-        if (expr.returnType == Type.unit) {
+
+        forEachAst(expr) {
+            if (it is Return) {
+                checkTypeMatches(expected, it.type, it.sourceSection)
+            }
+        }
+
+        if (expected == Type.unit) {
             return
         }
 
@@ -379,6 +386,7 @@ fun checkTypes(expr: Expression, messages: MutableList<Message>) {
         is EffectDefinition -> {} // TODO: maybe something?
         is Handle -> {} // TODO: check that effect branches return the same type that handle expects
         is InterpolatedString -> {} // nothing to check
+        is Return -> {}
     }
 }
 

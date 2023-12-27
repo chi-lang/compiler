@@ -168,6 +168,41 @@ class FnTypeCheckingSpec : FunSpec() {
                 }
             }
         }
+
+        test("should check that return expression type matches the function return value") {
+            analyze(
+                ast(
+                    """
+                        fn foo(): int {
+                            return "hello"
+                            5
+                        }
+                    """.trimIndent(), ignoreCompilationErrors = true
+                )
+
+            ).should {
+                it.shouldHaveSize(1)
+                it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
+                    error.expected shouldBe intType
+                    error.actual shouldBe string
+                }
+            }
+        }
+
+        test("should accept return without any value") {
+            analyze(
+                ast(
+                    """
+                        fn foo() {
+                            return
+                            5
+                        }
+                    """.trimIndent()
+                )
+            ).should {
+                it.shouldHaveSize(0)
+            }
+        }
     }
 }
 

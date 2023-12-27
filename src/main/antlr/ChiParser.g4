@@ -68,6 +68,7 @@ expression
     | string # StringExpr
     | receiver=expression ws PERIOD methodName=ID callGenericParameters? '(' arguments=expr_comma_list ')' # MethodInvocation
     | receiver=expression ws PERIOD memberName=ID # FieldAccessExpr
+    | MINUS expression # NegationExpr
     | expression BIT_SHL expression # BinOp
     | expression BIT_SHR expression # BinOp
     | expression divMul expression # BinOp
@@ -84,9 +85,9 @@ expression
     | variable=expression '[' index=expression ']' '=' value=expression # IndexedAssignment
     | lambda # LambdaExpr
     | if_expr # IfExpr
+    | 'return' expression? # ReturnExpr
     | input=expression ws WEAVE ws template=expression ws # WeaveExpr
     | variable=ID opEqual value=expression # OpEqualExpr
-    | MINUS expression # NegationExpr
     | NUMBER # NumberExpr
     | bool # BoolExpr
     | ID # IdExpr

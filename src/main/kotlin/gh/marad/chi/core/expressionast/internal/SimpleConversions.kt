@@ -112,4 +112,6 @@ fun convertNot(ctx: ConversionContext, ast: ParseNot): PrefixOp =
         sourceSection = ast.section
     )
 
+fun convertReturn(ctx: ConversionContext, ast: ParseReturn): Return =
+    Return(ast.value?.let { generateExpressionAst(ctx, it) }, ast.section)
 

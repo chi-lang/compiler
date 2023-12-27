@@ -113,6 +113,10 @@ fun forEachAst(expression: Expression, func: (Expression) -> Unit) {
             }
             func(expression)
         }
+        is Return -> {
+          expression.value?.let { forEachAst(it, func) }
+          func(expression)
+        }
     }
 }
 
@@ -256,6 +260,14 @@ fun mapAst(expression: Expression, func: (Expression) -> Expression): Expression
                     cases = expression.cases.map {
                         it.copy(body = mapAst(it.body, func))
                     }
+                )
+            )
+        }
+
+        is Return -> {
+            func(
+                expression.copy(
+                    value = expression.value?.let { func(it) }
                 )
             )
         }

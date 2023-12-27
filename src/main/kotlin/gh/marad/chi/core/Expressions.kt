@@ -293,3 +293,8 @@ data class HandleCase(
     val scope: CompilationScope,
     val sourceSection: ChiSource.Section?
 )
+
+data class Return(val value: Expression?,
+                  override val sourceSection: ChiSource.Section?) : Expression {
+    override val type: Type get() = value?.type ?: Type.unit
+}
