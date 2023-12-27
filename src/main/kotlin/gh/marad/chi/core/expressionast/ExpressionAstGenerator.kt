@@ -99,5 +99,6 @@ fun generateExpressionAst(ctx: ConversionContext, ast: ParseAst): Expression = w
     is ParseLambda -> convertLambda(ctx, ast)
     is ParseEffectDefinition -> convertEffectDefinition(ctx, ast)
     is ParseHandle -> convertHandle(ctx, ast)
+    is ParseReturn -> convertReturn(ctx, ast)
     else -> TODO("Unsupported conversion of AST element $ast")
 }

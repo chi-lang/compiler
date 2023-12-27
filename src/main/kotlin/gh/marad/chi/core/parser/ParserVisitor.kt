@@ -106,4 +106,7 @@ internal class ParserVisitor(private val source: ChiSource) : ChiParserBaseVisit
 
     override fun visitHandleExpression(ctx: ChiParser.HandleExpressionContext): ParseAst =
         EffectReader.readHandle(this, source, ctx)
+
+    override fun visitReturnExpr(ctx: ChiParser.ReturnExprContext): ParseAst =
+        ReturnReader.read(this, source, ctx)
 }

@@ -23,6 +23,7 @@ CONTINUE : 'continue';
 EFFECT : 'effect';
 HANDLE : 'handle';
 WITH : 'with';
+RETURN : 'return';
 
 ARROW : '->' ;
 COLON : ':' ;
