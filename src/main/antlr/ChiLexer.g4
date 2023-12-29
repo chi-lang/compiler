@@ -24,6 +24,7 @@ EFFECT : 'effect';
 HANDLE : 'handle';
 WITH : 'with';
 RETURN : 'return';
+TRAIT : 'trait';
 
 ARROW : '->' ;
 COLON : ':' ;

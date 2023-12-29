@@ -2,7 +2,7 @@ parser grammar ChiParser;
 
 options { tokenVocab=ChiLexer; }
 
-program : (package_definition ws)? (ws import_definition)* ws (expression | variantTypeDefinition)? (newline (expression | variantTypeDefinition))* ws EOF ;
+program : (package_definition ws)? (ws import_definition)* ws (expression | variantTypeDefinition | traitDefinition)? (newline (expression | variantTypeDefinition))* ws EOF ;
 
 newline : NEWLINE+;
 
@@ -49,6 +49,13 @@ handleExpression : HANDLE ws block ws WITH ws LBRACE ws handleCase*  RBRACE;
 handleCase : effectName=ID '(' handleCaseEffectParam (',' handleCaseEffectParam)* ')' ws '->' ws handleCaseBody ws;
 handleCaseEffectParam : ID;
 handleCaseBody : block | expression;
+
+// ====================================================================================================
+// Traits
+// ====================================================================================================
+
+traitDefinition : 'trait' name=ID generic_type_definitions '{' ws traitFunctionDefinition* '}';
+traitFunctionDefinition : FN funcName=ID arguments=func_argument_definitions (COLON func_return_type)? ws;
 
 // ====================================================================================================
 // Expressions
