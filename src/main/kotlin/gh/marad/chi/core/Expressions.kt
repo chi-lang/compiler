@@ -9,6 +9,7 @@ sealed interface Expression {
     val sourceSection: ChiSource.Section?
     val type: Type
     val type: OldType
+    fun accept(visitor: ExpressionVisitor)
 }
 
 data class Program(val expressions: List<Expression>, override val sourceSection: ChiSource.Section? = null) :
@@ -17,12 +18,14 @@ data class Program(val expressions: List<Expression>, override val sourceSection
         get() = expressions.lastOrNull()?.type ?: Type.unit
     override val type: OldType
         get() = expressions.lastOrNull()?.type ?: OldType.unit
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitProgram(this)
 }
 
 data class Package(val moduleName: String, val packageName: String, override val sourceSection: ChiSource.Section?) :
     Expression {
     override val type: Type = Type.unit
     override val type: OldType = OldType.unit
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitPackage(this)
 }
 
 data class ImportEntry(
@@ -43,6 +46,7 @@ data class Import(
 ) : Expression {
     override val type: Type = Type.unit
     override val type: OldType = OldType.unit
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitImport(this)
 }
 
 data class DefineVariantType(
@@ -52,6 +56,7 @@ data class DefineVariantType(
 ) : Expression {
     override val type: OldType = OldType.unit
     val name get() = baseVariantType.simpleName
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitDefineVariantType(this)
 }
 
 data class VariantTypeConstructor(
@@ -84,6 +89,7 @@ data class Atom(val value: String, override val type: OldType, override val sour
         fun string(value: String, sourceSection: ChiSource.Section?) = Atom(value, OldType.string, sourceSection)
     }
 
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitAtom(this)
     override fun toString(): String = "Atom($value: $type)"
 }
 
@@ -91,6 +97,7 @@ data class InterpolatedString(val parts: List<Expression>, override val sourceSe
     Expression {
     override val type: Type = Type.string
     override val type: OldType = OldType.string
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitInterpolatedString(this)
 }
 
 data class VariableAccess(
@@ -105,6 +112,7 @@ data class VariableAccess(
         get() = definitionScope.getSymbolType(name) ?: Type.undefined
     override val type: OldType
         get() = definitionScope.getSymbolType(name) ?: OldType.undefined
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitVariableAccess(this)
 }
 
 data class FieldAccess(
@@ -120,6 +128,7 @@ data class FieldAccess(
             return if (recvType is CompositeType) recvType.memberType(fieldName) ?: OldType.undefined
             else OldType.undefined
         }
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitFieldAccess(this)
 }
 
 data class FieldAssignment(
@@ -133,6 +142,7 @@ data class FieldAssignment(
     override val type: OldType
         get() = (receiver.type as CompositeType).memberType(fieldName) ?: OldType.undefined
 
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitFieldAssignment(this)
 }
 
 data class Assignment(
@@ -141,6 +151,7 @@ data class Assignment(
 ) : Expression {
     override val type: Type get() = value.type
     override val type: OldType get() = value.type
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitAssignment(this)
 }
 
 data class NameDeclaration(
@@ -154,11 +165,13 @@ data class NameDeclaration(
 ) : Expression {
     override val type: Type get() = expectedType ?: value.type
     override val type: OldType get() = expectedType ?: value.type
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitNameDeclaration(this)
 }
 
 data class Group(val value: Expression, override val sourceSection: ChiSource.Section?) : Expression {
     override val type: OldType
         get() = value.type
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitGroup(this)
 }
 
 data class FnParam(val name: String, val type: OldType, val sourceSection: ChiSource.Section?)
@@ -172,6 +185,7 @@ data class Fn(
 ) : Expression {
     override val type: Type get() = FnType(genericTypeParameters, parameters.map { it.type }, returnType)
     override val type: OldType get() = FnType(genericTypeParameters, parameters.map { it.type }, returnType)
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitFn(this)
 }
 
 data class Block(val body: List<Expression>, override val sourceSection: ChiSource.Section?) : Expression {
@@ -199,6 +213,7 @@ data class FnCall(
                 parameters,
             )
         }
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitFnCall(this)
 }
 
 data class IfElse(
@@ -211,6 +226,7 @@ data class IfElse(
         get() = if (thenBranch.type == elseBranch?.type) thenBranch.type else Type.unit
     override val type: OldType
         get() = if (thenBranch.type == elseBranch?.type) thenBranch.type else OldType.unit
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitIfElse(this)
 }
 
 data class InfixOp(
@@ -226,23 +242,27 @@ data class InfixOp(
             in listOf("==", "!=", "<", ">", "<=", ">=", "&&", "||") -> OldType.bool
             else -> left.type
         }
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitInfixOp(this)
 }
 
 data class PrefixOp(val op: String, val expr: Expression, override val sourceSection: ChiSource.Section?) : Expression {
     override val type: Type get() = expr.type
     override val type: OldType get() = expr.type
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitPrefixOp(this)
 }
 
 data class Cast(val expression: Expression, val targetType: OldType, override val sourceSection: ChiSource.Section?) :
     Expression {
     override val type: Type get() = targetType
     override val type: OldType get() = targetType
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitCast(this)
 }
 
 data class WhileLoop(val condition: Expression, val loop: Expression, override val sourceSection: ChiSource.Section?) :
     Expression {
     override val type: Type get() = Type.unit
     override val type: OldType get() = OldType.unit
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitWhileLoop(this)
 }
 
 data class Break(override val sourceSection: ChiSource.Section?) : Expression {
@@ -250,6 +270,7 @@ data class Break(override val sourceSection: ChiSource.Section?) : Expression {
         get() = Type.unit
     override val type: OldType
         get() = OldType.unit
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitBreak(this)
 }
 
 data class Continue(override val sourceSection: ChiSource.Section?) : Expression {
@@ -257,6 +278,7 @@ data class Continue(override val sourceSection: ChiSource.Section?) : Expression
         get() = Type.unit
     override val type: OldType
         get() = OldType.unit
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitContinue(this)
 }
 
 data class IndexOperator(
@@ -269,6 +291,7 @@ data class IndexOperator(
 //            assert(variable.type.isIndexable()) { "Cannot index types other than array!" }
             return variable.type.indexedElementType()
         }
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitIndexOperator(this)
 }
 
 data class IndexedAssignment(
@@ -282,12 +305,14 @@ data class IndexedAssignment(
 //            assert(variable.type.isIndexable()) { "Cannot index types other than array!" }
             return variable.type.indexedElementType()
         }
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitIndexedAssignment(this)
 }
 
 data class Is(val value: Expression, val typeOrVariant: String, override val sourceSection: ChiSource.Section?) :
     Expression {
     override val type: Type = Type.bool
     override val type: OldType = OldType.bool
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitIs(this)
 }
 
 data class EffectDefinition(
@@ -302,6 +327,7 @@ data class EffectDefinition(
 ) : Expression {
     override val type: Type get() = FnType(genericTypeParameters, parameters.map { it.type }, returnType)
     override val type: OldType get() = FnType(genericTypeParameters, parameters.map { it.type }, returnType)
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitEffectDefinition(this)
 }
 
 data class Handle(
@@ -312,6 +338,7 @@ data class Handle(
     override val type: Type get() = body.type
 
     override val type: OldType get() = body.type
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitHandle(this)
 }
 
 data class HandleCase(
@@ -328,4 +355,5 @@ data class Return(val value: Expression?,
                   override val sourceSection: ChiSource.Section?) : Expression {
     override val type: Type get() = value?.type ?: Type.unit
     override val type: OldType get() = value?.type ?: OldType.unit
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitReturn(this)
 }
