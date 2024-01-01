@@ -13,7 +13,15 @@ fun inferAndFillTypes(env: Map<String, Type>, expr: Expression) {
     expr.accept(TypeFiller(solution))
 }
 
-data class Constraint(var actual: Type, var expected: Type, val section: ChiSource.Section?) {
+data class Constraint(
+    var actual: Type,
+    var expected: Type,
+    val section: ChiSource.Section?,
+    /// This parameter has very specific use case. It's used
+    /// For FnCall type inference to convey the parameter
+    /// sections, to produce meaningful errors.
+    val fnParamSections: List<ChiSource.Section?>? = null
+) {
     fun substitute(v: TypeVariable, t: Type) {
         actual = actual.substitute(v,t)
         expected = expected.substitute(v,t)
@@ -60,7 +68,7 @@ class SubstituteTypeVariable(private val v: TypeVariable, private val t: Type) :
 class TypeInferenceFailed(
     message: String,
     val section: ChiSource.Section?
-) : RuntimeException(message)
+) : RuntimeException(message + if (section != null) "at $section" else "")
 
 internal fun inferTypes(env: Map<String, Type>, expr: Expression): InferenceResult =
     inferTypes(InferenceContext(), env, expr)
@@ -116,7 +124,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             var currentEnv = env
             val constraints = mutableSetOf<Constraint>()
             val last = expr.body.map {
-                var result = inferTypes(ctx, currentEnv, it)
+                val result = inferTypes(ctx, currentEnv, it)
                 currentEnv = result.env
                 constraints.addAll(result.constraints)
                 result
@@ -161,6 +169,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             constraints.add(Constraint(
                 funcType.type,
                 FunctionType(paramTypes.map { it.type } + t),
+                fnParamSections = expr.parameters.map { it.sourceSection },
                 section = expr.function.sourceSection
             ))
             constraints.addAll(funcType.constraints)
@@ -204,20 +213,25 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             val left = inferTypes(ctx, env, expr.left)
             val right = inferTypes(ctx, env, expr.right)
             val constraints = mutableSetOf<Constraint>()
-            if (expr.op in listOf("==", "!=", "<", ">", "<=", ">=")) {
-                constraints.add(Constraint(t, Types.bool, expr.sourceSection))
-                constraints.add(Constraint(left.type, right.type, expr.sourceSection))
-            } else if (expr.op in listOf("&&", "||") ) {
-                constraints.add(Constraint(t, Types.bool, expr.sourceSection))
-                constraints.add(Constraint(left.type, Types.bool, expr.left.sourceSection))
-                constraints.add(Constraint(right.type, Types.bool, expr.right.sourceSection))
-            } else if (expr.op in listOf("+", "-", "*", "/")) {
-                constraints.add(Constraint(t, left.type, expr.left.sourceSection))
-                constraints.add(Constraint(t, right.type, expr.right.sourceSection))
-            } else if (expr.op in listOf("%", ">>", "<<", "&", "|")) {
-                constraints.add(Constraint(t, Types.int, expr.sourceSection))
-                constraints.add(Constraint(left.type, Types.int, expr.left.sourceSection))
-                constraints.add(Constraint(right.type, Types.int, expr.right.sourceSection))
+            when (expr.op) {
+                in listOf("==", "!=", "<", ">", "<=", ">=") -> {
+                    constraints.add(Constraint(t, Types.bool, expr.sourceSection))
+                    constraints.add(Constraint(left.type, right.type, expr.sourceSection))
+                }
+                in listOf("&&", "||") -> {
+                    constraints.add(Constraint(t, Types.bool, expr.sourceSection))
+                    constraints.add(Constraint(left.type, Types.bool, expr.left.sourceSection))
+                    constraints.add(Constraint(right.type, Types.bool, expr.right.sourceSection))
+                }
+                in listOf("+", "-", "*", "/") -> {
+                    constraints.add(Constraint(t, left.type, expr.left.sourceSection))
+                    constraints.add(Constraint(t, right.type, expr.right.sourceSection))
+                }
+                in listOf("%", ">>", "<<", "&", "|") -> {
+                    constraints.add(Constraint(t, Types.int, expr.sourceSection))
+                    constraints.add(Constraint(left.type, Types.int, expr.left.sourceSection))
+                    constraints.add(Constraint(right.type, Types.int, expr.right.sourceSection))
+                }
             }
             constraints.addAll(left.constraints)
             constraints.addAll(right.constraints)
@@ -246,7 +260,30 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             expr.newType = value.type
             value
         }
-        is Handle -> TODO()
+        is Handle -> {
+            val t = ctx.nextTypeVariable()
+            val constraints = mutableSetOf<Constraint>()
+
+            val body = inferTypes(ctx, env, expr.body)
+            constraints.add(Constraint(t, body.type, expr.sourceSection))
+            constraints.addAll(body.constraints)
+
+            expr.cases.forEach { handleCase ->
+                val effectType = env[handleCase.effectName] ?: throw TypeInferenceFailed("Symbol ${handleCase.effectName} not found in scope.", handleCase.sourceSection)
+                if (effectType is FunctionType) {
+                    val effectReturnType = effectType.types.last()
+                    val caseEnv = env + ("resume" to FunctionType(listOf(effectReturnType, t)))
+                    val inferred = inferTypes(ctx, caseEnv, handleCase.body)
+                    constraints.add(Constraint(inferred.type, t, handleCase.sourceSection))
+                    constraints.addAll(inferred.constraints)
+                } else {
+                    throw TypeInferenceFailed("Symbol ${handleCase.effectName} has type $effectType but a function type was expected!", handleCase.sourceSection)
+                }
+            }
+
+            expr.newType = t
+            InferenceResult(t, constraints, env)
+        }
         is Import -> TODO()
         is IndexOperator -> TODO()
         is IndexedAssignment -> TODO()
@@ -265,7 +302,7 @@ fun unify(typeGraph: TypeGraph, constraints: Set<Constraint>): List<Pair<TypeVar
     val substitutions = mutableListOf<Pair<TypeVariable, Type>>()
 
     while (q.isNotEmpty()) {
-        val (a, b, section) = q.removeFirst()
+        val (a, b, section, paramSections) = q.removeFirst()
 //            println("$a = $b")
 //            println(q)
         if (a == b) {
@@ -282,11 +319,23 @@ fun unify(typeGraph: TypeGraph, constraints: Set<Constraint>): List<Pair<TypeVar
         } else if (a is FunctionType && b is FunctionType) {
             val aHead = a.types.first()
             val bHead = b.types.first()
-            q.add(Constraint(aHead, bHead, section))
+            val headSection = if (paramSections != null && paramSections.firstOrNull() != null) {
+                paramSections.first()
+            } else {
+                section
+            }
+            q.add(Constraint(aHead, bHead, headSection))
 
             val aTail = a.types.drop(1).let { if (it.size == 1) it[0] else FunctionType(it) }
             val bTail = b.types.drop(1).let { if (it.size == 1) it[0] else FunctionType(it) }
-            q.add(Constraint(aTail, bTail, section))
+            if (paramSections != null && paramSections.size == 2) {
+                // after taking one for head there is only single type left
+                // so aTail and bTail are going to be simple types (not FunctionType)
+                // so we can simply take the last section as
+                q.add(Constraint(aTail, bTail, paramSections.last()))
+            } else {
+                q.add(Constraint(aTail, bTail, section, paramSections?.drop(1)))
+            }
         } else if (a is TypeVariable) {
             if (b.contains(a)) {
                 throw TypeInferenceFailed("$a is contained in $b", section)

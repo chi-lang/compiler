@@ -382,6 +382,23 @@ class InferenceKtTest {
         println(result)
     }
 
+    @Test
+    fun `test handle effect typing`() {
+        // when
+        val result = testInference("""
+            effect eff(name: int): bool
+            
+            handle {
+                eff(5)
+            } with {
+                eff(value) -> resume(true)
+            }
+        """.trimIndent())
+
+        // then
+        result.block.body[1].newType shouldBe Types.bool
+    }
+
     fun testInference(code: String, env: Map<String, Type> = mapOf()): Result {
         val ns = GlobalCompilationNamespace()
         val ctx = ConversionContext(ns)

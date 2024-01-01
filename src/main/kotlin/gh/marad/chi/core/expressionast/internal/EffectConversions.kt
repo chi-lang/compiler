@@ -26,7 +26,9 @@ fun convertEffectDefinition(ctx: ConversionContext, ast: ParseEffectDefinition):
         },
         returnType = ast.returnTypeRef.let { ctx.resolveType(it, typeParameterNames) },
         sourceSection = ast.section
-    )
+    ).also {
+        ctx.currentScope.addSymbol(it.name, it.type, SymbolType.Local, public = it.public, mutable = false)
+    }
 }
 
 fun convertHandle(ctx: ConversionContext, ast: ParseHandle): Expression {

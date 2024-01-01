@@ -1,5 +1,6 @@
 package gh.marad.chi.core.parser
 
+import gh.marad.chi.core.MessageCollectingErrorListener
 import gh.marad.chi.core.antlr.ChiLexer
 import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.readers.*
@@ -7,6 +8,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.DefaultErrorStrategy
+import java.lang.AssertionError
 
 fun testParse(code: String): List<ParseAst> {
     val source = ChiSource(code)
@@ -15,8 +18,18 @@ fun testParse(code: String): List<ParseAst> {
     val lexer = ChiLexer(charStream)
     val tokenStream = CommonTokenStream(lexer)
     val parser = ChiParser(tokenStream)
+    parser.errorHandler = DefaultErrorStrategy()
+    parser.removeErrorListeners()
+    var errorListener = MessageCollectingErrorListener()
+    parser.addErrorListener(errorListener)
     val visitor = ParserVisitor(source)
     val block = visitor.visitProgram(parser.program()) as ParseBlock
+    if (errorListener.getMessages().isNotEmpty()) {
+        errorListener.getMessages().forEach {
+            println(it)
+        }
+        throw AssertionError("There where compilation errors!")
+    }
     return block.body
 }
 
