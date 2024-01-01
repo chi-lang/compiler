@@ -7,17 +7,18 @@ import java.lang.RuntimeException
 
 
 fun inferAndFillTypes(env: Map<String, Type>, expr: Expression) {
-    val inferred = inferTypes(env, expr)
-    val solution = unify(inferred.constraints)
+    val ctx = InferenceContext()
+    val inferred = inferTypes(ctx, env, expr)
+    val solution = unify(ctx.typeGraph, inferred.constraints)
     expr.accept(TypeFiller(solution))
 }
 
-data class Constraint(var a: Type, var b: Type) {
+data class Constraint(var actual: Type, var expected: Type, val section: ChiSource.Section?) {
     fun substitute(v: TypeVariable, t: Type) {
-        a = a.substitute(v,t)
-        b = b.substitute(v,t)
+        actual = actual.substitute(v,t)
+        expected = expected.substitute(v,t)
     }
-    override fun toString(): String = "$a = $b"
+    override fun toString(): String = "$actual = $expected"
 }
 
 data class InferenceResult(val type: Type, val constraints: Set<Constraint>, val env: Map<String, Type>)
@@ -64,7 +65,7 @@ class TypeInferenceFailed(
 internal fun inferTypes(env: Map<String, Type>, expr: Expression): InferenceResult =
     inferTypes(InferenceContext(), env, expr)
 
-private fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression): InferenceResult {
+internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression): InferenceResult {
     return when (expr) {
         is Atom -> {
             expr.newType = expr.type.toNewType()
@@ -78,7 +79,7 @@ private fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expr
 
         is NameDeclaration -> {
             val valueType = inferTypes(ctx, env, expr.value)
-            val (updatedEnv, generalizedType) = generalize(valueType.constraints, env, expr.name, valueType.type)
+            val (updatedEnv, generalizedType) = generalize(ctx.typeGraph, valueType.constraints, env, expr.name, valueType.type)
             expr.newType = generalizedType
             InferenceResult(generalizedType, valueType.constraints, updatedEnv)
         }
@@ -90,7 +91,7 @@ private fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expr
             }
             signatureTypes.add(expr.returnType.toNewType())
             val type = FunctionType(signatureTypes)
-            val (updatedEnv, generalizedType) = generalize(emptySet(), env, expr.name, type)
+            val (updatedEnv, generalizedType) = generalize(ctx.typeGraph, emptySet(), env, expr.name, type)
             expr.newType = generalizedType
             InferenceResult(generalizedType, emptySet(), updatedEnv)
         }
@@ -159,7 +160,9 @@ private fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expr
             val constraints = mutableSetOf<Constraint>()
             constraints.add(Constraint(
                 funcType.type,
-                FunctionType(paramTypes.map { it.type } + t)))
+                FunctionType(paramTypes.map { it.type } + t),
+                section = expr.function.sourceSection
+            ))
             constraints.addAll(funcType.constraints)
             paramTypes.forEach { constraints.addAll(it.constraints) }
 
@@ -179,8 +182,14 @@ private fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expr
                 ?: InferenceResult(Types.unit, setOf(), env)
 
             val constraints = mutableSetOf<Constraint>()
-            constraints.add(Constraint(condType.type, Types.bool))
-            constraints.add(Constraint(t, thenBranchType.type))
+            constraints.add(Constraint(
+                actual = condType.type,
+                expected = Types.bool,
+                section = expr.condition.sourceSection))
+            constraints.add(Constraint(
+                actual = t,
+                expected = thenBranchType.type,
+                section = expr.sourceSection))
 //            constraints.add(Constraint(t, elseBranchType.type))
             constraints.addAll(condType.constraints)
             constraints.addAll(thenBranchType.constraints)
@@ -195,11 +204,20 @@ private fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expr
             val left = inferTypes(ctx, env, expr.left)
             val right = inferTypes(ctx, env, expr.right)
             val constraints = mutableSetOf<Constraint>()
-            if (expr.op in listOf("==", "!=", "<", ">", "<=", ">=", "&&", "||") ) {
-                constraints.add(Constraint(t, Types.bool))
-            } else {
-                constraints.add(Constraint(t, left.type))
-                constraints.add(Constraint(t, right.type))
+            if (expr.op in listOf("==", "!=", "<", ">", "<=", ">=")) {
+                constraints.add(Constraint(t, Types.bool, expr.sourceSection))
+                constraints.add(Constraint(left.type, right.type, expr.sourceSection))
+            } else if (expr.op in listOf("&&", "||") ) {
+                constraints.add(Constraint(t, Types.bool, expr.sourceSection))
+                constraints.add(Constraint(left.type, Types.bool, expr.left.sourceSection))
+                constraints.add(Constraint(right.type, Types.bool, expr.right.sourceSection))
+            } else if (expr.op in listOf("+", "-", "*", "/")) {
+                constraints.add(Constraint(t, left.type, expr.left.sourceSection))
+                constraints.add(Constraint(t, right.type, expr.right.sourceSection))
+            } else if (expr.op in listOf("%", ">>", "<<", "&", "|")) {
+                constraints.add(Constraint(t, Types.int, expr.sourceSection))
+                constraints.add(Constraint(left.type, Types.int, expr.left.sourceSection))
+                constraints.add(Constraint(right.type, Types.int, expr.right.sourceSection))
             }
             constraints.addAll(left.constraints)
             constraints.addAll(right.constraints)
@@ -221,9 +239,13 @@ private fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expr
             InferenceResult(targetType, emptySet(), env)
         }
         is DefineVariantType -> TODO("This should not be evaluated here")
-        is FieldAccess -> TODO()
-        is FieldAssignment -> TODO()
-        is Group -> TODO()
+        is FieldAccess -> TODO("Implement this when new typesystem supports Variant types")
+        is FieldAssignment -> TODO("Implement this when new typesystem supports Variant types")
+        is Group -> {
+            val value = inferTypes(ctx, env, expr.value)
+            expr.newType = value.type
+            value
+        }
         is Handle -> TODO()
         is Import -> TODO()
         is IndexOperator -> TODO()
@@ -238,39 +260,50 @@ private fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expr
     }
 }
 
-fun unify(constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
+fun unify(typeGraph: TypeGraph, constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
     var q = ArrayDeque(constraints)
     val substitutions = mutableListOf<Pair<TypeVariable, Type>>()
 
     while (q.isNotEmpty()) {
-        val (a, b) = q.removeFirst()
+        val (a, b, section) = q.removeFirst()
 //            println("$a = $b")
 //            println(q)
         if (a == b) {
             // this is nothing interesting
             continue
+//        } else if (a is SimpleType && b is SimpleType) {
+//            val supertypeName = typeGraph.commonSupertype(a.name, b.name)
+//            if (supertypeName == null || supertypeName == "any") {
+//                throw TypeInferenceFailed(
+//                    "Expected type was '$a' but got '$b'",
+//                    section
+//                )
+//            }
         } else if (a is FunctionType && b is FunctionType) {
             val aHead = a.types.first()
             val bHead = b.types.first()
-            q.add(Constraint(aHead, bHead))
+            q.add(Constraint(aHead, bHead, section))
 
             val aTail = a.types.drop(1).let { if (it.size == 1) it[0] else FunctionType(it) }
             val bTail = b.types.drop(1).let { if (it.size == 1) it[0] else FunctionType(it) }
-            q.add(Constraint(aTail, bTail))
+            q.add(Constraint(aTail, bTail, section))
         } else if (a is TypeVariable) {
             if (b.contains(a)) {
-                TODO("Inference failed - $a is contained in $b")
+                throw TypeInferenceFailed("$a is contained in $b", section)
             }
             q.forEach { it.substitute(a, b) }
             substitutions.add(a to b)
         } else if (b is TypeVariable) {
             if (a.contains(b)) {
-                TODO("Inference failed - $b is contained in $a")
+                throw TypeInferenceFailed("$a is contained in $b", section)
             }
             q.forEach { it.substitute(b, a) }
             substitutions.add(b to a)
         } else {
-            TODO("FAIL - cannot solve: $a = $b")
+            throw TypeInferenceFailed(
+                "Expected type was '$a' but got '$b'",
+                section
+            )
         }
     }
 
@@ -294,12 +327,13 @@ private fun instantiate(ctx: InferenceContext, inputType: Type): Type =
     }
 
 private fun generalize(
+    typeGraph: TypeGraph,
     constraints: Set<Constraint>,
     env: Map<String, Type>,
     name: String,
     type: Type
 ): Pair<Map<String, Type>, Type> {
-    val unified = unify(constraints)
+    val unified = unify(typeGraph, constraints)
     val typeVariablesNotToGeneralize = mutableSetOf<TypeVariable>()
     val newEnv = env.mapValues {
         val result = applySubstitution(it.value, unified)

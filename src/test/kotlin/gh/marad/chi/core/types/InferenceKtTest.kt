@@ -10,12 +10,14 @@ import gh.marad.chi.core.parser.readers.ParseBlock
 import gh.marad.chi.core.parser.testParse
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
-import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.maps.shouldBeEmpty
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -225,12 +227,13 @@ class InferenceKtTest {
 
         // then
         result.block.newType.shouldBe(Types.bool)
-        result.inferred.constraints.shouldContain(
-            Constraint(
-                FunctionType(listOf(Types.int, Types.bool)),
-                FunctionType(listOf(Types.int, TypeVariable("t0")))
-            )
-        )
+        result.inferred.constraints shouldHaveSize 1
+        result.inferred.constraints.first().should {
+            it.actual shouldBe FunctionType(listOf(Types.int, Types.bool))
+            it.expected shouldBe FunctionType(listOf(Types.int, TypeVariable("t0")))
+            it.section.shouldNotBeNull()
+        }
+
     }
 
     @Test
@@ -293,39 +296,90 @@ class InferenceKtTest {
     }
 
 
-    private fun infixTestCases(): Stream<Arguments> {
-        val typeShouldBeBool = true
-        val typeShouldBeUnchanged = false
-        return Stream.of(
-            Arguments.of("+", true), // number -> number -> number
-            Arguments.of("-", true),
-            Arguments.of("*", true),
-            Arguments.of("/", true),
-            Arguments.of("%", true),
-            Arguments.of("&&", true),
-            Arguments.of("<", true),
-            Arguments.of("<=", true),
-            Arguments.of(">", true),
-            Arguments.of(">=", true),
-            Arguments.of("==", true),
-            Arguments.of("!=", true),
-            Arguments.of("||", true),
-            Arguments.of("&", true),
-            Arguments.of("|", true),
-            Arguments.of(">>", true),
-            Arguments.of("<<", true),
+    @ParameterizedTest
+    @MethodSource("booleanOperators")
+    fun `test boolean operators`(op: String) {
+        // given
+        val env = mapOf(
+            "left" to Types.bool,
+            "right" to Types.bool
         )
+
+        // when
+        val result = testInference("left $op right", env)
+
+        // then
+        result.finalType shouldBe Types.bool
     }
 
-    private fun arithmeticOperators(): Stream<Arguments> = Stream.of(
+    @ParameterizedTest
+    @MethodSource("booleanOperators")
+    fun `boolean operators should require both sides to be bool`(op: String) {
+        // given
+        val env = mapOf(
+            "b" to Types.bool,
+            "i" to Types.int
+        )
 
-    )
+        // expect
+        assertThrows<TypeInferenceFailed> {
+            println(testInference("b $op i", env))
+        }.section.shouldNotBeNull()
+
+        // and
+        assertThrows<TypeInferenceFailed> {
+            testInference("i $op b", env)
+        }.section.shouldNotBeNull()
+    }
+
 
     @ParameterizedTest
-//    @ValueSource(strings = ["+", "-", "*", "/", "%", "&&", "<", "<=", ">", ">=", "==", "!=", "||", "&", "|", ">>", "<<"])
-    @MethodSource("infixTestCases")
-    fun `test infix  types`() {
+    @MethodSource("comparisonOperators")
+    fun `test comparison operators`(op: String) {
+        // given
+        val env = mapOf(
+            "left" to Types.int,
+            "right" to Types.int
+        )
 
+        // when
+        val result = testInference("left $op right", env)
+
+        // then
+        result.finalType shouldBe Types.bool
+    }
+
+    @ParameterizedTest
+    @MethodSource("arithmeticOperators")
+    fun `test arithmetic operators`(op: String) {
+        // given
+        val env = mapOf(
+            "left" to Types.int,
+            "right" to Types.int
+        )
+
+        // when
+        val result = testInference("left $op right", env)
+
+        // then
+        result.finalType shouldBe Types.int
+    }
+
+    @ParameterizedTest
+    @MethodSource("intOperators")
+    fun `int binary operators should not accept other types`(op: String) {
+        // given
+        val env = mapOf(
+            "f" to Types.float,
+        )
+
+        // when
+        val result = shouldThrow<TypeInferenceFailed> {
+            testInference("f $op f", env)
+        }
+
+
+        println(result)
     }
 
     fun testInference(code: String, env: Map<String, Type> = mapOf()): Result {
@@ -333,8 +387,9 @@ class InferenceKtTest {
         val ctx = ConversionContext(ns)
         val ast = testParse(code)
         val expr = generateExpressionAst(ctx, ParseBlock(ast, null)) as Block
-        val inferred = inferTypes(env, expr)
-        val solution = unify(inferred.constraints)
+        val infCtx = InferenceContext()
+        val inferred = inferTypes(infCtx, env, expr)
+        val solution = unify(infCtx.typeGraph, inferred.constraints)
         expr.accept(TypeFiller(solution))
         val finalType = applySubstitution(inferred.type, solution)
         return Result(inferred, solution, finalType, expr)
@@ -347,5 +402,41 @@ class InferenceKtTest {
         val block: Block
     ) {
         fun firstExpr() = block.body.first()
+    }
+
+    companion object {
+        @JvmStatic
+        fun booleanOperators() = Stream.of(
+            Arguments.of("&&"), // bool -> bool -> bool
+            Arguments.of("||"),
+        )
+
+        @JvmStatic
+        fun comparisonOperators() = Stream.of(
+            Arguments.of("<"), // number -> number -> bool
+            Arguments.of("<="),
+            Arguments.of(">"),
+            Arguments.of(">="),
+            Arguments.of("=="),
+            Arguments.of("!="),
+        )
+
+        @JvmStatic
+        fun arithmeticOperators() = Stream.of(
+            Arguments.of("+"), // number -> number -> number
+            Arguments.of("-"),
+            Arguments.of("*"),
+            Arguments.of("/"),
+        )
+
+        @JvmStatic
+        fun intOperators() = Stream.of(
+            Arguments.of("%"), // int -> int -> int
+            Arguments.of(">>"),
+            Arguments.of("<<"),
+            Arguments.of("&"),
+            Arguments.of("|"),
+        )
+
     }
 }
