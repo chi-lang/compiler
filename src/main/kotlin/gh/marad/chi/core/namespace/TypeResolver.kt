@@ -1,7 +1,7 @@
 package gh.marad.chi.core.namespace
 
 import gh.marad.chi.core.FnType
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.OldType
 import gh.marad.chi.core.VariantType
 import gh.marad.chi.core.parser.readers.*
 
@@ -18,9 +18,9 @@ class TypeResolver {
     fun resolve(
         ref: TypeRef,
         providedTypeParameterNames: Set<String>,
-        getTypeByName: (String) -> Type,
+        getTypeByName: (String) -> OldType,
         getVariants: (VariantType) -> List<VariantType.Variant>
-    ): Type {
+    ): OldType {
         val typeParameterNames = providedTypeParameterNames + contextParameterNames
         return when (ref) {
             is TypeNameRef ->
@@ -36,16 +36,16 @@ class TypeResolver {
                 resolveVariantNameRef(ref, typeParameterNames, getTypeByName, getVariants)
 
             is TypeParameterRef ->
-                Type.typeParameter(ref.name)
+                OldType.typeParameter(ref.name)
         }
     }
 
     private fun resolveNameTypeRef(
         typeParameterNames: Set<String>,
         ref: TypeNameRef,
-        getTypeByName: (String) -> Type
+        getTypeByName: (String) -> OldType
     ) = if (typeParameterNames.contains(ref.typeName)) {
-        Type.typeParameter(ref.typeName)
+        OldType.typeParameter(ref.typeName)
     } else {
         getTypeByName(ref.typeName)
     }
@@ -53,11 +53,11 @@ class TypeResolver {
     private fun resolveFunctionTypeRef(
         ref: FunctionTypeRef,
         typeParameterNames: Set<String>,
-        getTypeByName: (String) -> Type,
+        getTypeByName: (String) -> OldType,
         getVariants: (VariantType) -> List<VariantType.Variant>
     ): FnType = FnType(
         genericTypeParameters = ref.typeParameters.filterIsInstance<TypeParameterRef>()
-            .map { Type.typeParameter(it.name) },
+            .map { OldType.typeParameter(it.name) },
         paramTypes = ref.argumentTypeRefs.map {
             resolve(
                 it,
@@ -72,9 +72,9 @@ class TypeResolver {
     private fun resolveTypeConstructorRef(
         typeParameterNames: Set<String>,
         ref: TypeConstructorRef,
-        getTypeByName: (String) -> Type,
+        getTypeByName: (String) -> OldType,
         getVariants: (VariantType) -> List<VariantType.Variant>
-    ): Type {
+    ): OldType {
         // TODO: sprawdź, że typ isTypeConstructor()
         // TODO: sprawdź, że ma tyle samo type parametrów co podane
         val allTypeParameterNames =
@@ -89,7 +89,7 @@ class TypeResolver {
     private fun resolveVariantNameRef(
         ref: VariantNameRef,
         typeParameterNames: Set<String>,
-        getTypeByName: (String) -> Type,
+        getTypeByName: (String) -> OldType,
         getVariants: (VariantType) -> List<VariantType.Variant>
     ): VariantType {
         val variantType =

@@ -6,14 +6,14 @@ import gh.marad.chi.ast
 import gh.marad.chi.asts
 import gh.marad.chi.compile
 import gh.marad.chi.core.Block
-import gh.marad.chi.core.Type
-import gh.marad.chi.core.Type.Companion.array
-import gh.marad.chi.core.Type.Companion.bool
-import gh.marad.chi.core.Type.Companion.floatType
-import gh.marad.chi.core.Type.Companion.intType
-import gh.marad.chi.core.Type.Companion.string
-import gh.marad.chi.core.Type.Companion.typeParameter
-import gh.marad.chi.core.Type.Companion.unit
+import gh.marad.chi.core.OldType
+import gh.marad.chi.core.OldType.Companion.array
+import gh.marad.chi.core.OldType.Companion.bool
+import gh.marad.chi.core.OldType.Companion.floatType
+import gh.marad.chi.core.OldType.Companion.intType
+import gh.marad.chi.core.OldType.Companion.string
+import gh.marad.chi.core.OldType.Companion.typeParameter
+import gh.marad.chi.core.OldType.Companion.unit
 import gh.marad.chi.core.namespace.CompilationScope
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.ScopeType
@@ -36,7 +36,7 @@ class AssignmentTypeCheckingSpec : FunSpec() {
                 it.shouldHaveSize(1)
                 it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
                     error.expected shouldBe intType
-                    error.actual shouldBe Type.fn(unit)
+                    error.actual shouldBe OldType.fn(unit)
                 }
             }
         }
@@ -64,7 +64,7 @@ class NameDeclarationTypeCheckingSpec : FunSpec() {
 
         test("should return nothing for simple atom and variable read") {
             val scope = CompilationScope(ScopeType.Package)
-            scope.addSymbol("x", Type.fn(unit), SymbolType.Local)
+            scope.addSymbol("x", OldType.fn(unit), SymbolType.Local)
             analyze(ast("5", scope, ignoreCompilationErrors = true)).shouldBeEmpty()
             analyze(ast("x", scope, ignoreCompilationErrors = true)).shouldBeEmpty()
         }
@@ -73,7 +73,7 @@ class NameDeclarationTypeCheckingSpec : FunSpec() {
             analyze(ast("val x: () -> int = 5", ignoreCompilationErrors = true)).should {
                 it.shouldHaveSize(1)
                 it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                    error.expected shouldBe Type.fn(intType)
+                    error.expected shouldBe OldType.fn(intType)
                     error.actual shouldBe intType
                 }
             }
@@ -106,7 +106,7 @@ class BlockExpressionTypeCheckingSpec : FunSpec() {
                     error.expectedType shouldBe intType
                 }
                 errors[1].shouldBeTypeOf<TypeMismatch>().should { error ->
-                    error.expected shouldBe Type.fn(intType)
+                    error.expected shouldBe OldType.fn(intType)
                     error.actual shouldBe intType
                 }
             }
@@ -137,7 +137,7 @@ class FnTypeCheckingSpec : FunSpec() {
                 it.shouldHaveSize(1)
                 it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
                     error.expected shouldBe intType
-                    error.actual shouldBe Type.fn(unit)
+                    error.actual shouldBe OldType.fn(unit)
                 }
             }
 
@@ -164,7 +164,7 @@ class FnTypeCheckingSpec : FunSpec() {
                 it.shouldHaveSize(1)
                 it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
                     error.expected shouldBe intType
-                    error.actual shouldBe Type.fn(unit)
+                    error.actual shouldBe OldType.fn(unit)
                 }
             }
         }
@@ -210,14 +210,14 @@ class FnCallTypeCheckingSpec : FunSpec() {
     init {
         val scope = CompilationScope(ScopeType.Package)
         scope.addSymbol("x", intType, SymbolType.Local)
-        scope.addSymbol("test", Type.fn(intType, intType, Type.fn(unit)), SymbolType.Local)
+        scope.addSymbol("test", OldType.fn(intType, intType, OldType.fn(unit)), SymbolType.Local)
 
         test("should check that parameter argument types match") {
             analyze(ast("test(10, {})", scope)).shouldBeEmpty()
             analyze(ast("test(10, 20)", scope, ignoreCompilationErrors = true)).should {
                 it.shouldHaveSize(1)
                 it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                    error.expected shouldBe Type.fn(unit)
+                    error.expected shouldBe OldType.fn(unit)
                     error.actual shouldBe intType
                 }
             }
@@ -242,8 +242,8 @@ class FnCallTypeCheckingSpec : FunSpec() {
 
         test("should check that proper overloaded function exists") {
             val localScope = CompilationScope(ScopeType.Package)
-            localScope.addSymbol("test", Type.fn(intType, intType), SymbolType.Local)
-            localScope.addSymbol("test", Type.fn(intType, floatType), SymbolType.Local)
+            localScope.addSymbol("test", OldType.fn(intType, intType), SymbolType.Local)
+            localScope.addSymbol("test", OldType.fn(intType, floatType), SymbolType.Local)
 
             analyze(ast("test(2)", localScope)).shouldBeEmpty()
             analyze(ast("test(2 as unit)", localScope, ignoreCompilationErrors = true)).should {
@@ -258,15 +258,15 @@ class FnCallTypeCheckingSpec : FunSpec() {
             // given
             val localScope = CompilationScope(ScopeType.Package)
             localScope.addSymbol(
-                "map", Type.genericFn(
+                "map", OldType.genericFn(
                     listOf(typeParameter("T"), typeParameter("R")),
                     array(typeParameter("R")),
                     array(typeParameter("T")),
-                    Type.fn(typeParameter("R"), typeParameter("T"))
+                    OldType.fn(typeParameter("R"), typeParameter("T"))
                 ),
                 SymbolType.Local
             )
-            localScope.addSymbol("operation", Type.fn(string, intType), SymbolType.Local)
+            localScope.addSymbol("operation", OldType.fn(string, intType), SymbolType.Local)
             localScope.addSymbol("arr", array(intType), SymbolType.Local)
 
             // when
@@ -280,15 +280,15 @@ class FnCallTypeCheckingSpec : FunSpec() {
             // given
             val localScope = CompilationScope(ScopeType.Package)
             localScope.addSymbol(
-                "map", Type.genericFn(
+                "map", OldType.genericFn(
                     listOf(typeParameter("T"), typeParameter("R")),
                     array(typeParameter("R")),
                     array(typeParameter("T")),
-                    Type.fn(typeParameter("R"), typeParameter("T"))
+                    OldType.fn(typeParameter("R"), typeParameter("T"))
                 ),
                 SymbolType.Local
             )
-            localScope.addSymbol("operation", Type.fn(unit, intType), SymbolType.Local)
+            localScope.addSymbol("operation", OldType.fn(unit, intType), SymbolType.Local)
             localScope.addSymbol("arr", array(intType), SymbolType.Local)
 
             // when
@@ -308,7 +308,7 @@ class FnCallTypeCheckingSpec : FunSpec() {
             val localScope = CompilationScope(ScopeType.Package).apply {
                 addSymbol(
                     "unsafeArray",
-                    Type.genericFn(
+                    OldType.genericFn(
                         listOf(typeParameter("T")),
                         array(typeParameter("T")),
                         intType,

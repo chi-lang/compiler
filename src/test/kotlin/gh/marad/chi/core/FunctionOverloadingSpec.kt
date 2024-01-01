@@ -1,9 +1,9 @@
 package gh.marad.chi.core
 
-import gh.marad.chi.core.Type.Companion.any
-import gh.marad.chi.core.Type.Companion.fn
-import gh.marad.chi.core.Type.Companion.intType
-import gh.marad.chi.core.Type.Companion.string
+import gh.marad.chi.core.OldType.Companion.any
+import gh.marad.chi.core.OldType.Companion.fn
+import gh.marad.chi.core.OldType.Companion.intType
+import gh.marad.chi.core.OldType.Companion.string
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe

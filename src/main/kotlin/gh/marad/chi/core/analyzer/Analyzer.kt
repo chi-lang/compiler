@@ -46,7 +46,7 @@ data class SyntaxError(val offendingSymbol: Any?, val msg: String?, override val
         "Syntax error at $codePoint.${if (msg != null) "Error: $msg" else ""}"
 }
 
-data class TypeMismatch(val expected: Type, val actual: Type, override val codePoint: CodePoint?) :
+data class TypeMismatch(val expected: OldType, val actual: OldType, override val codePoint: CodePoint?) :
     Message {
     override val level = Level.ERROR
     override val message =
@@ -54,8 +54,8 @@ data class TypeMismatch(val expected: Type, val actual: Type, override val codeP
 }
 
 data class GenericTypeMismatch(
-    val expected: Type,
-    val actual: Type,
+    val expected: OldType,
+    val actual: OldType,
     val genericTypeParameter: GenericTypeParameter,
     override val codePoint: CodePoint?
 ) : Message {
@@ -64,7 +64,7 @@ data class GenericTypeMismatch(
         "Expected type of type parameter '${genericTypeParameter.typeParameterName}' is '${expected.toDisplayString()}' but got '${actual.toDisplayString()}'"
 }
 
-data class MissingReturnValue(val expectedType: Type, override val codePoint: CodePoint?) : Message {
+data class MissingReturnValue(val expectedType: OldType, override val codePoint: CodePoint?) : Message {
     override val level: Level = Level.ERROR
     override val message: String = "Missing return value at $codePoint"
 }
@@ -97,7 +97,7 @@ data class GenericTypeArityError(
 }
 
 data class NoCandidatesForFunction(
-    val argumentTypes: List<Type>,
+    val argumentTypes: List<OldType>,
     val options: Set<FnType>,
     override val codePoint: CodePoint?
 ) : Message {
@@ -120,7 +120,7 @@ data class CannotAccessInternalName(val name: String, override val codePoint: Co
         get() = "$name is not public and is not from this module"
 }
 
-data class TypeIsNotIndexable(val type: Type, override val codePoint: CodePoint?) : Message {
+data class TypeIsNotIndexable(val type: OldType, override val codePoint: CodePoint?) : Message {
     override val level: Level = Level.ERROR
     override val message: String = "Type '${type.name}' is cannot be indexed"
 }
@@ -130,7 +130,7 @@ data class CannotChangeImmutableVariable(override val codePoint: CodePoint?) : M
     override val message: String = "Cannot change immutable variable"
 }
 
-data class MemberDoesNotExist(val type: Type, val member: String, override val codePoint: CodePoint?) :
+data class MemberDoesNotExist(val type: OldType, val member: String, override val codePoint: CodePoint?) :
     Message {
     override val level: Level = Level.ERROR
     override val message: String
@@ -143,7 +143,7 @@ data class TypeInferenceFailed(override val codePoint: CodePoint?) : Message {
         get() = "Type inference failed here. Please provide more type information."
 }
 
-data class ExpectedVariantType(val actual: Type, override val codePoint: CodePoint?) : Message {
+data class ExpectedVariantType(val actual: OldType, override val codePoint: CodePoint?) : Message {
     override val level: Level = Level.ERROR
     override val message: String
         get() = "Expected variant type, but got '$actual'"

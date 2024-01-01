@@ -2,14 +2,14 @@ package gh.marad.chi.core
 
 import gh.marad.chi.core.analyzer.isSubType
 
-fun Type.canCastTo(targetType: Type): Boolean {
+fun OldType.canCastTo(targetType: OldType): Boolean {
     return isSubType(this, targetType)
 }
 
-fun Type.canDowncastTo(targetType: Type): Boolean =
+fun OldType.canDowncastTo(targetType: OldType): Boolean =
     this.isNumber() && targetType.isNumber()
 
-fun Expression.castTo(targetType: Type): Cast = Cast(this, targetType, null)
+fun Expression.castTo(targetType: OldType): Cast = Cast(this, targetType, null)
 
 fun automaticallyCastCompatibleTypes(expression: Expression): Expression {
     return mapAst(expression) { exp ->

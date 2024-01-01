@@ -1,7 +1,7 @@
 package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.EffectDefinition
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.OldType
 import gh.marad.chi.core.parser.readers.ParseEffectDefinition
 import gh.marad.chi.core.parser.readers.TypeNameRef
 import gh.marad.chi.core.parser.readers.TypeParameterRef
@@ -44,7 +44,7 @@ class EffectConversionsKtDefinitionTest {
         result.parameters shouldHaveSize 1
         result.parameters.first() should {
             it.name shouldBe "t"
-            it.type shouldBe Type.typeParameter("T")
+            it.type shouldBe OldType.typeParameter("T")
         }
     }
 
@@ -61,7 +61,7 @@ class EffectConversionsKtDefinitionTest {
             .shouldBeTypeOf<EffectDefinition>()
 
         // then
-        result.returnType shouldBe Type.typeParameter("T")
+        result.returnType shouldBe OldType.typeParameter("T")
     }
 
     private val sampleEffectDefinition = ParseEffectDefinition(

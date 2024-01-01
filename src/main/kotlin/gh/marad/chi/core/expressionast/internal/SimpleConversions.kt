@@ -26,7 +26,7 @@ fun convertInterpolatedString(ctx: ConversionContext, ast: ParseInterpolatedStri
 }
 
 fun convertInterpolation(ctx: ConversionContext, ast: ParseInterpolation): Expression {
-    return Cast(generateExpressionAst(ctx, ast.value), Type.string, ast.section)
+    return Cast(generateExpressionAst(ctx, ast.value), OldType.string, ast.section)
 }
 
 fun convertStringText(ast: StringText): Expression =

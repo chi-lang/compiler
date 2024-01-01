@@ -17,8 +17,8 @@ class VariablesConversionsKtMethodInvocationSyntaxTest {
         // given object of type int and method of type (int, int) -> int
         val namespace = GlobalCompilationNamespace()
         val ctx = ConversionContext(namespace)
-        ctx.addPublicSymbol("object", Type.intType)
-        ctx.addPublicSymbol("method", Type.fn(Type.intType, Type.intType, Type.intType))
+        ctx.addPublicSymbol("object", OldType.intType)
+        ctx.addPublicSymbol("method", OldType.fn(OldType.intType, OldType.intType, OldType.intType))
 
         // when
         val expr = convertMethodInvocation(
@@ -39,7 +39,7 @@ class VariablesConversionsKtMethodInvocationSyntaxTest {
             call.callTypeParameters shouldBe emptyList()
             call.parameters shouldHaveSize 2
             call.parameters[0].shouldBeVariable("object")
-            call.parameters[1].shouldBeAtom("10", Type.intType)
+            call.parameters[1].shouldBeAtom("10", OldType.intType)
         }
     }
 
@@ -72,7 +72,7 @@ class VariablesConversionsKtMethodInvocationSyntaxTest {
             }
             call.callTypeParameters shouldBe emptyList()
             call.parameters shouldHaveSize 1
-            call.parameters[0].shouldBeAtom("10", Type.intType)
+            call.parameters[0].shouldBeAtom("10", OldType.intType)
         }
     }
 
@@ -88,7 +88,7 @@ class VariablesConversionsKtMethodInvocationSyntaxTest {
         ctx.addPublicSymbol(
             moduleName = testModule,
             packageName = testPackage,
-            "method", Type.fn(Type.intType, testType)
+            "method", OldType.fn(OldType.intType, testType)
         )
 
         ctx.addPublicSymbol("object", testType)

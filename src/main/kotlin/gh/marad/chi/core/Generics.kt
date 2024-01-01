@@ -2,9 +2,9 @@ package gh.marad.chi.core
 
 fun resolveGenericType(
     fnType: FnType,
-    callTypeParameters: List<Type>,
+    callTypeParameters: List<OldType>,
     callParameters: List<Expression>,
-): Type {
+): OldType {
     val typeByParameterName = typesByTypeParameterName(fnType, callTypeParameters, callParameters)
     return if (fnType.returnType.isTypeConstructor()) {
         fnType.returnType.construct(typeByParameterName)
@@ -16,12 +16,12 @@ fun resolveGenericType(
 
 fun typesByTypeParameterName(
     fnType: FnType,
-    callTypeParameters: List<Type>,
+    callTypeParameters: List<OldType>,
     callParameters: List<Expression>
-): Map<GenericTypeParameter, Type> {
+): Map<GenericTypeParameter, OldType> {
     val namesFromTypeParameters = matchTypeParameters(fnType.genericTypeParameters, callTypeParameters)
     val namesFromCallParameters = matchCallTypes(fnType.paramTypes, callParameters.map { it.type })
-    val result = mutableMapOf<GenericTypeParameter, Type>()
+    val result = mutableMapOf<GenericTypeParameter, OldType>()
     result.putAll(namesFromCallParameters)
     result.putAll(namesFromTypeParameters)
     return result
@@ -29,13 +29,13 @@ fun typesByTypeParameterName(
 
 fun matchTypeParameters(
     definedTypeParameters: List<GenericTypeParameter>,
-    callTypeParameters: List<Type>
-): Map<GenericTypeParameter, Type> {
+    callTypeParameters: List<OldType>
+): Map<GenericTypeParameter, OldType> {
     return definedTypeParameters.zip(callTypeParameters).toMap()
 }
 
-fun matchCallTypes(definedParameters: List<Type>, callParameters: List<Type>): Map<GenericTypeParameter, Type> {
-    val result = mutableMapOf<GenericTypeParameter, Type>()
+fun matchCallTypes(definedParameters: List<OldType>, callParameters: List<OldType>): Map<GenericTypeParameter, OldType> {
+    val result = mutableMapOf<GenericTypeParameter, OldType>()
     definedParameters.zip(callParameters)
         .forEach { (definedParam, callParam) ->
             result.putAll(matchCallTypes(definedParam, callParam))
@@ -43,7 +43,7 @@ fun matchCallTypes(definedParameters: List<Type>, callParameters: List<Type>): M
     return result
 }
 
-fun matchCallTypes(definedParam: Type, callParam: Type): Map<GenericTypeParameter, Type> {
+fun matchCallTypes(definedParam: OldType, callParam: OldType): Map<GenericTypeParameter, OldType> {
     return if (definedParam is GenericTypeParameter) {
         mapOf(definedParam to callParam)
     } else if (definedParam.isTypeConstructor()) {

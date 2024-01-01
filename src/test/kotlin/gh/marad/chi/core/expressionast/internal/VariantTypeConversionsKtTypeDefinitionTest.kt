@@ -1,6 +1,6 @@
 package gh.marad.chi.core.expressionast.internal
 
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.OldType
 import gh.marad.chi.core.parser.readers.FormalField
 import gh.marad.chi.core.parser.readers.ParseVariantTypeDefinition
 import gh.marad.chi.core.parser.readers.TypeNameRef
@@ -48,7 +48,7 @@ class VariantTypeConversionsKtTypeDefinitionTest {
         fields shouldHaveSize 1
         fields.first() should {
             it.name shouldBe "a"
-            it.type shouldBe Type.typeParameter("T")
+            it.type shouldBe OldType.typeParameter("T")
             it.public.shouldBeTrue()
             it.sourceSection shouldBe sectionC
         }

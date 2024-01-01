@@ -45,8 +45,8 @@ class ObjectsSpec : FunSpec({
         msgs shouldHaveSize 1
         msgs[0].shouldBeTypeOf<TypeMismatch>() should {
             it.level shouldBe Level.ERROR
-            it.expected shouldBe Type.intType
-            it.actual shouldBe Type.string
+            it.expected shouldBe OldType.intType
+            it.actual shouldBe OldType.string
         }
     }
 })

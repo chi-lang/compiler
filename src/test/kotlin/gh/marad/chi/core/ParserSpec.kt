@@ -1,8 +1,8 @@
 package gh.marad.chi.core
 
 import gh.marad.chi.ast
-import gh.marad.chi.core.Type.Companion.fn
-import gh.marad.chi.core.Type.Companion.intType
+import gh.marad.chi.core.OldType.Companion.fn
+import gh.marad.chi.core.OldType.Companion.intType
 import gh.marad.chi.core.namespace.CompilationScope
 import gh.marad.chi.core.namespace.ScopeType
 import gh.marad.chi.core.namespace.SymbolType

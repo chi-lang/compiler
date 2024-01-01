@@ -1,7 +1,7 @@
 package gh.marad.chi.core.weaveexpr
 
 import gh.marad.chi.core.*
-import gh.marad.chi.core.Type.Companion.string
+import gh.marad.chi.core.OldType.Companion.string
 import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.expressionast.generateExpressionAst
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
@@ -83,7 +83,7 @@ class WeaveExprSpec {
         """.trimIndent()
         val ast = testParse(code)
         val ctx = ConversionContext(GlobalCompilationNamespace())
-        ctx.currentScope.addSymbol("toUpper", Type.fn(string, string), SymbolType.Local)
+        ctx.currentScope.addSymbol("toUpper", OldType.fn(string, string), SymbolType.Local)
         val expr = generateExpressionAst(ctx, ast[0])
 
         val body = expr.shouldBeTypeOf<Block>().body

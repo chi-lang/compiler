@@ -101,7 +101,7 @@ fun ConversionContext.addPublicSymbol(
     moduleName: ModuleName,
     packageName: PackageName,
     variableName: String,
-    type: Type = Type.intType
+    type: OldType = OldType.intType
 ) = also {
     it.namespace.getOrCreatePackage(moduleName.name, packageName.name)
         .scope.addSymbol(variableName, type, SymbolType.Local, public = true, mutable = false)
@@ -109,7 +109,7 @@ fun ConversionContext.addPublicSymbol(
 
 fun ConversionContext.addPublicSymbol(
     variableName: String,
-    type: Type = Type.intType
+    type: OldType = OldType.intType
 ) = this.addPublicSymbol(
     moduleName = ModuleName(currentModule, null),
     packageName = PackageName(currentPackage, null),
@@ -131,7 +131,7 @@ fun ConversionContext.addTypeDefinition(
     packageName: PackageName,
     typeName: String,
     constructorNames: List<String>? = null
-): Type = let {
+): OldType = let {
     val constructors = (constructorNames ?: listOf(typeName)).map {
         ParseVariantTypeDefinition.Constructor(
             public = true,

@@ -2,13 +2,13 @@ package gh.marad.chi.core.namespace
 
 import gh.marad.chi.core.FnType
 import gh.marad.chi.core.OverloadedFnType
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.OldType
 
 enum class ScopeType { Package, Function, Virtual }
 enum class SymbolType { Local, Argument, Overwrite }
 data class SymbolInfo(
     val name: String,
-    val type: Type,
+    val type: OldType,
     val symbolType: SymbolType,
     val scopeType: ScopeType,
     val slot: Int,
@@ -16,7 +16,7 @@ data class SymbolInfo(
     val public: Boolean,
 )
 
-fun determineSymbolType(existingType: Type?, providedType: Type): Type {
+fun determineSymbolType(existingType: OldType?, providedType: OldType): OldType {
     return if (existingType is FnType && providedType is FnType) {
         if (existingType.paramTypes == providedType.paramTypes) {
             providedType
@@ -39,13 +39,13 @@ data class CompilationScope(val type: ScopeType, private val parent: Compilation
         }
     }
 
-    fun addSymbol(name: String, type: Type, scope: SymbolType, public: Boolean = false, mutable: Boolean = false) {
+    fun addSymbol(name: String, type: OldType, scope: SymbolType, public: Boolean = false, mutable: Boolean = false) {
         val existingType = getSymbolType(name)
         val finalType = determineSymbolType(existingType, type)
         symbols[name] = SymbolInfo(name, finalType, scope, this.type, -1, mutable, public)
     }
 
-    fun getSymbolType(name: String): Type? = symbols[name]?.type ?: parent?.getSymbolType(name)
+    fun getSymbolType(name: String): OldType? = symbols[name]?.type ?: parent?.getSymbolType(name)
 
     fun getSymbol(name: String, ignoreOverwrites: Boolean = true): SymbolInfo? =
         symbols[name]?.let {

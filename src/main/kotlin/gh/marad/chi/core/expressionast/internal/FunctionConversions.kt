@@ -22,7 +22,7 @@ fun convertLambda(ctx: ConversionContext, ast: ParseLambda): Fn {
             fnScope = ctx.currentScope,
             genericTypeParameters = emptyList(),
             parameters = params,
-            returnType = body.lastOrNull()?.type ?: Type.unit,
+            returnType = body.lastOrNull()?.type ?: OldType.unit,
             body = Block(body, ast.section),
             sourceSection = ast.section,
         )
@@ -54,7 +54,7 @@ fun convertFuncWithName(ctx: ConversionContext, ast: ParseFuncWithName): NameDec
                         )
                     }
                 },
-                returnType = ast.returnTypeRef?.let { ctx.resolveType(it, typeParameterNames) } ?: Type.unit,
+                returnType = ast.returnTypeRef?.let { ctx.resolveType(it, typeParameterNames) } ?: OldType.unit,
                 body = ctx.withTypeParameters(typeParameterNames) { generateExpressionAst(ctx, ast.body) as Block },
                 sourceSection = ast.section
             )

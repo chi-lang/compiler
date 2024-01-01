@@ -1,7 +1,7 @@
 package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.Handle
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.OldType
 import gh.marad.chi.core.namespace.ScopeType
 import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.ParseHandle
@@ -19,7 +19,7 @@ class EffectConversionsKtHandleTest {
     fun `should create virtual scope for every case`() {
         // given
         val context = defaultContext()
-        context.addPublicSymbol(sampleCase.effectName, Type.fn(returnType = Type.intType, Type.string))
+        context.addPublicSymbol(sampleCase.effectName, OldType.fn(returnType = OldType.intType, OldType.string))
         val handle = sampleHandle.copy(
             cases = listOf(
                 sampleCase.copy(),
@@ -43,7 +43,7 @@ class EffectConversionsKtHandleTest {
     fun `case scope should have 'resume' function defined`() {
         // given
         val context = defaultContext()
-        context.addPublicSymbol(sampleCase.effectName, Type.fn(returnType = Type.intType, Type.string))
+        context.addPublicSymbol(sampleCase.effectName, OldType.fn(returnType = OldType.intType, OldType.string))
         val parseHandle = sampleHandle.copy(
             cases = listOf(sampleCase)
         )
@@ -58,7 +58,7 @@ class EffectConversionsKtHandleTest {
             val resumeInfo = getSymbol("resume").shouldNotBeNull()
             resumeInfo.scopeType shouldBe ScopeType.Virtual
             resumeInfo.symbolType shouldBe SymbolType.Local
-            resumeInfo.type shouldBe Type.fn(returnType = handle.type, Type.intType)
+            resumeInfo.type shouldBe OldType.fn(returnType = handle.type, OldType.intType)
         }
     }
 
@@ -66,7 +66,7 @@ class EffectConversionsKtHandleTest {
     fun `effect arguments should be defined within case scope`() {
         // given
         val context = defaultContext()
-        context.addPublicSymbol(sampleCase.effectName, Type.fn(returnType = Type.intType, Type.string))
+        context.addPublicSymbol(sampleCase.effectName, OldType.fn(returnType = OldType.intType, OldType.string))
         val parseHandle = sampleHandle.copy(
             cases = listOf(
                 sampleCase.copy(
@@ -83,7 +83,7 @@ class EffectConversionsKtHandleTest {
         handle.cases shouldHaveSize 1
         with(handle.cases.first().scope) {
             val arg = getSymbol("argument").shouldNotBeNull()
-            arg.type shouldBe Type.string
+            arg.type shouldBe OldType.string
         }
     }
 

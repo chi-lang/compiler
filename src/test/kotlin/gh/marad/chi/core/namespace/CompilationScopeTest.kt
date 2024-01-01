@@ -2,10 +2,10 @@ package gh.marad.chi.core.namespace
 
 import gh.marad.chi.core.FnType
 import gh.marad.chi.core.OverloadedFnType
-import gh.marad.chi.core.Type.Companion.fn
-import gh.marad.chi.core.Type.Companion.intType
-import gh.marad.chi.core.Type.Companion.string
-import gh.marad.chi.core.Type.Companion.unit
+import gh.marad.chi.core.OldType.Companion.fn
+import gh.marad.chi.core.OldType.Companion.intType
+import gh.marad.chi.core.OldType.Companion.string
+import gh.marad.chi.core.OldType.Companion.unit
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf

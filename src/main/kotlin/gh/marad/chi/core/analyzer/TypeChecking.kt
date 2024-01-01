@@ -76,7 +76,7 @@ fun checkThatAssignmentDoesNotChangeImmutableValue(expr: Expression, messages: M
 fun checkThatFunctionHasAReturnValue(expr: Expression, messages: MutableList<Message>) {
     if (expr is Fn) {
         val expected = expr.returnType
-        if (expr.body.body.isEmpty() && expected != Type.unit) {
+        if (expr.body.body.isEmpty() && expected != OldType.unit) {
             messages.add(MissingReturnValue(expected, expr.body.sourceSection.toCodePoint()))
         }
     }
@@ -130,7 +130,7 @@ fun checkThatFunctionCallsActuallyCallFunctions(expr: Expression, messages: Muta
 }
 
 fun checkThatExpressionTypeIsDefined(expr: Expression, messages: MutableList<Message>) {
-    if (expr.type == Type.undefined && messages.isEmpty()) {
+    if (expr.type == OldType.undefined && messages.isEmpty()) {
         messages.add(TypeInferenceFailed(expr.sourceSection.toCodePoint()))
     }
 }
@@ -178,10 +178,10 @@ fun checkGenericTypes(expr: Expression, messages: MutableList<Message>) {
 }
 
 fun typesMatch(
-    expected: Type,
-    actual: Type,
+    expected: OldType,
+    actual: OldType,
 ): Boolean {
-    if (expected == Type.any) {
+    if (expected == OldType.any) {
         // accept any type
         return true
     }
@@ -191,7 +191,7 @@ fun typesMatch(
     )
 }
 
-fun matchStructurally(expected: Type, actual: Type): Boolean {
+fun matchStructurally(expected: OldType, actual: OldType): Boolean {
     val expectedSubtypes = expected.getAllSubtypes()
     val actualSubtypes = actual.getAllSubtypes()
     return expected.javaClass == actual.javaClass &&
@@ -204,8 +204,8 @@ fun matchStructurally(expected: Type, actual: Type): Boolean {
 fun checkTypes(expr: Expression, messages: MutableList<Message>) {
 
     fun checkTypeMatches(
-        expected: Type,
-        actual: Type,
+        expected: OldType,
+        actual: OldType,
         sourceSection: ChiSource.Section?,
     ) {
         if (!typesMatch(expected, actual)) {
@@ -215,8 +215,8 @@ fun checkTypes(expr: Expression, messages: MutableList<Message>) {
 
     fun checkPrefixOp(op: PrefixOp) {
         when (op.op) {
-            "!" -> if (op.expr.type != Type.bool) {
-                messages.add(TypeMismatch(Type.bool, op.expr.type, op.sourceSection.toCodePoint()))
+            "!" -> if (op.expr.type != OldType.bool) {
+                messages.add(TypeMismatch(OldType.bool, op.expr.type, op.sourceSection.toCodePoint()))
             }
             else -> TODO("Unimplemented prefix operator")
         }
@@ -247,7 +247,7 @@ fun checkTypes(expr: Expression, messages: MutableList<Message>) {
             }
         }
 
-        if (expected == Type.unit) {
+        if (expected == OldType.unit) {
             return
         }
 
@@ -270,7 +270,7 @@ fun checkTypes(expr: Expression, messages: MutableList<Message>) {
                 val expectedType = definition.construct(genericParamToTypeFromPassedParameters)
                 val actualType = passed.type
                 if (expectedType is FnType && actualType is FnType
-                    && expectedType.returnType == Type.unit
+                    && expectedType.returnType == OldType.unit
                     && actualType.paramTypes.size == expectedType.paramTypes.size
                 ) {
                     // if types are FnType and expected FnType returns unit - then check only arguments - return value doesn't matter
@@ -312,8 +312,8 @@ fun checkTypes(expr: Expression, messages: MutableList<Message>) {
 
     fun checkIfElseType(expr: IfElse) {
         val conditionType = expr.condition.type
-        if (conditionType != Type.bool) {
-            messages.add(TypeMismatch(Type.bool, conditionType, expr.condition.sourceSection.toCodePoint()))
+        if (conditionType != OldType.bool) {
+            messages.add(TypeMismatch(OldType.bool, conditionType, expr.condition.sourceSection.toCodePoint()))
         }
     }
 
@@ -324,9 +324,9 @@ fun checkTypes(expr: Expression, messages: MutableList<Message>) {
         if (leftType != rightType) {
             messages.add(TypeMismatch(expected = leftType, rightType, expr.right.sourceSection.toCodePoint()))
         } else if (expr.op in arrayOf("|", "&", "<<", ">>") && !leftType.isNumber()) {
-            messages.add(TypeMismatch(expected = Type.intType, leftType, expr.left.sourceSection.toCodePoint()))
+            messages.add(TypeMismatch(expected = OldType.intType, leftType, expr.left.sourceSection.toCodePoint()))
         } else if (expr.op in arrayOf("|", "&", "<<", ">>") && !rightType.isNumber()) {
-            messages.add(TypeMismatch(expected = Type.intType, rightType, expr.right.sourceSection.toCodePoint()))
+            messages.add(TypeMismatch(expected = OldType.intType, rightType, expr.right.sourceSection.toCodePoint()))
         }
     }
 
@@ -334,7 +334,7 @@ fun checkTypes(expr: Expression, messages: MutableList<Message>) {
     }
 
     fun checkWhileLoop(expr: WhileLoop) {
-        checkTypeMatches(Type.bool, expr.condition.type, expr.sourceSection)
+        checkTypeMatches(OldType.bool, expr.condition.type, expr.sourceSection)
     }
 
     fun checkIndexOperator(expr: IndexOperator) {
@@ -400,7 +400,7 @@ private var typeGraph: Graph<String, DefaultEdge> =
         it.addEdge("int", "float")
     }
 
-fun isSubType(subtype: Type, supertype: Type): Boolean {
+fun isSubType(subtype: OldType, supertype: OldType): Boolean {
     return if (subtype != supertype && typeGraph.containsVertex(subtype.name) && typeGraph.containsVertex(supertype.name)) {
         val dijkstraAlgo = DijkstraShortestPath(typeGraph)
         val path = dijkstraAlgo.getPath(subtype.name, supertype.name)

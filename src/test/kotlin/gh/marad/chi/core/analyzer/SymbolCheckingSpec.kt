@@ -29,7 +29,7 @@ class SymbolCheckingSpec : FunSpec({
 
     test("should not emit error message if the variable is defined in scope") {
         val scope = CompilationScope(ScopeType.Package)
-        scope.addSymbol("x", Type.intType, SymbolType.Local)
+        scope.addSymbol("x", OldType.intType, SymbolType.Local)
         val expr = VariableAccess(defaultModule, defaultPacakge, scope, "x", isModuleLocal = true, null)
 
         val result = analyze(expr)
@@ -60,7 +60,7 @@ class SymbolCheckingSpec : FunSpec({
 
     test("should not emit error message if function is defined in scope") {
         val scope = CompilationScope(ScopeType.Package)
-        scope.addSymbol("funcName", Type.fn(Type.unit), SymbolType.Local)
+        scope.addSymbol("funcName", OldType.fn(OldType.unit), SymbolType.Local)
         val expr = FnCall(
             VariableAccess(defaultModule, defaultPacakge, scope, "funcName", isModuleLocal = true, null),
             emptyList(),

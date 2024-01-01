@@ -1,6 +1,6 @@
 package gh.marad.chi.core.expressionast.internal
 
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.OldType
 import gh.marad.chi.core.namespace.ScopeType
 import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.FormalArgument
@@ -30,8 +30,8 @@ class FunctionConversionsKtLambdaTest {
 
         // then
         fn.parameters.shouldBeEmpty()
-        fn.returnType shouldBe Type.intType
-        fn.body.body[0].shouldBeAtom("10", Type.intType)
+        fn.returnType shouldBe OldType.intType
+        fn.body.body[0].shouldBeAtom("10", OldType.intType)
         fn.fnScope.shouldNotBeNull()
         fn.sourceSection shouldBe testSection
     }
@@ -51,7 +51,7 @@ class FunctionConversionsKtLambdaTest {
         fn.parameters should {
             it shouldHaveSize 1
             it[0].name shouldBe "name"
-            it[0].type shouldBe Type.intType
+            it[0].type shouldBe OldType.intType
             it[0].sourceSection shouldBe sectionB
         }
     }
@@ -66,7 +66,7 @@ class FunctionConversionsKtLambdaTest {
         val fn = convertLambda(context, lambda)
 
         // then
-        fn.returnType shouldBe Type.unit
+        fn.returnType shouldBe OldType.unit
 
     }
 
@@ -86,12 +86,12 @@ class FunctionConversionsKtLambdaTest {
             getSymbol("a").shouldNotBeNull() should { a ->
                 a.scopeType shouldBe ScopeType.Function
                 a.symbolType shouldBe SymbolType.Argument
-                a.type shouldBe Type.intType
+                a.type shouldBe OldType.intType
             }
             getSymbol("b").shouldNotBeNull() should { b ->
                 b.scopeType shouldBe ScopeType.Function
                 b.symbolType shouldBe SymbolType.Argument
-                b.type shouldBe Type.string
+                b.type shouldBe OldType.string
             }
         }
     }

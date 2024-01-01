@@ -1,7 +1,7 @@
 package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.FieldAccess
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.OldType
 import gh.marad.chi.core.VariableAccess
 import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseFieldAccess
@@ -73,7 +73,7 @@ class VariablesConversionsKtTest {
         )
 
         result.variable.shouldBeVariable("variable")
-        result.index.shouldBeAtom("10", Type.intType)
+        result.index.shouldBeAtom("10", OldType.intType)
         result.sourceSection shouldBe testSection
     }
 

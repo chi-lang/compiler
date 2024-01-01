@@ -2,7 +2,7 @@ package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.Fn
 import gh.marad.chi.core.NameDeclaration
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.OldType
 import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.*
 import io.kotest.matchers.booleans.shouldBeFalse
@@ -51,7 +51,7 @@ class FunctionConversionsKtFuncWithNameTest {
             .shouldBeTypeOf<Fn>()
 
         // then
-        fn.returnType shouldBe Type.unit
+        fn.returnType shouldBe OldType.unit
     }
 
     @Test
@@ -73,11 +73,11 @@ class FunctionConversionsKtFuncWithNameTest {
         // then
         with(fn.fnScope) {
             getSymbol("a").shouldNotBeNull() should {
-                it.type shouldBe Type.intType
+                it.type shouldBe OldType.intType
                 it.symbolType shouldBe SymbolType.Argument
             }
             getSymbol("b").shouldNotBeNull() should {
-                it.type shouldBe Type.string
+                it.type shouldBe OldType.string
                 it.symbolType shouldBe SymbolType.Argument
             }
         }
@@ -98,7 +98,7 @@ class FunctionConversionsKtFuncWithNameTest {
             .shouldBeTypeOf<Fn>()
 
         // then
-        fn.returnType shouldBe Type.typeParameter("T")
+        fn.returnType shouldBe OldType.typeParameter("T")
     }
 
     @Test
@@ -123,7 +123,7 @@ class FunctionConversionsKtFuncWithNameTest {
 
         // then
         fn.body.body.first().shouldBeTypeOf<NameDeclaration>()
-            .expectedType shouldBe Type.typeParameter("T")
+            .expectedType shouldBe OldType.typeParameter("T")
     }
 
     @Test
@@ -140,7 +140,7 @@ class FunctionConversionsKtFuncWithNameTest {
             .shouldBeTypeOf<NameDeclaration>().value
             .shouldBeTypeOf<Fn>()
 
-        fn.parameters.first().type shouldBe Type.typeParameter("T")
+        fn.parameters.first().type shouldBe OldType.typeParameter("T")
     }
 
 

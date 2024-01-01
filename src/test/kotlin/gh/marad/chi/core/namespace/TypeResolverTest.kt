@@ -1,7 +1,7 @@
 package gh.marad.chi.core.namespace
 
 import gh.marad.chi.core.GenericTypeParameter
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.OldType
 import gh.marad.chi.core.VariantType
 import gh.marad.chi.core.expressionast.internal.sectionA
 import gh.marad.chi.core.expressionast.internal.sectionB
@@ -17,13 +17,13 @@ class TypeResolverTest {
     @Test
     fun `should resolve type ref by name`() {
         val type = resolveRef(ref = nameRef("int"), getTypeByName = basicTypeMappings)
-        type shouldBe Type.intType
+        type shouldBe OldType.intType
     }
 
     @Test
     fun `should resolve type parameter by name`() {
         val type = resolveRef(ref = nameRef("T"), typeParameters = setOf("T"))
-        type shouldBe Type.typeParameter("T")
+        type shouldBe OldType.typeParameter("T")
     }
 
     @Test
@@ -39,7 +39,7 @@ class TypeResolverTest {
         val type = resolveRef(functionTypeRef)
 
         // then
-        type shouldBe Type.fn(Type.string, Type.intType, Type.bool)
+        type shouldBe OldType.fn(OldType.string, OldType.intType, OldType.bool)
     }
 
     @Test
@@ -55,7 +55,7 @@ class TypeResolverTest {
         val type = resolveRef(typeConstructorRef)
 
         // then
-        type shouldBe Type.array(Type.intType)
+        type shouldBe OldType.array(OldType.intType)
     }
 
     @Test
@@ -94,25 +94,25 @@ class TypeResolverTest {
         }
 
         // then
-        type shouldBe Type.typeParameter("X")
+        type shouldBe OldType.typeParameter("X")
     }
 
     private val basicTypeMappings = nameToTypeMapping(
-        "int" to Type.intType,
-        "float" to Type.floatType,
-        "string" to Type.string,
-        "bool" to Type.bool,
-        "array" to Type.array(Type.typeParameter("T"))
+        "int" to OldType.intType,
+        "float" to OldType.floatType,
+        "string" to OldType.string,
+        "bool" to OldType.bool,
+        "array" to OldType.array(OldType.typeParameter("T"))
     )
 
     private fun resolveRef(
-        ref: TypeRef, typeParameters: Set<String> = emptySet(), getTypeByName: (String) -> Type = basicTypeMappings,
+        ref: TypeRef, typeParameters: Set<String> = emptySet(), getTypeByName: (String) -> OldType = basicTypeMappings,
         getVariants: (VariantType) -> List<VariantType.Variant> = { emptyList() }
-    ): Type = resolver.resolve(ref, typeParameters, getTypeByName, getVariants)
+    ): OldType = resolver.resolve(ref, typeParameters, getTypeByName, getVariants)
 
     private fun nameRef(name: String): TypeRef = TypeNameRef(name, testSection)
 
-    private fun nameToTypeMapping(vararg args: Pair<String, Type>): (String) -> Type {
+    private fun nameToTypeMapping(vararg args: Pair<String, OldType>): (String) -> OldType {
         val map = args.toMap()
         return { typeName: String ->
             assert(map.containsKey(typeName)) { "You didn't provide mapping for type $typeName!" }
@@ -132,7 +132,7 @@ class TypeResolverTest {
     private val justVariant = VariantType.Variant(
         public = true,
         variantName = "Just",
-        fields = listOf(VariantType.VariantField(public = true, name = "value", type = Type.typeParameter("T")))
+        fields = listOf(VariantType.VariantField(public = true, name = "value", type = OldType.typeParameter("T")))
     )
 
     private val noneVariant = VariantType.Variant(

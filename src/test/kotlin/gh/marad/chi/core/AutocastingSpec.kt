@@ -5,14 +5,14 @@ import io.kotest.matchers.shouldBe
 
 class AutocastingSpec : FunSpec({
     test("should allow upcasting numbers") {
-        Type.intType.canCastTo(Type.floatType) shouldBe true
+        OldType.intType.canCastTo(OldType.floatType) shouldBe true
     }
 
     test("canCastTo should not allow downcasting") {
-        Type.floatType.canCastTo(Type.intType) shouldBe false
+        OldType.floatType.canCastTo(OldType.intType) shouldBe false
     }
 
     test("should allow downcasting numbers") {
-        Type.floatType.canDowncastTo(Type.intType) shouldBe true
+        OldType.floatType.canDowncastTo(OldType.intType) shouldBe true
     }
 })

@@ -1,7 +1,7 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.ast
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.OldType
 import gh.marad.chi.core.analyzer.TypeIsNotIndexable
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.analyzer.analyze
@@ -17,7 +17,7 @@ import io.kotest.matchers.types.shouldBeTypeOf
 @Suppress("unused")
 class IndexOperatorSpec : FunSpec({
     val scope = CompilationScope(ScopeType.Package).also {
-        it.addSymbol("arr", Type.array(Type.intType), SymbolType.Local)
+        it.addSymbol("arr", OldType.array(OldType.intType), SymbolType.Local)
     }
 
     test("should not allow to index arrays with types other than integer") {
@@ -30,8 +30,8 @@ class IndexOperatorSpec : FunSpec({
         ).should { msgs ->
             msgs shouldHaveSize 1
             msgs.first().shouldBeTypeOf<TypeMismatch>().should {
-                it.expected shouldBe Type.intType
-                it.actual shouldBe Type.string
+                it.expected shouldBe OldType.intType
+                it.actual shouldBe OldType.string
             }
         }
     }
@@ -46,8 +46,8 @@ class IndexOperatorSpec : FunSpec({
         ).should { msgs ->
             msgs shouldHaveSize 1
             msgs.first().shouldBeTypeOf<TypeMismatch>().should {
-                it.expected shouldBe Type.intType
-                it.actual shouldBe Type.string
+                it.expected shouldBe OldType.intType
+                it.actual shouldBe OldType.string
             }
         }
     }
@@ -62,7 +62,7 @@ class IndexOperatorSpec : FunSpec({
         ).should { msgs ->
             msgs shouldHaveSize 1
             msgs[0].shouldBeTypeOf<TypeIsNotIndexable>().should {
-                it.type shouldBe Type.intType
+                it.type shouldBe OldType.intType
             }
         }
     }
@@ -77,7 +77,7 @@ class IndexOperatorSpec : FunSpec({
         ).should { msgs ->
             msgs shouldHaveSize 1
             msgs[0].shouldBeTypeOf<TypeIsNotIndexable>().should {
-                it.type shouldBe Type.intType
+                it.type shouldBe OldType.intType
             }
         }
     }
@@ -92,8 +92,8 @@ class IndexOperatorSpec : FunSpec({
         ).should { msgs ->
             msgs shouldHaveSize 1
             msgs[0].shouldBeTypeOf<TypeMismatch>().should {
-                it.expected shouldBe Type.intType
-                it.actual shouldBe Type.string
+                it.expected shouldBe OldType.intType
+                it.actual shouldBe OldType.string
             }
         }
     }

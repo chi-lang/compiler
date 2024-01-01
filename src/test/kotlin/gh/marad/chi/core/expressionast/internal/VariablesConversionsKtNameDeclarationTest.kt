@@ -1,6 +1,6 @@
 package gh.marad.chi.core.expressionast.internal
 
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.OldType
 import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseNameDeclaration
 import gh.marad.chi.core.parser.readers.Symbol
@@ -30,8 +30,8 @@ class VariablesConversionsKtNameDeclarationTest {
         result.public.shouldBeTrue()
         result.mutable.shouldBeFalse()
         result.name shouldBe "variable"
-        result.value.shouldBeAtom("10", Type.intType)
-        result.expectedType shouldBe Type.intType
+        result.value.shouldBeAtom("10", OldType.intType)
+        result.expectedType shouldBe OldType.intType
         result.enclosingScope shouldBe ctx.currentScope
         result.sourceSection shouldBe sectionC
     }

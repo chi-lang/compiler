@@ -1,7 +1,7 @@
 package gh.marad.chi.core.expressionast
 
 import gh.marad.chi.core.Expression
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.OldType
 import gh.marad.chi.core.VariantType
 import gh.marad.chi.core.namespace.CompilationScope
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
@@ -77,25 +77,25 @@ class ConversionContext(val namespace: GlobalCompilationNamespace) {
     data class TypeLookupResult(
         val moduleName: String,
         val packageName: String,
-        val type: Type,
+        val type: OldType,
         val variants: List<VariantType.Variant>?,
     )
 
     fun lookupType(name: String): TypeLookupResult {
         return sequenceOf(
-            {
+            { // try to find type in current package
                 lookupTypeFromPkg(currentPackageDescriptor, name)
             },
-            {
+            { // try to find type in imported types
                 imports.getImportedType(name)?.let {
                     val pkgDesc = namespace.getOrCreatePackage(it.module, it.pkg)
                     lookupTypeFromPkg(pkgDesc, it.name)
                 }
             },
-            {
+            { // find type by variant name in current package
                 lookupTypeByVariantNameFromPkg(currentPackageDescriptor, name)
             },
-            {
+            { // try to find by variant name in imported types
                 imports.getImportedTypeForVariantName(name)?.let {
                     val pkgDesc = namespace.getOrCreatePackage(it.module, it.pkg)
                     lookupTypeByVariantNameFromPkg(pkgDesc, name)
@@ -124,7 +124,7 @@ class ConversionContext(val namespace: GlobalCompilationNamespace) {
     fun <T> withTypeParameters(typeParameterNames: Set<String>, f: () -> T): T =
         namespace.typeResolver.withTypeParameters(typeParameterNames, f)
 
-    fun resolveType(typeRef: TypeRef, typeParameterNames: Set<String> = emptySet()): Type {
+    fun resolveType(typeRef: TypeRef, typeParameterNames: Set<String> = emptySet()): OldType {
         val getType = { typeName: String ->
             lookupType(typeName).type
         }

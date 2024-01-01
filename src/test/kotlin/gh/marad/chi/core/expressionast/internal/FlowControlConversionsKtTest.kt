@@ -13,7 +13,7 @@ class FlowControlConversionsKtTest {
     @Test
     fun `generate group expression`() {
         convertGroup(defaultContext(), ParseGroup(LongValue(10), testSection)) should {
-            it.value.shouldBeAtom("10", Type.intType)
+            it.value.shouldBeAtom("10", OldType.intType)
             it.sourceSection shouldBe testSection
         }
     }
@@ -29,8 +29,8 @@ class FlowControlConversionsKtTest {
             )
         )
 
-        result.condition.shouldBeAtom("true", Type.bool)
-        result.thenBranch.shouldBeAtom("1", Type.intType)
+        result.condition.shouldBeAtom("true", OldType.bool)
+        result.thenBranch.shouldBeAtom("1", OldType.intType)
         result.elseBranch.shouldBeNull()
         result.sourceSection shouldBe testSection
     }
@@ -47,7 +47,7 @@ class FlowControlConversionsKtTest {
         )
 
         result.elseBranch.shouldNotBeNull()
-            .shouldBeAtom("2", Type.intType)
+            .shouldBeAtom("2", OldType.intType)
     }
 
     @Test
@@ -66,14 +66,14 @@ class FlowControlConversionsKtTest {
         )
 
         // then
-        result.condition.shouldBeAtom("true", Type.bool)
-        result.thenBranch.shouldBeAtom("1", Type.intType)
+        result.condition.shouldBeAtom("true", OldType.bool)
+        result.thenBranch.shouldBeAtom("1", OldType.intType)
         result.sourceSection shouldBe sectionA
         result.elseBranch.shouldBeTypeOf<IfElse>().should {
-            it.condition.shouldBeAtom("false", Type.bool)
-            it.thenBranch.shouldBeAtom("2", Type.intType)
+            it.condition.shouldBeAtom("false", OldType.bool)
+            it.thenBranch.shouldBeAtom("2", OldType.intType)
             it.sourceSection shouldBe sectionB
-            it.elseBranch.shouldNotBeNull().shouldBeAtom("0", Type.intType)
+            it.elseBranch.shouldNotBeNull().shouldBeAtom("0", OldType.intType)
         }
     }
 
@@ -104,8 +104,8 @@ class FlowControlConversionsKtTest {
             convertWhile(defaultContext(), ParseWhile(condition = BoolValue(true), body = LongValue(1), testSection))
 
         // then
-        result.condition.shouldBeAtom("true", Type.bool)
-        result.loop.shouldBeAtom("1", Type.intType)
+        result.condition.shouldBeAtom("true", OldType.bool)
+        result.loop.shouldBeAtom("1", OldType.intType)
         result.sourceSection shouldBe testSection
     }
 

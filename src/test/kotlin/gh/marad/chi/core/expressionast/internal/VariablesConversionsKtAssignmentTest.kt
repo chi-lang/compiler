@@ -1,6 +1,6 @@
 package gh.marad.chi.core.expressionast.internal
 
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.OldType
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.shouldBeAtom
 import io.kotest.matchers.shouldBe
@@ -19,7 +19,7 @@ class VariablesConversionsKtAssignmentTest {
         )
 
         result.name shouldBe "variable"
-        result.value.shouldBeAtom("10", Type.intType)
+        result.value.shouldBeAtom("10", OldType.intType)
         result.definitionScope shouldBe ctx.currentScope
         result.sourceSection shouldBe testSection
     }
@@ -37,8 +37,8 @@ class VariablesConversionsKtAssignmentTest {
         )
 
         result.variable.shouldBeVariable("variable")
-        result.index.shouldBeAtom("10", Type.intType)
-        result.value.shouldBeAtom("hello", Type.string)
+        result.index.shouldBeAtom("10", OldType.intType)
+        result.value.shouldBeAtom("hello", OldType.string)
         result.sourceSection shouldBe testSection
     }
 

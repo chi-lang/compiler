@@ -1,6 +1,6 @@
 package gh.marad.chi.core.expressionast.internal
 
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.OldType
 import gh.marad.chi.core.VariantType
 import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.namespace.SymbolType
@@ -28,7 +28,7 @@ class SimpleConversionsKtParseIsTest {
         )
 
         // then
-        result.value.shouldBeAtom("10", Type.intType)
+        result.value.shouldBeAtom("10", OldType.intType)
         result.typeOrVariant shouldBe "string"
     }
 
