@@ -54,7 +54,7 @@ handleCaseBody : block | expression;
 // Traits
 // ====================================================================================================
 
-traitDefinition : 'trait' name=ID generic_type_definitions '{' ws traitFunctionDefinition* '}';
+traitDefinition : 'trait' name=ID generic_type_definitions? '{' ws traitFunctionDefinition* '}';
 traitFunctionDefinition : FN funcName=ID arguments=func_argument_definitions (COLON func_return_type)? ws;
 
 // ====================================================================================================
