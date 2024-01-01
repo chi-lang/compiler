@@ -257,6 +257,8 @@ class InferenceKtTest {
     }
 
     @Test
+    //FIXME to wymaga, zeby było wiadomo czy expr jest używany jako wyrażenie
+    //      na razie robię, że oba mają mieć ten sam typ
     fun `test if-else type inference with different branch types`() {
         // given
         val env = mapOf(
@@ -266,17 +268,14 @@ class InferenceKtTest {
         )
 
         // when
-        val result = testInference("""
-            if cond { thenBranch } else { elseBranch }
-        """.trimIndent(), env)
-
-        // then
-        result.firstExpr().shouldBeTypeOf<IfElse>().should {
-            it.newType.shouldBe(Types.int)
+        shouldThrow<TypeInferenceFailed> {
+            testInference("""
+                    if cond { thenBranch } else { elseBranch }
+                """.trimIndent(), env)
         }
     }
 
-    //FIXME @Test to wymaga, zeby było wiadomo czy expr jest używany jako wyrażenie
+    @Test
     fun `test if-else type inference without else branch`() {
         // given
         val env = mapOf(
@@ -397,6 +396,29 @@ class InferenceKtTest {
 
         // then
         result.block.body[1].newType shouldBe Types.bool
+    }
+
+    @Test
+    fun `test prefix operator type inference`() {
+        // given
+        val env = mapOf("x" to Types.bool)
+
+        // when
+        val result = testInference("!x".trimIndent(), env)
+
+        // then
+        result.firstExpr().newType shouldBe Types.bool
+    }
+
+    @Test
+    fun `not operator should fail with non-bool types`() {
+        // given
+        val env = mapOf("x" to Types.int)
+
+        // when
+        shouldThrow<TypeInferenceFailed> {
+            testInference("!x".trimIndent(), env)
+        }
     }
 
     fun testInference(code: String, env: Map<String, Type> = mapOf()): Result {

@@ -195,15 +195,22 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
                 actual = condType.type,
                 expected = Types.bool,
                 section = expr.condition.sourceSection))
-            constraints.add(Constraint(
-                actual = t,
-                expected = thenBranchType.type,
-                section = expr.sourceSection))
-//            constraints.add(Constraint(t, elseBranchType.type))
+            if (expr.elseBranch != null) {
+                constraints.add(Constraint(
+                    actual = t,
+                    expected = thenBranchType.type,
+                    section = expr.sourceSection))
+                constraints.add(
+                    Constraint(t, elseBranchType.type, expr.elseBranch.sourceSection ?: expr.sourceSection)
+                )
+            } else {
+                constraints.add(
+                    Constraint(t, Types.unit, expr.sourceSection)
+                )
+            }
             constraints.addAll(condType.constraints)
             constraints.addAll(thenBranchType.constraints)
             constraints.addAll(elseBranchType.constraints)
-            // FIXME: nie wiem czy to nie zepsuje inferencji
             expr.newType = t
             InferenceResult(t, constraints, env)
         }
@@ -252,9 +259,6 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             expr.newType = targetType
             InferenceResult(targetType, emptySet(), env)
         }
-        is DefineVariantType -> TODO("This should not be evaluated here")
-        is FieldAccess -> TODO("Implement this when new typesystem supports Variant types")
-        is FieldAssignment -> TODO("Implement this when new typesystem supports Variant types")
         is Group -> {
             val value = inferTypes(ctx, env, expr.value)
             expr.newType = value.type
@@ -284,16 +288,30 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             expr.newType = t
             InferenceResult(t, constraints, env)
         }
-        is Import -> TODO()
+        is PrefixOp -> {
+            if (expr.op != "!") {
+                throw TypeInferenceFailed("Unknown prefix operator '${expr.op}.", expr.sourceSection)
+            }
+
+            val value = inferTypes(ctx, env, expr.expr)
+            val type = value.type
+            expr.newType = type
+            value.copy(constraints =
+                value.constraints + Constraint(type, Types.bool, expr.expr.sourceSection)
+            )
+        }
         is IndexOperator -> TODO()
         is IndexedAssignment -> TODO()
         is InterpolatedString -> TODO()
         is Is -> TODO()
-        is Package -> TODO()
-        is PrefixOp -> TODO()
         is Program -> TODO()
         is Return -> TODO()
         is WhileLoop -> TODO()
+        is DefineVariantType -> TODO("This should generate constructor functions in env")
+        is FieldAccess -> TODO("Implement this when new typesystem supports Variant types")
+        is FieldAssignment -> TODO("Implement this when new typesystem supports Variant types")
+        is Package -> TODO("This should not be an expression")
+        is Import -> TODO("This should not be an expression")
     }
 }
 
