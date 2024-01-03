@@ -7,13 +7,14 @@ object Types {
     val bool = SimpleType("std", "lang", "bool")
     val unit = SimpleType("std", "lang", "unit")
     val string = SimpleType("std", "lang", "string")
+    val array = SimpleType("std", "lang", "array")
 
     fun generic(vararg types: Type) = GenericType(types.toList())
     fun fn(vararg types: Type) = FunctionType(types.toList())
 
     fun array(elementType: Type) = GenericType(
         listOf(
-            SimpleType("std", "lang", "array"),
+            array,
             elementType
         ),
         if (elementType is TypeVariable) {

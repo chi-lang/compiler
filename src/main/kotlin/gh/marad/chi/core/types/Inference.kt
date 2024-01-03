@@ -35,13 +35,14 @@ data class InferenceResult(val type: Type, val constraints: Set<Constraint>, val
 
 internal class InferenceContext {
     val typeGraph = TypeGraph().apply {
-        addType("any")
-        addSubtype("any", "@number")
-        addSubtype("@number", "int")
-        addSubtype("@number", "float")
-        addSubtype("any", "string")
-        addSubtype("any", "bool")
-        addSubtype("any", "unit")
+        addType(Types.any.toString())
+        addSubtype(Types.any.toString(), "@number")
+        addSubtype("@number", Types.int.toString())
+        addSubtype("@number", Types.float.toString())
+        addSubtype(Types.any.toString(), Types.string.toString())
+        addSubtype(Types.any.toString(), Types.bool.toString())
+        addSubtype(Types.any.toString(), Types.unit.toString())
+        addSubtype(Types.any.toString(), Types.array.toString())
     }
 
     private var nextTypeVariableNum = 0
