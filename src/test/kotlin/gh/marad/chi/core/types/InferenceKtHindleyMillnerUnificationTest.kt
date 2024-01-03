@@ -71,7 +71,7 @@ class InferenceKtHindleyMillnerUnificationTest {
     fun `should fail type inference if compared types are of different kinds`() {
         // given
         val a = Types.int
-        val b = Types.fn(Types.int)
+        val b = Types.fn(Types.int, Types.bool)
         val section = randomSourceSection()
 
         // expect
@@ -117,8 +117,8 @@ class InferenceKtHindleyMillnerUnificationTest {
     fun `should decompose generic types`() {
         // given
         val t = TypeVariable("a")
-        val a = Types.generic(SimpleType("array"), Types.int)
-        val b = Types.generic(SimpleType("array"), t)
+        val a = Types.array(Types.int)
+        val b = Types.array(t)
 
         // when
         val solution = unify(TypeGraph(), setOf(Constraint(a, b, null)))
@@ -130,8 +130,8 @@ class InferenceKtHindleyMillnerUnificationTest {
     @Test
     fun `should fail inference if generic types don't match`() {
         // give
-        val a = Types.generic(SimpleType("Map"), Types.string, Types.int)
-        val b = Types.generic(SimpleType("Map"), Types.bool, Types.int)
+        val a = Types.generic(SimpleType("std", "lang", "Map"), Types.string, Types.int)
+        val b = Types.generic(SimpleType("std", "lang", "Map"), Types.bool, Types.int)
         val mapSection = randomSourceSection()
         val boolSection = randomSourceSection()
         val intSection = randomSourceSection()

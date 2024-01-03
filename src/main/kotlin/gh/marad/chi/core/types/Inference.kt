@@ -515,14 +515,19 @@ private fun generalize(
 
 private fun OldType.toNewType(): Type {
     return when (this) {
-        is AnyType -> TODO()
-        is ArrayType -> TODO()
+        is AnyType -> Types.any
+        is ArrayType -> Types.array(this.elementType.toNewType())
         is VariantType -> TODO()
-        is FnType -> TODO()
+        is FnType -> {
+            val types = mutableListOf<Type>()
+            types.addAll(this.paramTypes.map { it.toNewType() })
+            types.add(this.returnType.toNewType())
+            Types.fn(*types.toTypedArray())
+        }
         is GenericTypeParameter -> TypeVariable(name)
         is OverloadedFnType -> TODO()
-        is PrimitiveType -> SimpleType(name)
-        is StringType -> SimpleType(name)
+        is PrimitiveType -> SimpleType(moduleName, packageName, name)
+        is StringType -> Types.string
         is UndefinedType -> TODO()
     }
 }
