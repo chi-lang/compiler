@@ -355,10 +355,38 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             expr.newType = Types.string
             InferenceResult(Types.string, constraints, env)
         }
-        is Is -> TODO()
-        is Program -> TODO()
-        is Return -> TODO()
-        is WhileLoop -> TODO()
+        is Is -> {
+            val valueType = inferTypes(ctx, env, expr.value)
+            expr.newType = Types.bool
+            InferenceResult(Types.bool, valueType.constraints, env)
+        }
+        is Program -> {
+            val block = Block(expr.expressions, expr.sourceSection)
+            val inferred = inferTypes(ctx, env, block)
+            expr.newType = block.newType
+            inferred
+        }
+        is Return -> {
+            if (expr.value != null) {
+                val inferredValue = inferTypes(ctx, env, expr.value)
+                expr.newType = inferredValue.type
+                inferredValue
+            } else {
+                InferenceResult(Types.unit, setOf(), env)
+            }
+        }
+        is WhileLoop -> {
+            val condition = inferTypes(ctx, env, expr.condition)
+            val loop = inferTypes(ctx, env, expr.loop)
+
+            val constraints = mutableSetOf<Constraint>()
+            constraints.add(Constraint(condition.type, Types.bool, expr.condition.sourceSection))
+            constraints.addAll(condition.constraints)
+            constraints.addAll(loop.constraints)
+
+            expr.newType = Types.unit
+            InferenceResult(Types.unit, constraints, env)
+        }
         is DefineVariantType -> TODO("This should generate constructor functions in env")
         is FieldAccess -> TODO("Implement this when new typesystem supports Variant types")
         is FieldAssignment -> TODO("Implement this when new typesystem supports Variant types")

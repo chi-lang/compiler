@@ -473,6 +473,55 @@ class InferenceKtTest {
         }
     }
 
+    @Test
+    fun `test 'is' type inference`() {
+        // given
+        val env = mapOf("x" to Types.int)
+
+        // when
+        val result = testInference("x is bool", env)
+
+        // then
+        result.firstExpr().shouldBeTypeOf<Is>().should {
+            it.newType shouldBe Types.bool
+            it.value.newType shouldBe Types.int
+        }
+    }
+
+    @Test
+    fun `test return inference`() {
+        // when
+        val result = testInference("return 5")
+
+        // then
+        result.firstExpr().shouldBeTypeOf<Return>().should {
+            it.newType shouldBe Types.int
+            it.value?.newType shouldBe Types.int
+        }
+        result.inferred.constraints shouldBe emptySet()
+    }
+
+    @Test
+    fun `test while loop inference`() {
+        // when
+        val result = testInference("while true { 5 }")
+
+        // then
+        result.firstExpr().shouldBeTypeOf<WhileLoop>().should {
+            it.newType shouldBe Types.unit
+            it.condition.newType shouldBe Types.bool
+            it.loop.newType shouldBe Types.int
+        }
+    }
+
+    @Test
+    fun `while loop condition should be bool`() {
+        // expect
+        shouldThrow<TypeInferenceFailed> {
+            testInference("while 5 { 5 }")
+        }
+    }
+
     fun testInference(code: String, env: Map<String, Type> = mapOf()): Result {
         val ns = GlobalCompilationNamespace()
         val ctx = ConversionContext(ns)
