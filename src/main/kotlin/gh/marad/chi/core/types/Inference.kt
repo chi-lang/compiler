@@ -71,7 +71,7 @@ class SubstituteTypeVariable(private val v: TypeVariable, private val t: Type) :
 class TypeInferenceFailed(
     message: String,
     val section: ChiSource.Section?
-) : RuntimeException(message + if (section != null) "at $section" else "")
+) : RuntimeException(message + if (section != null) " at $section" else "")
 
 internal fun inferTypes(env: Map<String, Type>, expr: Expression): InferenceResult =
     inferTypes(InferenceContext(), env, expr)

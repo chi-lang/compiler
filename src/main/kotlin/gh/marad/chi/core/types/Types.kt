@@ -51,9 +51,9 @@ data class SimpleType(val moduleName: String, val packageName: String, val name:
     override fun toString(): String {
         val sb = StringBuilder()
         sb.append(moduleName)
-        sb.append('/')
+        sb.append("::")
         sb.append(packageName)
-        sb.append('/')
+        sb.append("::")
         sb.append(name)
         return sb.toString()
     }
