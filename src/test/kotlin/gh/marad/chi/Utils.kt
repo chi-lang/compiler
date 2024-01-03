@@ -3,6 +3,7 @@ package gh.marad.chi
 import gh.marad.chi.core.CompilationDefaults
 import gh.marad.chi.core.Compiler
 import gh.marad.chi.core.Expression
+import gh.marad.chi.core.Program
 import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.namespace.CompilationScope
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
@@ -14,7 +15,7 @@ fun compile(
     code: String,
     namespace: GlobalCompilationNamespace = GlobalCompilationNamespace(),
     ignoreCompilationErrors: Boolean = false
-): List<Expression> {
+): Program {
     val result = Compiler.compile(code, namespace)
 
     if (!ignoreCompilationErrors) {
@@ -28,7 +29,7 @@ fun compile(
         }
     }
 
-    return result.program.expressions
+    return result.program
 }
 
 fun asts(
@@ -38,7 +39,7 @@ fun asts(
 ): List<Expression> {
     val namespace = GlobalCompilationNamespace()
     namespace.setPackageScope(CompilationDefaults.defaultModule, CompilationDefaults.defaultPacakge, scope)
-    return compile(code, namespace, ignoreCompilationErrors)
+    return compile(code, namespace, ignoreCompilationErrors).expressions
 }
 
 fun ast(

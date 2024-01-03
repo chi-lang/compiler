@@ -13,20 +13,13 @@ sealed interface Expression {
     fun accept(visitor: ExpressionVisitor)
 }
 
-data class Program(val expressions: List<Expression>, override val sourceSection: ChiSource.Section? = null) :
-    Expression {
-    override val type: OldType
-        get() = expressions.lastOrNull()?.type ?: OldType.unit
-    override var newType: Type? = null
-    override fun accept(visitor: ExpressionVisitor) = visitor.visitProgram(this)
-}
+data class Program(
+    val packageDefinition: Package?,
+    val imports: List<Import>,
+    val expressions: List<Expression>,
+    val sourceSection: ChiSource.Section? = null)
 
-data class Package(val moduleName: String, val packageName: String, override val sourceSection: ChiSource.Section?) :
-    Expression {
-    override val type: OldType = OldType.unit
-    override var newType: Type? = null
-    override fun accept(visitor: ExpressionVisitor) = visitor.visitPackage(this)
-}
+data class Package(val moduleName: String, val packageName: String, val sourceSection: ChiSource.Section?)
 
 data class ImportEntry(
     val name: String,
@@ -42,12 +35,8 @@ data class Import(
     val packageAlias: String?,
     val entries: List<ImportEntry>,
     val withinSameModule: Boolean,
-    override val sourceSection: ChiSource.Section?
-) : Expression {
-    override val type: OldType = OldType.unit
-    override var newType: Type? = null
-    override fun accept(visitor: ExpressionVisitor) = visitor.visitImport(this)
-}
+    val sourceSection: ChiSource.Section?
+)
 
 data class DefineVariantType(
     val baseVariantType: VariantType,

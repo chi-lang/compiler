@@ -4,6 +4,8 @@ import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.antlr.ChiLexer
 import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.expressionast.generateExpressionsFromParsedProgram
+import gh.marad.chi.core.expressionast.internal.convertImportDefinition
+import gh.marad.chi.core.expressionast.internal.convertPackageDefinition
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
@@ -27,14 +29,13 @@ internal fun parseProgram(source: String, namespace: GlobalCompilationNamespace)
     val visitor = ParserVisitor(chiSource)
     val parseResult = parser.program()
     val program = if (errorListener.getMessages().isNotEmpty()) {
-        Program(emptyList())
+        Program(null, emptyList(), emptyList())
     } else {
         val parsedProgram = ProgramReader.read(visitor, chiSource, parseResult)
-        val block = generateExpressionsFromParsedProgram(parsedProgram, namespace)
-        Program(block.body)
+        generateExpressionsFromParsedProgram(parsedProgram, namespace)
     }
     return Pair(
-        automaticallyCastCompatibleTypes(program) as Program,
+        program,
         errorListener.getMessages()
     )
 }

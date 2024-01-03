@@ -500,7 +500,7 @@ class IsExprSpec : FunSpec({
         val code = """
             import mymod/mypkg { foo, bar, baz, faz }
         """.trimIndent()
-        val result = analyze(compile(code, namespace, ignoreCompilationErrors = true)[0])
+        val result = analyze(compile(code, namespace, ignoreCompilationErrors = true))
 
         result shouldHaveSize 2
         result[0].shouldBeTypeOf<ImportInternal>()

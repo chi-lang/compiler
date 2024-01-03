@@ -3,12 +3,14 @@ package gh.marad.chi.core.expressionast
 import gh.marad.chi.core.Block
 import gh.marad.chi.core.CompilationDefaults
 import gh.marad.chi.core.Expression
+import gh.marad.chi.core.automaticallyCastCompatibleTypes
 import gh.marad.chi.core.expressionast.internal.*
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.*
+import kotlin.math.exp
 
-fun generateExpressionsFromParsedProgram(program: Program, namespace: GlobalCompilationNamespace): Block {
+fun generateExpressionsFromParsedProgram(program: Program, namespace: GlobalCompilationNamespace): gh.marad.chi.core.Program {
     val packageDefinition = convertPackageDefinition(program.packageDefinition)
     val moduleName = packageDefinition?.moduleName ?: CompilationDefaults.defaultModule
     val packageName = packageDefinition?.packageName ?: CompilationDefaults.defaultPacakge
@@ -28,12 +30,15 @@ fun generateExpressionsFromParsedProgram(program: Program, namespace: GlobalComp
     registerPackageSymbols(context, program)
 
     val blockBody = mutableListOf<Expression>()
-    packageDefinition?.let { blockBody.add(it) }
-    blockBody.addAll(imports)
     blockBody.addAll(typeDefinitions)
     blockBody.addAll(program.functions.map { generateExpressionAst(context, it) })
     blockBody.addAll(program.topLevelCode.map { generateExpressionAst(context, it) })
-    return Block(blockBody, null)
+    return gh.marad.chi.core.Program(
+        packageDefinition = packageDefinition,
+        imports = imports,
+        expressions = blockBody.map { automaticallyCastCompatibleTypes(it) },
+        program.section
+    )
 }
 
 private fun registerPackageSymbols(ctx: ConversionContext, program: Program) {

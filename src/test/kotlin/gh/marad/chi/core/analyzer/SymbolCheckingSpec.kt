@@ -87,15 +87,15 @@ class SymbolCheckingSpec : FunSpec({
             val foo = Foo(20)
         """.trimIndent()
 
-        val ast = compile(import, namespace, ignoreCompilationErrors = true)
+        val ast = compile(import, namespace, ignoreCompilationErrors = true).expressions
+
+        ast[0].shouldBeTypeOf<NameDeclaration>()
+            .name shouldBe "bar"
+        analyze(ast[0]) shouldHaveSize 0
 
         ast[1].shouldBeTypeOf<NameDeclaration>()
-            .name shouldBe "bar"
-        analyze(ast[1]) shouldHaveSize 0
-
-        ast[2].shouldBeTypeOf<NameDeclaration>()
             .name shouldBe "foo"
-        analyze(ast[2]) should {
+        analyze(ast[1]) should {
             it shouldHaveSize 1
             it[0].shouldBeTypeOf<CannotAccessInternalName>()
                 .name shouldBe "Foo"
@@ -117,13 +117,13 @@ class SymbolCheckingSpec : FunSpec({
             foo.f
         """.trimIndent()
 
-        val ast = compile(import, namespace, ignoreCompilationErrors = true)
+        val ast = compile(import, namespace, ignoreCompilationErrors = true).expressions
 
-        ast[2].shouldBeTypeOf<FieldAccess>() should {
+        ast[1].shouldBeTypeOf<FieldAccess>() should {
             analyze(it) shouldHaveSize 0
         }
 
-        ast[3].shouldBeTypeOf<FieldAccess>() should {
+        ast[2].shouldBeTypeOf<FieldAccess>() should {
             val msgs = analyze(it)
             msgs shouldHaveSize 1
             msgs[0].shouldBeTypeOf<CannotAccessInternalName>()

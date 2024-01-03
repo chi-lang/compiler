@@ -19,20 +19,6 @@ class PrintAstVisitor : ExpressionVisitor {
 
     override fun visit(expr: Expression) = expr.accept(this)
 
-    override fun visitProgram(program: Program) {
-        for (expression in program.expressions) {
-            expression.accept(this)
-        }
-    }
-
-    override fun visitPackage(arg: Package) {
-        TODO("Not yet implemented")
-    }
-
-    override fun visitImport(import: Import) {
-        TODO("Not yet implemented")
-    }
-
     override fun visitDefineVariantType(defineVariantType: DefineVariantType) {
         TODO("Not yet implemented")
     }

@@ -22,16 +22,10 @@ class PackageSpec : FunSpec({
             package my.module/some.system
             val millis = {}
         """.trimIndent(), namespace
-        )
+        ).expressions
 
         // then
-        expressions shouldHaveSize 2
-        expressions.first()
-            .shouldBeTypeOf<gh.marad.chi.core.Package>()
-            .should { pkg ->
-                pkg.moduleName shouldBe "my.module"
-                pkg.packageName shouldBe "some.system"
-            }
+        expressions shouldHaveSize 1
 
         // and
         val targetScope = namespace.getOrCreatePackage("my.module", "some.system").scope
@@ -43,14 +37,14 @@ class PackageSpec : FunSpec({
 
     test("should not allow empty module name") {
         // given
-        val packageDefinition = ast(
+        val program = compile(
             """
             package /some.system
         """.trimIndent(), ignoreCompilationErrors = true
         )
 
         // when
-        val messages = analyze(packageDefinition)
+        val messages = analyze(program)
 
         // then
         messages shouldHaveSize 1
@@ -60,14 +54,14 @@ class PackageSpec : FunSpec({
 
     test("should not allow empty package name") {
         // given
-        val packageDefinition = ast(
+        val program = compile(
             """
             package some.module/
         """.trimIndent(), ignoreCompilationErrors = true
         )
 
         // when
-        val messages = analyze(packageDefinition)
+        val messages = analyze(program)
 
         // then
         messages shouldHaveSize 1

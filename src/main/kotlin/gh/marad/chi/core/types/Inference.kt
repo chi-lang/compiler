@@ -361,12 +361,6 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             expr.newType = Types.bool
             InferenceResult(Types.bool, valueType.constraints, env)
         }
-        is Program -> {
-            val block = Block(expr.expressions, expr.sourceSection)
-            val inferred = inferTypes(ctx, env, block)
-            expr.newType = block.newType
-            inferred
-        }
         is Return -> {
             if (expr.value != null) {
                 val inferredValue = inferTypes(ctx, env, expr.value)
@@ -391,8 +385,6 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
         is DefineVariantType -> TODO("This should generate constructor functions in env")
         is FieldAccess -> TODO("Implement this when new typesystem supports Variant types")
         is FieldAssignment -> TODO("Implement this when new typesystem supports Variant types")
-        is Package -> TODO("This should not be an expression")
-        is Import -> TODO("This should not be an expression")
     }
 }
 

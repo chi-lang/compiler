@@ -152,6 +152,7 @@ data class ExpectedVariantType(val actual: OldType, override val codePoint: Code
 fun analyze(program: Program): List<Message> {
     val messages = mutableListOf<Message>()
     program.packageDefinition?.let { checkModuleAndPackageNames(it, messages) }
+    program.imports.forEach { checkImports(it, messages) }
     program.expressions.forEach {
         analyze(it, messages)
     }
@@ -176,7 +177,6 @@ fun analyze(expr: Expression, messages: MutableList<Message>) {
     // W przeciwnym wypadku wyznaczanie typów wyrażeń może się nie udać
 
     forEachAst(expr) {
-        checkImports(it, messages)
         checkThatTypesContainAccessedFieldsAndFieldIsAccessible(it, messages)
         checkThatVariableIsDefinedAndAccessible(it, messages)
         checkThatFunctionHasAReturnValue(it, messages)
