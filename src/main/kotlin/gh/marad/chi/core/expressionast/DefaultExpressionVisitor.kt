@@ -5,15 +5,6 @@ import gh.marad.chi.core.*
 interface DefaultExpressionVisitor : ExpressionVisitor {
     override fun visit(expr: Expression) = expr.accept(this)
 
-    override fun visitProgram(program: Program) {
-        visit(program)
-        for (expression in program.expressions) {
-            expression.accept(this)
-        }
-    }
-
-    override fun visitPackage(arg: Package) { visit(arg) }
-
     override fun visitImport(import: Import) { visit(import) }
 
     override fun visitDefineVariantType(defineVariantType: DefineVariantType) { visit(defineVariantType) }

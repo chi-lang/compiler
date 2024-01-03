@@ -149,20 +149,33 @@ data class ExpectedVariantType(val actual: OldType, override val codePoint: Code
         get() = "Expected variant type, but got '$actual'"
 }
 
+fun analyze(program: Program): List<Message> {
+    val messages = mutableListOf<Message>()
+    program.packageDefinition?.let { checkModuleAndPackageNames(it, messages) }
+    program.expressions.forEach {
+        analyze(it, messages)
+    }
+    return messages
+}
+
+fun analyze(expr: Expression): List<Message> {
+    val messages = mutableListOf<Message>()
+    analyze(expr, messages)
+    return messages
+}
+
 // Rzeczy do sprawdzenia
 // - Prosta zgodność typów wyrażeń
 // - Nieużywane zmienne
 // - Redeklaracja zmiennych (drugie zapisanie var/val w tym samym scope - ale pozwala na shadowing)
 // - Obecność funkcji `main` bez parametrów (później trzeba będzie ogarnąć listę argumentów)
 // - przypisanie unit
-fun analyze(expr: Expression): List<Message> {
+fun analyze(expr: Expression, messages: MutableList<Message>) {
     // TODO: pozostałe checki
     // Chyba poprawność wywołań i obecność zmiennych w odpowiednich miejscach powinna być przed sprawdzaniem typów.
     // W przeciwnym wypadku wyznaczanie typów wyrażeń może się nie udać
-    val messages = mutableListOf<Message>()
 
     forEachAst(expr) {
-        checkModuleAndPackageNames(it, messages)
         checkImports(it, messages)
         checkThatTypesContainAccessedFieldsAndFieldIsAccessible(it, messages)
         checkThatVariableIsDefinedAndAccessible(it, messages)
@@ -175,6 +188,4 @@ fun analyze(expr: Expression): List<Message> {
         checkThatAssignmentDoesNotChangeImmutableValue(it, messages)
         checkThatExpressionTypeIsDefined(it, messages)
     }
-
-    return messages
 }
