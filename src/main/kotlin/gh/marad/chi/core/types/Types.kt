@@ -7,6 +7,21 @@ object Types {
     val bool = SimpleType("bool")
     val unit = SimpleType("unit")
     val string = SimpleType("string")
+
+    fun generic(vararg types: Type) = GenericType(types.toList())
+    fun fn(vararg types: Type) = FunctionType(types.toList())
+
+    fun array(elementType: Type) = GenericType(
+        listOf(
+            SimpleType("array"),
+            elementType
+        ),
+        if (elementType is TypeVariable) {
+            listOf(elementType)
+        } else {
+            emptyList()
+        }
+    )
 }
 
 sealed interface Type {
@@ -21,6 +36,46 @@ sealed interface Type {
     fun findTypeVariables(): List<TypeVariable>
     fun generalize(variables: List<TypeVariable>): Type
     fun instantiate(mappings: List<Pair<TypeVariable, Type>>): Type
+}
+
+data class GenericType(
+    val types: List<Type>,
+    val typeSchemeVariables: List<TypeVariable> = emptyList(),
+) : Type {
+    init {
+        assert(types.size >= 2) { "Generic type needs base type and at least one parameter type. Types given: $types" }
+    }
+
+    override fun contains(v: TypeVariable): Boolean = types.contains(v)
+    override fun substitute(v: TypeVariable, t: Type): Type =
+        copy(types = types.map { it.substitute(v, t) },
+            typeSchemeVariables = if (t is TypeVariable) {
+                typeSchemeVariables.map { it.substitute(v,t) as TypeVariable }
+            } else {
+                typeSchemeVariables
+            })
+
+    override fun isTypeScheme(): Boolean = typeSchemeVariables.isNotEmpty()
+    override fun typeSchemeVariables(): List<TypeVariable> = typeSchemeVariables
+    override fun findTypeVariables(): List<TypeVariable> = types.flatMap { it.findTypeVariables() }
+    override fun generalize(variables: List<TypeVariable>): Type = copy(typeSchemeVariables = variables)
+    override fun instantiate(mappings: List<Pair<TypeVariable, Type>>): Type =
+        copy(
+            types = types.map { it.instantiate(mappings) },
+            typeSchemeVariables = typeSchemeVariables - mappings.map { it.first }.toSet()
+        )
+
+    override fun toString(): String {
+        val sb = StringBuilder()
+        sb.append(types.first())
+        val tail = types.drop(1)
+        if (tail.isNotEmpty()) {
+            sb.append('[')
+            sb.append(tail.joinToString(", "))
+            sb.append(']')
+        }
+        return sb.toString()
+    }
 }
 
 data class SimpleType(val name: String,
@@ -76,6 +131,12 @@ data class TypeVariable(val name: String, val typeScheme: Boolean = false) : Typ
 }
 
 data class FunctionType(val types: List<Type>, val typeSchemeVariables: List<TypeVariable> = emptyList()) : Type {
+    init {
+        assert(types.size >= 2) {
+            "Function type requires at least two types. Types given: $types"
+        }
+    }
+
     override fun contains(v: TypeVariable): Boolean = types.any { it.contains(v) }
     override fun substitute(v: TypeVariable, t: Type): Type =
         copy(types = types.map { it.substitute(v, t) },

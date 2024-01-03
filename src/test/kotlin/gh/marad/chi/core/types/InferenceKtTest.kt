@@ -421,6 +421,58 @@ class InferenceKtTest {
         }
     }
 
+    @Test
+    fun `test index operator type inference`() {
+        // given
+        val env = mapOf("x" to Types.array(Types.string))
+
+        // when
+        val result = testInference("x[0]", env)
+
+        // then
+        result.firstExpr().shouldBeTypeOf<IndexOperator>().should {
+            it.newType shouldBe Types.string
+            it.index.newType shouldBe Types.int
+            it.variable.newType shouldBe Types.array(Types.string)
+        }
+    }
+
+    @Test
+    fun `test indexed assignment type inference`() {
+        // given
+        val env = mapOf("x" to Types.array(Types.string))
+
+        // when
+        val result = testInference("x[0] = \"hello\"", env)
+
+        // then
+        result.firstExpr().shouldBeTypeOf<IndexedAssignment>().should {
+            it.newType shouldBe Types.string
+            it.index.newType shouldBe Types.int
+            it.variable.newType shouldBe Types.array(Types.string)
+            it.value.newType shouldBe Types.string
+        }
+    }
+
+    @Test
+    fun `test interpolated string type inference`() {
+        // given
+        val env = mapOf("name" to Types.int)
+
+        // when
+        val result = testInference("\"hello \$name\"", env)
+
+        // then
+        result.firstExpr().shouldBeTypeOf<InterpolatedString>().should {
+            it.newType shouldBe Types.string
+            it.parts shouldHaveSize 2
+            it.parts[0].newType shouldBe Types.string
+            it.parts[1].shouldBeTypeOf<Cast>().should { cast ->
+                cast.expression.newType shouldBe Types.int
+            }
+        }
+    }
+
     fun testInference(code: String, env: Map<String, Type> = mapOf()): Result {
         val ns = GlobalCompilationNamespace()
         val ctx = ConversionContext(ns)

@@ -18,9 +18,11 @@ data class Constraint(
     var expected: Type,
     val section: ChiSource.Section?,
     /// This parameter has very specific use case. It's used
-    /// For FnCall type inference to convey the parameter
+    /// for FnCall type inference to convey the parameter
     /// sections, to produce meaningful errors.
-    val fnParamSections: List<ChiSource.Section?>? = null
+    /// It's also used for GenericType inference for
+    /// generic type parameters
+    val paramSections: List<ChiSource.Section?>? = null
 ) {
     fun substitute(v: TypeVariable, t: Type) {
         actual = actual.substitute(v,t)
@@ -169,7 +171,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             constraints.add(Constraint(
                 funcType.type,
                 FunctionType(paramTypes.map { it.type } + t),
-                fnParamSections = expr.parameters.map { it.sourceSection },
+                paramSections = expr.parameters.map { it.sourceSection },
                 section = expr.function.sourceSection
             ))
             constraints.addAll(funcType.constraints)
@@ -239,6 +241,9 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
                     constraints.add(Constraint(left.type, Types.int, expr.left.sourceSection))
                     constraints.add(Constraint(right.type, Types.int, expr.right.sourceSection))
                 }
+                else -> {
+                    throw TypeInferenceFailed("Unknown infix operator '${expr.op}.", expr.sourceSection)
+                }
             }
             constraints.addAll(left.constraints)
             constraints.addAll(right.constraints)
@@ -256,8 +261,9 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
         }
         is Cast -> {
             val targetType = expr.targetType.toNewType()
+            val inferred = inferTypes(ctx, env, expr.expression)
             expr.newType = targetType
-            InferenceResult(targetType, emptySet(), env)
+            InferenceResult(targetType, inferred.constraints, env)
         }
         is Group -> {
             val value = inferTypes(ctx, env, expr.value)
@@ -300,9 +306,55 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
                 value.constraints + Constraint(type, Types.bool, expr.expr.sourceSection)
             )
         }
-        is IndexOperator -> TODO()
-        is IndexedAssignment -> TODO()
-        is InterpolatedString -> TODO()
+        is IndexOperator -> {
+            val base = ctx.nextTypeVariable()
+            val element = ctx.nextTypeVariable()
+            val t = Types.generic(base, element)
+
+            val variableType = inferTypes(ctx, env, expr.variable)
+            val indexType = inferTypes(ctx, env, expr.index)
+
+            val constraints = mutableSetOf<Constraint>()
+            constraints.add(Constraint(variableType.type, t, expr.variable.sourceSection))
+            constraints.add(Constraint(indexType.type, Types.int, expr.index.sourceSection))
+            constraints.addAll(variableType.constraints)
+            constraints.addAll(indexType.constraints)
+
+            expr.newType = element
+            InferenceResult(element, constraints, env)
+        }
+        is IndexedAssignment -> {
+            val base = ctx.nextTypeVariable()
+            val element = ctx.nextTypeVariable()
+            val t = Types.generic(base, element)
+
+            val variableType = inferTypes(ctx, env, expr.variable)
+            val indexType = inferTypes(ctx, env, expr.index)
+            val valueType = inferTypes(ctx, env, expr.value)
+
+            val constraints = mutableSetOf<Constraint>()
+
+            constraints.add(Constraint(variableType.type, t, expr.variable.sourceSection))
+            constraints.add(Constraint(indexType.type, Types.int, expr.index.sourceSection))
+            constraints.add(Constraint(valueType.type, element, expr.value.sourceSection))
+            constraints.addAll(variableType.constraints)
+            constraints.addAll(indexType.constraints)
+            constraints.addAll(valueType.constraints)
+
+            expr.newType = element
+            InferenceResult(element, constraints, env)
+        }
+        is InterpolatedString -> {
+            val constraints = mutableSetOf<Constraint>()
+
+            expr.parts.forEach {
+                val inferred = inferTypes(ctx, env, it)
+                constraints.addAll(inferred.constraints)
+            }
+
+            expr.newType = Types.string
+            InferenceResult(Types.string, constraints, env)
+        }
         is Is -> TODO()
         is Program -> TODO()
         is Return -> TODO()
@@ -354,6 +406,26 @@ fun unify(typeGraph: TypeGraph, constraints: Set<Constraint>): List<Pair<TypeVar
             } else {
                 q.add(Constraint(aTail, bTail, section, paramSections?.drop(1)))
             }
+        } else if (a is GenericType && b is GenericType) {
+            val aHead = a.types.first()
+            val bHead = b.types.first()
+            val headSection = if (paramSections != null && paramSections.firstOrNull() != null) {
+                paramSections.first()
+            } else {
+                section
+            }
+            q.add(Constraint(aHead, bHead, headSection))
+
+            val aTail = a.types.drop(1).let { if (it.size == 1) it[0] else GenericType(it) }
+            val bTail = b.types.drop(1).let { if (it.size == 1) it[0] else GenericType(it) }
+            if (paramSections != null && paramSections.size == 2) {
+                // after taking one for head there is only single type left
+                // so aTail and bTail are going to be simple types (not FunctionType)
+                // so we can simply take the last section as
+                q.add(Constraint(aTail, bTail, paramSections.last()))
+            } else {
+                q.add(Constraint(aTail, bTail, section, paramSections?.drop(1)))
+            }
         } else if (a is TypeVariable) {
             if (b.contains(a)) {
                 throw TypeInferenceFailed("$a is contained in $b", section)
@@ -368,7 +440,7 @@ fun unify(typeGraph: TypeGraph, constraints: Set<Constraint>): List<Pair<TypeVar
             substitutions.add(b to a)
         } else {
             throw TypeInferenceFailed(
-                "Expected type was '$a' but got '$b'",
+                "Expected type was $a but got $b",
                 section
             )
         }
