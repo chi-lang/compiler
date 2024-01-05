@@ -222,12 +222,6 @@ fun checkTypes(expr: Expression, messages: MutableList<Message>) {
         }
     }
 
-    fun checkNameDeclaration(expr: NameDeclaration) {
-        if (expr.expectedType != null) {
-            checkTypeMatches(expr.expectedType, expr.value.type, expr.value.sourceSection)
-        }
-    }
-
     fun checkFn(expr: Fn) {
         val expected = expr.returnType
 
@@ -351,7 +345,7 @@ fun checkTypes(expr: Expression, messages: MutableList<Message>) {
     val ignored: Any = when (expr) {
         is DefineVariantType -> {} // nothing to check
         is Assignment -> checkAssignment(expr)
-        is NameDeclaration -> checkNameDeclaration(expr)
+        is NameDeclaration -> {}
         is Block -> {} // nothing to check
         is Fn -> checkFn(expr)
         is FnCall -> checkFnCall(expr)
