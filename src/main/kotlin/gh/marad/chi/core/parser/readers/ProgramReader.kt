@@ -7,10 +7,10 @@ import gh.marad.chi.core.parser.getSection
 import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 internal object ProgramReader {
-    fun read(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.ProgramContext): Program {
+    fun read(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.ProgramContext): ParseProgram {
         val split = ctx.expression().groupBy { isFunctionDeclaration(it) }
 
-        return Program(
+        return ParseProgram(
             packageDefinition = ctx.package_definition()?.let { PackageReader.read(source, it) },
             imports = ctx.import_definition().map { ImportReader.read(source, it) },
             typeDefinitions = ctx.variantTypeDefinition().map {
@@ -27,7 +27,7 @@ internal object ProgramReader {
 
 }
 
-data class Program(
+data class ParseProgram(
     val packageDefinition: ParsePackageDefinition?,
     val imports: List<ParseImportDefinition>,
     val typeDefinitions: List<ParseVariantTypeDefinition>,
