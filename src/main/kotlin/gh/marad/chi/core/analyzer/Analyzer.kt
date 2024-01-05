@@ -2,6 +2,7 @@ package gh.marad.chi.core.analyzer
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.parser.ChiSource
+import gh.marad.chi.core.types.TypeInferenceFailed
 
 enum class Level { ERROR }
 
@@ -137,7 +138,8 @@ data class MemberDoesNotExist(val type: OldType, val member: String, override va
         get() = "Type ${type.name} does not have field '$member', or I don't have enough information about the type variant"
 }
 
-data class TypeInferenceFailed(override val codePoint: CodePoint?) : Message {
+data class TypeInferenceFailed(val cause: TypeInferenceFailed) : Message {
+    override val codePoint = cause.section?.toCodePoint()
     override val level: Level = Level.ERROR
     override val message: String
         get() = "Type inference failed here. Please provide more type information."
@@ -186,6 +188,5 @@ fun analyze(expr: Expression, messages: MutableList<Message>) {
         checkGenericTypes(it, messages)
         checkTypes(it, messages)
         checkThatAssignmentDoesNotChangeImmutableValue(it, messages)
-        checkThatExpressionTypeIsDefined(it, messages)
     }
 }
