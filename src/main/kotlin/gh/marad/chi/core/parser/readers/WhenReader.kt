@@ -4,6 +4,7 @@ import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 internal object WhenReader {
     fun read(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.WhenExpressionContext): ParseAst =
@@ -41,7 +42,9 @@ data class ParseWhen(
     val cases: List<ParseWhenCase>,
     val elseCase: ParseElseCase?,
     override val section: ChiSource.Section?
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitWhen(this)
+}
 
 data class ParseWhenCase(
     val condition: ParseAst,

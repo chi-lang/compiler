@@ -4,6 +4,7 @@ import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 internal object IfElseReader {
     fun read(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.If_exprContext): ParseAst =
@@ -28,4 +29,6 @@ data class ParseIfElse(
     val thenBody: ParseAst,
     val elseBody: ParseAst?,
     override val section: ChiSource.Section?
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitIfElse(this)
+}

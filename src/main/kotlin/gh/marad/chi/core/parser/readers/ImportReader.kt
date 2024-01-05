@@ -5,6 +5,7 @@ import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.getSection
 import gh.marad.chi.core.parser.readers.CommonReader.readModuleName
 import gh.marad.chi.core.parser.readers.CommonReader.readPackageName
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 object ImportReader {
     fun read(source: ChiSource, ctx: ChiParser.Import_definitionContext): ParseImportDefinition =
@@ -38,5 +39,7 @@ data class ParseImportDefinition(
     override val section: ChiSource.Section?
 ) : ParseAst {
     data class Entry(val name: String, val alias: Alias?, val section: ChiSource.Section?)
+
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitImportDefinition(this)
 }
 

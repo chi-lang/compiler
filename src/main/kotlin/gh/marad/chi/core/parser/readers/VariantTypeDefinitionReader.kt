@@ -5,6 +5,7 @@ import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
 import gh.marad.chi.core.parser.readers.CommonReader.readTypeParameters
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 internal object VariantTypeDefinitionReader {
     fun read(
@@ -94,6 +95,8 @@ data class ParseVariantTypeDefinition(
         val formalFields: List<FormalField>,
         val section: ChiSource.Section?
     )
+
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitVariantTypeDefinition(this)
 }
 
 data class FormalField(val public: Boolean, val name: String, val typeRef: TypeRef, val section: ChiSource.Section?)

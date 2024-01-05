@@ -4,6 +4,7 @@ import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 internal object TraitReader {
     fun read(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.TraitDefinitionContext) =
@@ -29,11 +30,15 @@ data class ParseTraitDefinition(
     val typeParameters: List<TypeParameterRef>,
     val functions: List<ParseTraitFunctionDefinition>,
     override val section: ChiSource.Section?
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitTraitDefinition(this)
+}
 
 data class ParseTraitFunctionDefinition(
     val name: String,
     val formalArguments: List<FormalArgument>,
     val returnTypeRef: TypeRef,
     override val section: ChiSource.Section?
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitTraitFunctionDefinition(this)
+}

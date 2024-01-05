@@ -1,8 +1,10 @@
 package gh.marad.chi.core.parser.readers
 
 import gh.marad.chi.core.parser.ChiSource
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 sealed interface ParseAst {
+    fun <T> accept(visitor: ParseAstVisitor<T>): T
     val section: ChiSource.Section?
 }
 

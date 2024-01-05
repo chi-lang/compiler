@@ -4,6 +4,7 @@ import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 internal object ArithmeticLogicReader {
     fun readNot(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.NotOpContext): ParseAst =
@@ -40,11 +41,15 @@ internal object ArithmeticLogicReader {
 data class ParseNot(
     val value: ParseAst,
     override val section: ChiSource.Section?
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitNot(this)
+}
 
 data class ParseBinaryOp(
     val op: String,
     val left: ParseAst,
     val right: ParseAst,
     override val section: ChiSource.Section?,
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitBinaryOperator(this)
+}

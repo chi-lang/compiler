@@ -3,6 +3,7 @@ package gh.marad.chi.core.parser.readers
 import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.getSection
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 object PackageReader {
     fun read(source: ChiSource, ctx: ChiParser.Package_definitionContext): ParsePackageDefinition {
@@ -15,5 +16,7 @@ object PackageReader {
 data class ParsePackageDefinition(
     val moduleName: ModuleName, val packageName: PackageName,
     override val section: ChiSource.Section?
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitPackageDefinition(this)
+}
 

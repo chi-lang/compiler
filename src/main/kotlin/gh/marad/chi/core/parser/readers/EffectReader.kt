@@ -4,6 +4,7 @@ import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 internal object EffectReader {
     fun readEffectDefinition(
@@ -55,13 +56,17 @@ data class ParseEffectDefinition(
     val formalArguments: List<FormalArgument>,
     val returnTypeRef: TypeRef,
     override val section: ChiSource.Section?
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitEffectDefinition(this)
+}
 
 data class ParseHandle(
     val body: ParseBlock,
     val cases: List<ParseHandleCase>,
     override val section: ChiSource.Section?
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitHandle(this)
+}
 
 data class ParseHandleCase(
     val effectName: String,

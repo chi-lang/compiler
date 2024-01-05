@@ -4,6 +4,7 @@ import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 import org.antlr.v4.runtime.tree.TerminalNode
 
 internal object VariableReader {
@@ -45,23 +46,31 @@ data class ParseAssignment(
     val variableName: String,
     val value: ParseAst,
     override val section: ChiSource.Section?
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitAssignment(this)
+}
 
 data class ParseIndexedAssignment(
     val variable: ParseAst,
     val index: ParseAst,
     val value: ParseAst,
     override val section: ChiSource.Section?,
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitIndexedAssignment(this)
+}
 
 data class ParseVariableRead(
     val variableName: String,
     override val section: ChiSource.Section? = null
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitVariableRead(this)
+}
 
 
 data class ParseIndexOperator(
     val variable: ParseAst,
     val index: ParseAst,
     override val section: ChiSource.Section?,
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitIndexOperator(this)
+}

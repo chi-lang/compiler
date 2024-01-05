@@ -4,6 +4,7 @@ import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 internal object FieldOperatorReader {
     fun readFieldAccess(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.FieldAccessExprContext): ParseAst =
@@ -47,7 +48,9 @@ data class ParseFieldAccess(
     val receiver: ParseAst,
     val memberSection: ChiSource.Section?,
     override val section: ChiSource.Section?,
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitFieldAccess(this)
+}
 
 data class ParseFieldAssignment(
     val receiverName: String,
@@ -55,7 +58,9 @@ data class ParseFieldAssignment(
     val receiver: ParseAst,
     val value: ParseAst,
     override val section: ChiSource.Section?,
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitFieldAssignment(this)
+}
 
 data class ParseMethodInvocation(
     val receiverName: String,
@@ -65,4 +70,6 @@ data class ParseMethodInvocation(
     val arguments: List<ParseAst>,
     val memberSection: ChiSource.Section?,
     override val section: ChiSource.Section?,
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitMethodInvocation(this)
+}
