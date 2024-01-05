@@ -1,6 +1,5 @@
 package gh.marad.chi.core.expressionast
 
-import gh.marad.chi.core.Block
 import gh.marad.chi.core.CompilationDefaults
 import gh.marad.chi.core.Expression
 import gh.marad.chi.core.automaticallyCastCompatibleTypes
@@ -8,7 +7,6 @@ import gh.marad.chi.core.expressionast.internal.*
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.*
-import kotlin.math.exp
 
 fun generateExpressionsFromParsedProgram(program: Program, namespace: GlobalCompilationNamespace): gh.marad.chi.core.Program {
     val packageDefinition = convertPackageDefinition(program.packageDefinition)
