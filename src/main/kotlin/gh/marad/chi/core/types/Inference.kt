@@ -39,6 +39,9 @@ class InferenceContext(val typeGraph: TypeGraph) {
 
 class TypeFiller(private val solution: List<Pair<TypeVariable, Type>>) : DefaultExpressionVisitor {
     override fun visit(expr: Expression) {
+        assert(expr.newType != null) {
+            "Expression did not have type set: $expr"
+        }
         expr.newType = applySubstitution(expr.newType!!, solution)
         val startLetter = 'a'.code
         expr.newType!!.typeSchemeVariables().distinctBy { it.name }.sortedBy { it.name }
@@ -79,8 +82,13 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
         is NameDeclaration -> {
             val valueType = inferTypes(ctx, env, expr.value)
             val (updatedEnv, generalizedType) = generalize(ctx.typeGraph, valueType.constraints, env, expr.name, valueType.type)
+            val constraints = if (expr.expectedType != null) {
+                valueType.constraints + (Constraint(generalizedType, expr.expectedType, expr.sourceSection))
+            } else {
+                valueType.constraints
+            }
             expr.newType = generalizedType
-            InferenceResult(generalizedType, valueType.constraints, updatedEnv)
+            InferenceResult(generalizedType, constraints, updatedEnv)
         }
 
         is EffectDefinition -> {
@@ -400,7 +408,13 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             expr.newType = t
             InferenceResult(t, receiverInferred.constraints, env)
         }
-        is FieldAssignment -> TODO("Implement this when new typesystem supports Variant types")
+        is FieldAssignment -> {
+            val t = ctx.nextTypeVariable()
+            val receiverInferred = inferTypes(ctx, env, expr.receiver)
+            val valueInferred = inferTypes(ctx, env, expr.value)
+            expr.newType = t
+            InferenceResult(t, receiverInferred.constraints + valueInferred.constraints, env)
+        }
     }
 }
 
@@ -478,7 +492,7 @@ fun unify(typeGraph: TypeGraph, constraints: Set<Constraint>): List<Pair<TypeVar
             substitutions.add(b to a)
         } else {
             throw TypeInferenceFailed(
-                "Expected type was $a but got $b",
+                "Expected type was $b but got $a",
                 section
             )
         }
