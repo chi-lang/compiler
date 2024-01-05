@@ -9,6 +9,14 @@ fun printAst(expr: Expression) {
     println(visitor.toString().trim())
 }
 
+fun printAst(exprs: List<Expression>) {
+    val visitor = PrintAstVisitor()
+    for (expr in exprs) {
+        expr.accept(visitor)
+    }
+    println(visitor.toString().trim())
+}
+
 class PrintAstVisitor : ExpressionVisitor {
     var indent = ""
     val sb = StringBuilder()
@@ -44,11 +52,30 @@ class PrintAstVisitor : ExpressionVisitor {
     }
 
     override fun visitFieldAccess(fieldAccess: FieldAccess) {
-        TODO("Not yet implemented")
+        sb.appendLine()
+        sb.append(indent)
+        sb.append("(FieldAccess ")
+        sb.append(fieldAccess.fieldName)
+        sb.append(" : ")
+        sb.append(fieldAccess.newType)
+        withIndent {
+            fieldAccess.receiver.accept(this)
+        }
+        sb.append(")")
     }
 
     override fun visitFieldAssignment(fieldAssignment: FieldAssignment) {
-        TODO("Not yet implemented")
+        sb.appendLine()
+        sb.append(indent)
+        sb.append("(FieldAssignment ")
+        sb.append(fieldAssignment.fieldName)
+        sb.append(" : ")
+        sb.append(fieldAssignment.newType)
+        withIndent {
+            fieldAssignment.receiver.accept(this)
+            fieldAssignment.value.accept(this)
+        }
+        sb.append(")")
     }
 
     override fun visitAssignment(assignment: Assignment) {
@@ -138,11 +165,35 @@ class PrintAstVisitor : ExpressionVisitor {
     }
 
     override fun visitIndexOperator(indexOperator: IndexOperator) {
-        TODO("Not yet implemented")
+        sb.appendLine()
+        sb.append(indent)
+        sb.append("(IndexOperator : ${indexOperator.newType}")
+        val prev = indent
+        indent = "$indent\t"
+        indexOperator.variable.accept(this)
+        indexOperator.index.accept(this)
+        sb.append(')')
+        indent = prev
+    }
+
+    private fun withIndent(f: () -> Unit) {
+        val prev = indent
+        indent = "$indent\t"
+        f()
+        indent = prev
     }
 
     override fun visitIndexedAssignment(indexedAssignment: IndexedAssignment) {
-        TODO("Not yet implemented")
+        sb.appendLine()
+        sb.append(indent)
+        sb.append("(IndexedAssignment : ${indexedAssignment.newType}")
+        val prev = indent
+        indent = "$indent\t"
+        indexedAssignment.variable.accept(this)
+        indexedAssignment.index.accept(this)
+        indexedAssignment.value.accept(this)
+        sb.append(')')
+        indent = prev
     }
 
     override fun visitIs(arg: Is) {
