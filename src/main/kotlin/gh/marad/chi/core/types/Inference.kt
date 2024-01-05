@@ -94,7 +94,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
         is EffectDefinition -> {
             val signatureTypes = mutableListOf<Type>()
             expr.parameters.forEach {
-                signatureTypes.add(it.type.toNewType())
+                signatureTypes.add(it.type!!)
             }
             signatureTypes.add(expr.returnType.toNewType())
             val type = FunctionType(signatureTypes)
@@ -138,7 +138,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
                     // if param types were optional we would have to generate
                     // new types for them and normally solve with constraints
                     if (it.type != null) {
-                        it.name to it   .type.toNewType()
+                        it.name to it.type
                     } else {
                         it.name to ctx.nextTypeVariable()
                     }
