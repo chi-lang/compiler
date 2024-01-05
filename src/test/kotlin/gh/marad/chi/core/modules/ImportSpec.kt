@@ -2,10 +2,13 @@ package gh.marad.chi.core.modules
 
 import gh.marad.chi.ErrorMessagesException
 import gh.marad.chi.ast
-import gh.marad.chi.asts
+import gh.marad.chi.compile
 import gh.marad.chi.core.FnCall
+import gh.marad.chi.core.OldType
 import gh.marad.chi.core.VariableAccess
 import gh.marad.chi.core.analyzer.SyntaxError
+import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.SymbolType
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldHaveSize
@@ -40,15 +43,21 @@ class ImportSpec : FunSpec({
     // TODO this should be moved to FnCall generation tests
     test("importing function from package") {
         // given
-        val result = ast(
+        val ns = GlobalCompilationNamespace()
+        ns.getOrCreatePackage("std", "time")
+            .scope.addSymbol("millis", OldType.fn(OldType.intType), SymbolType.Local)
+
+        // when
+        val result = compile(
             """
             import std/time { millis }
             millis()
-        """.trimIndent(), ignoreCompilationErrors = true
+        """.trimIndent(), namespace = ns, ignoreCompilationErrors = true
         )
 
         // then
-        result.shouldBeTypeOf<FnCall>().should { call ->
+        val call = result.expressions.first()
+        call.shouldBeTypeOf<FnCall>().should { call ->
             call.function.shouldBeTypeOf<VariableAccess>().should { fn ->
                 fn.moduleName shouldBe "std"
                 fn.packageName shouldBe "time"
@@ -60,15 +69,21 @@ class ImportSpec : FunSpec({
     // TODO this should be moved to FnCall generation tests
     test("import function with alias") {
         // given
-        val result = ast(
+        val ns = GlobalCompilationNamespace()
+        ns.getOrCreatePackage("std", "time")
+            .scope.addSymbol("millis", OldType.fn(OldType.intType), SymbolType.Local)
+
+        // when
+        val result = compile(
             """
             import std/time { millis as coreMillis }
             coreMillis()
-        """.trimIndent(), ignoreCompilationErrors = true
+        """.trimIndent(), namespace = ns, ignoreCompilationErrors = true
         )
 
         // then
-        result.shouldBeTypeOf<FnCall>().should { call ->
+        val call = result.expressions.first()
+        call.shouldBeTypeOf<FnCall>().should { call ->
             call.function.shouldBeTypeOf<VariableAccess>().should { fn ->
                 fn.moduleName shouldBe "std"
                 fn.packageName shouldBe "time"
@@ -99,17 +114,22 @@ class ImportSpec : FunSpec({
 
 
     test("import package and functions and alias everything") {
+        // given
+        val ns = GlobalCompilationNamespace()
+        ns.getOrCreatePackage("std", "time")
+            .scope.addSymbol("millis", OldType.fn(OldType.intType), SymbolType.Local)
+
         // when
-        val result = asts(
+        val result = compile(
             """
                 import std/time as time { millis as coreMillis }
                 time.millis
                 coreMillis
-            """.trimIndent(), ignoreCompilationErrors = true
+            """.trimIndent(), namespace = ns, ignoreCompilationErrors = true
         )
 
         // then
-        result.drop(2) // drop implicit package and import
+        result.expressions// drop implicit package and import
             .forEach { expr ->
                 expr.shouldBeTypeOf<VariableAccess>().should { va ->
                     va.moduleName shouldBe "std"
