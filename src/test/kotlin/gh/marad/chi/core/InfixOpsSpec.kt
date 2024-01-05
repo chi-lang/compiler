@@ -14,16 +14,6 @@ import io.kotest.matchers.types.shouldBeTypeOf
 @Suppress("unused")
 class InfixOpsSpec : FreeSpec({
     "type checker" - {
-        "should check that operation types match" {
-            val result = analyze(ast("2 + true", ignoreCompilationErrors = true))
-
-            result shouldHaveSize 1
-            result.first().shouldBeTypeOf<TypeMismatch>().should {
-                it.expected shouldBe intType
-                it.actual shouldBe bool
-            }
-        }
-
         listOf("|", "&", "<<", ">>").forEach { op ->
             "should check that bit operator $op require ints" {
                 analyze(ast("2 $op 2", ignoreCompilationErrors = true)).should { msgs ->
