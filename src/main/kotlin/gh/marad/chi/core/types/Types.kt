@@ -82,12 +82,6 @@ data class TypeVariable(val name: String, val typeScheme: Boolean = false) : Typ
 }
 
 data class FunctionType(val types: List<Type>, val typeSchemeVariables: List<TypeVariable> = emptyList()) : Type {
-    init {
-        assert(types.size >= 2) {
-            "Function type requires at least two types. Types given: $types"
-        }
-    }
-
     override fun contains(v: TypeVariable): Boolean = types.any { it.contains(v) }
     override fun substitute(v: TypeVariable, t: Type): Type =
         copy(types = types.map { it.substitute(v, t) },

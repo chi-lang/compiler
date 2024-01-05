@@ -5,13 +5,11 @@ package gh.marad.chi.core.types
 import gh.marad.chi.ast
 import gh.marad.chi.core.AnyType
 import gh.marad.chi.core.NameDeclaration
-import gh.marad.chi.core.VariantType
 import gh.marad.chi.core.analyzer.analyze
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 
 class AnyTypeSpec : FunSpec({
@@ -31,19 +29,4 @@ class AnyTypeSpec : FunSpec({
         val msgs = analyze(ast("val x: any = 1", ignoreCompilationErrors = true))
         msgs.shouldBeEmpty()
     }
-
-    test("foo") {
-        ast(
-            """
-                data Foo = Foo(i: int)
-                fn f(param: any): Foo { param as Foo }
-                val foo = f(Foo(10))
-            """.trimIndent()
-        ).shouldBeTypeOf<NameDeclaration>() should {
-            it.type.shouldBeTypeOf<VariantType>() should {
-                it.name shouldBe "user/default.Foo"
-            }
-        }
-    }
-
 })

@@ -6,8 +6,6 @@ import gh.marad.chi.core.expressionast.generateExpressionAst
 import gh.marad.chi.core.namespace.CompilationScope
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.ScopeType
-import gh.marad.chi.core.parser.readers.ParseBlock
-import gh.marad.chi.core.parser.testParse
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
@@ -522,12 +520,37 @@ class InferenceKtTest {
         }
     }
 
+    @Test
+    fun `variant type definitions should define constructors in env`() {
+        // given
+        val typeDefinition = DefineVariantType(
+            baseVariantType = VariantType("user", "default", "A", emptyList(), emptyMap(), null),
+            constructors = listOf(
+                VariantTypeConstructor(true, "B", emptyList(), null),
+                VariantTypeConstructor(true, "C", listOf(
+                    VariantTypeField(true, "i", OldType.intType, null)
+                ), null),
+            ),
+            null
+        )
+        // when
+        val result = inferTypes(emptyMap(), typeDefinition)
+
+        // then
+        val env = result.env
+        env["A"] shouldBe SimpleType("user", "default", "A")
+        env["B"] shouldBe SimpleType("user", "default", "B")
+        env["C"] shouldBe FunctionType(types = listOf(
+            Types.int,
+            SimpleType("user", "default", "C")
+        ))
+    }
+
     fun testInference(code: String, env: Map<String, Type> = mapOf()): Result {
         val ns = GlobalCompilationNamespace()
-        val ctx = ConversionContext(ns)
-        val ast = testParse(code)
-        val expr = generateExpressionAst(ctx, ParseBlock(ast, null)) as Block
-        val infCtx = InferenceContext()
+        val result = Compiler.compile(code, ns)
+        val expr = Block(result.program.expressions, result.program.sourceSection)
+        val infCtx = InferenceContext(TypeGraph())
         val inferred = inferTypes(infCtx, env, expr)
         val solution = unify(infCtx.typeGraph, inferred.constraints)
         expr.accept(TypeFiller(solution))

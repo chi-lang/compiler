@@ -6,8 +6,7 @@ import gh.marad.chi.core.parser.ChiSource
 import java.lang.RuntimeException
 
 
-fun inferAndFillTypes(env: Map<String, Type>, expr: Expression) {
-    val ctx = InferenceContext()
+fun inferAndFillTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression) {
     val inferred = inferTypes(ctx, env, expr)
     val solution = unify(ctx.typeGraph, inferred.constraints)
     expr.accept(TypeFiller(solution))
@@ -33,18 +32,7 @@ data class Constraint(
 
 data class InferenceResult(val type: Type, val constraints: Set<Constraint>, val env: Map<String, Type>)
 
-internal class InferenceContext {
-    val typeGraph = TypeGraph().apply {
-        addType(Types.any.toString())
-        addSubtype(Types.any.toString(), "@number")
-        addSubtype("@number", Types.int.toString())
-        addSubtype("@number", Types.float.toString())
-        addSubtype(Types.any.toString(), Types.string.toString())
-        addSubtype(Types.any.toString(), Types.bool.toString())
-        addSubtype(Types.any.toString(), Types.unit.toString())
-        addSubtype(Types.any.toString(), Types.array.toString())
-    }
-
+class InferenceContext(val typeGraph: TypeGraph) {
     private var nextTypeVariableNum = 0
     fun nextTypeVariable() = TypeVariable("t${nextTypeVariableNum++}")
 }
@@ -74,7 +62,7 @@ class TypeInferenceFailed(
 ) : RuntimeException(message + if (section != null) " at $section" else "")
 
 internal fun inferTypes(env: Map<String, Type>, expr: Expression): InferenceResult =
-    inferTypes(InferenceContext(), env, expr)
+    inferTypes(InferenceContext(TypeGraph()), env, expr)
 
 internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression): InferenceResult {
     return when (expr) {
@@ -367,6 +355,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
                 expr.newType = inferredValue.type
                 inferredValue
             } else {
+                expr.newType = Types.unit
                 InferenceResult(Types.unit, setOf(), env)
             }
         }
@@ -382,8 +371,35 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             expr.newType = Types.unit
             InferenceResult(Types.unit, constraints, env)
         }
-        is DefineVariantType -> TODO("This should generate constructor functions in env")
-        is FieldAccess -> TODO("Implement this when new typesystem supports Variant types")
+        is DefineVariantType -> {
+            val newEnv = env.toMutableMap()
+            val base = expr.baseVariantType
+            val typeSchemeVariables = base.genericTypeParameters.map { it.toNewType() as TypeVariable }
+            val baseType = SimpleType(base.moduleName, base.packageName, expr.name)
+            newEnv[expr.name] = baseType
+
+            expr.constructors.forEach { constructor ->
+                val type = SimpleType(base.moduleName, base.packageName, constructor.name)
+                if (constructor.fields.isEmpty()) {
+                    newEnv[constructor.name] = type
+                } else {
+                    val paramVariables = constructor.fields.map { it.type.toNewType() }
+                    newEnv[constructor.name] = FunctionType(
+                        paramVariables + type,
+                        typeSchemeVariables.filter { paramVariables.contains(it) }
+                    )
+                }
+            }
+
+            expr.newType = Types.unit
+            InferenceResult(Types.unit, setOf(), newEnv)
+        }
+        is FieldAccess -> {
+            val t = ctx.nextTypeVariable()
+            val receiverInferred = inferTypes(ctx, env, expr.receiver)
+            expr.newType = t
+            InferenceResult(t, receiverInferred.constraints, env)
+        }
         is FieldAssignment -> TODO("Implement this when new typesystem supports Variant types")
     }
 }
@@ -399,14 +415,15 @@ fun unify(typeGraph: TypeGraph, constraints: Set<Constraint>): List<Pair<TypeVar
         if (a == b) {
             // this is nothing interesting
             continue
-//        } else if (a is SimpleType && b is SimpleType) {
-//            val supertypeName = typeGraph.commonSupertype(a.name, b.name)
-//            if (supertypeName == null || supertypeName == "any") {
-//                throw TypeInferenceFailed(
-//                    "Expected type was '$a' but got '$b'",
-//                    section
-//                )
-//            }
+        } else if (a is SimpleType && b is SimpleType) {
+            val typesAreRelated = typeGraph.isSubtype(a.toString(), b.toString())
+                    || typeGraph.isSubtype(b.toString(), a.toString())
+            if (!typesAreRelated) {
+                throw TypeInferenceFailed(
+                    "Expected type was '$a' but got '$b'",
+                    section
+                )
+            }
         } else if (a is FunctionType && b is FunctionType) {
             val aHead = a.types.first()
             val bHead = b.types.first()
@@ -506,11 +523,20 @@ private fun generalize(
     return Pair(newEnv + (name to generalizedType), generalizedType)
 }
 
-private fun OldType.toNewType(): Type {
+internal fun OldType.toNewType(): Type {
     return when (this) {
         is AnyType -> Types.any
         is ArrayType -> Types.array(this.elementType.toNewType())
-        is VariantType -> TODO()
+        is VariantType -> {
+            val variant = this.variant
+            // FIXME - handle generics
+            val type = if (variant != null) {
+                SimpleType(moduleName, packageName, variant.variantName)
+            } else {
+                SimpleType(moduleName, packageName, simpleName)
+            }
+            type
+        }
         is FnType -> {
             val types = mutableListOf<Type>()
             types.addAll(this.paramTypes.map { it.toNewType() })
