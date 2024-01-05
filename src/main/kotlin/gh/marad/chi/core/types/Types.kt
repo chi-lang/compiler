@@ -78,7 +78,19 @@ data class TypeVariable(val name: String, val typeScheme: Boolean = false) : Typ
                 substitute(v, t)
             } ?: this
 
+
     override fun toString(): String = "'$name"
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as TypeVariable
+
+        return name == other.name
+    }
+
+    override fun hashCode(): Int = name.hashCode()
 }
 
 data class FunctionType(val types: List<Type>, val typeSchemeVariables: List<TypeVariable> = emptyList()) : Type {
