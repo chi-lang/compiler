@@ -54,16 +54,21 @@ internal object TypeReader {
 }
 
 sealed interface TypeRef {
+    fun findTypeNames(): Set<String>
     companion object {
         val unit = TypeNameRef("unit", null)
     }
 }
 
-data class TypeParameterRef(val name: String, val section: ChiSource.Section?) : TypeRef
+data class TypeParameterRef(val name: String, val section: ChiSource.Section?) : TypeRef {
+    override fun findTypeNames(): Set<String> = setOf(name)
+
+}
 data class TypeNameRef(
     val typeName: String,
     val section: ChiSource.Section?
 ) : TypeRef {
+    override fun findTypeNames(): Set<String> = setOf(typeName)
     override fun equals(other: Any?): Boolean = other != null && other is TypeNameRef && typeName == other.typeName
     override fun hashCode(): Int = Objects.hash(typeName)
 }
@@ -74,6 +79,8 @@ data class FunctionTypeRef(
     val returnType: TypeRef,
     val section: ChiSource.Section?
 ) : TypeRef {
+    override fun findTypeNames(): Set<String> = argumentTypeRefs.flatMap { it.findTypeNames() }.toSet() + returnType.findTypeNames()
+
     override fun equals(other: Any?): Boolean =
         other != null && other is FunctionTypeRef
                 && argumentTypeRefs == other.argumentTypeRefs
@@ -87,6 +94,8 @@ data class TypeConstructorRef(
     val typeParameters: List<TypeRef>,
     val section: ChiSource.Section?
 ) : TypeRef {
+    override fun findTypeNames(): Set<String> = baseType.findTypeNames()
+
     override fun equals(other: Any?): Boolean =
         other != null && other is TypeConstructorRef
                 && baseType == other.baseType
@@ -100,6 +109,8 @@ data class VariantNameRef(
     val variantFields: List<FormalField>,
     val section: ChiSource.Section?
 ) : TypeRef {
+    override fun findTypeNames(): Set<String> = variantFields.flatMap { it.typeRef.findTypeNames() }.toSet() + variantType.findTypeNames()
+
     override fun equals(other: Any?): Boolean =
         other != null && other is VariantNameRef
                 && variantType == other.variantType
