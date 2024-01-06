@@ -2,6 +2,7 @@ package gh.marad.chi.core.utils
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.expressionast.ExpressionVisitor
+import gh.marad.chi.core.types.Type
 
 fun printAst(expr: Expression) {
     val visitor = PrintAstVisitor()
@@ -38,7 +39,15 @@ class PrintAstVisitor : ExpressionVisitor {
     }
 
     override fun visitInterpolatedString(interpolatedString: InterpolatedString) {
-        TODO("Not yet implemented")
+        sb.appendLine()
+        sb.append(indent)
+        sb.append("(InterpolatedString : ${interpolatedString.newType}")
+        withIndent {
+            for (part in interpolatedString.parts) {
+                part.accept(this)
+            }
+        }
+        sb.append(")")
     }
 
     override fun visitVariableAccess(variableAccess: VariableAccess) {
@@ -89,6 +98,9 @@ class PrintAstVisitor : ExpressionVisitor {
         sb.append(nameDeclaration.name)
         sb.append(" : ")
         sb.append(nameDeclaration.newType)
+        withIndent {
+            nameDeclaration.value.accept(this)
+        }
         sb.append(')')
     }
 
@@ -97,7 +109,13 @@ class PrintAstVisitor : ExpressionVisitor {
     }
 
     override fun visitFn(fn: Fn) {
-        TODO("Not yet implemented")
+        sb.appendLine()
+        sb.append(indent)
+        sb.append("(Fn : ${fn.newType}")
+        withIndent {
+            fn.body.accept(this)
+        }
+        sb.append(")")
     }
 
     override fun visitBlock(block: Block) {
@@ -149,19 +167,36 @@ class PrintAstVisitor : ExpressionVisitor {
     }
 
     override fun visitCast(cast: Cast) {
-        TODO("Not yet implemented")
+        sb.appendLine()
+        sb.append(indent)
+        sb.append("(Cast : ${cast.newType}")
+        withIndent {
+            cast.expression.accept(this)
+        }
+        sb.append(")")
     }
 
     override fun visitWhileLoop(whileLoop: WhileLoop) {
-        TODO("Not yet implemented")
+        node("WhileLoop", whileLoop.newType) {
+            whileLoop.condition.accept(this)
+            whileLoop.loop.accept(this)
+        }
+    }
+
+    private fun node(name: String, type: Type?, f: () -> Unit = {}) {
+        sb.appendLine()
+        sb.append(indent)
+        sb.append("($name : $type")
+        withIndent(f)
+        sb.append(")")
     }
 
     override fun visitBreak(arg: Break) {
-        TODO("Not yet implemented")
+        node("Break", arg.newType)
     }
 
     override fun visitContinue(arg: Continue) {
-        TODO("Not yet implemented")
+        node("Continue", arg.newType)
     }
 
     override fun visitIndexOperator(indexOperator: IndexOperator) {
@@ -201,7 +236,19 @@ class PrintAstVisitor : ExpressionVisitor {
     }
 
     override fun visitEffectDefinition(effectDefinition: EffectDefinition) {
-        TODO("Not yet implemented")
+        sb.appendLine()
+        sb.append(indent)
+        sb.append("(EffectDefinition ${effectDefinition.name} : ${effectDefinition.newType}")
+        withIndent {
+            effectDefinition.parameters.forEach {
+                sb.appendLine()
+                sb.append(indent)
+                sb.append(it.name)
+                sb.append(" : ")
+                sb.append(it.type)
+            }
+        }
+        sb.append(')')
     }
 
     override fun visitHandle(handle: Handle) {
