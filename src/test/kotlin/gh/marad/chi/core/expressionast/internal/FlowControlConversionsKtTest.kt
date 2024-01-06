@@ -2,6 +2,7 @@ package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.parser.readers.*
+import gh.marad.chi.core.types.Types
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
@@ -13,7 +14,7 @@ class FlowControlConversionsKtTest {
     @Test
     fun `generate group expression`() {
         convertGroup(defaultContext(), ParseGroup(LongValue(10), testSection)) should {
-            it.value.shouldBeAtom("10", OldType.intType)
+            it.value.shouldBeAtom("10", Types.int)
             it.sourceSection shouldBe testSection
         }
     }
@@ -29,8 +30,8 @@ class FlowControlConversionsKtTest {
             )
         )
 
-        result.condition.shouldBeAtom("true", OldType.bool)
-        result.thenBranch.shouldBeAtom("1", OldType.intType)
+        result.condition.shouldBeAtom("true", Types.bool)
+        result.thenBranch.shouldBeAtom("1", Types.int)
         result.elseBranch.shouldBeNull()
         result.sourceSection shouldBe testSection
     }
@@ -47,7 +48,7 @@ class FlowControlConversionsKtTest {
         )
 
         result.elseBranch.shouldNotBeNull()
-            .shouldBeAtom("2", OldType.intType)
+            .shouldBeAtom("2", Types.int)
     }
 
     @Test
@@ -66,14 +67,14 @@ class FlowControlConversionsKtTest {
         )
 
         // then
-        result.condition.shouldBeAtom("true", OldType.bool)
-        result.thenBranch.shouldBeAtom("1", OldType.intType)
+        result.condition.shouldBeAtom("true", Types.bool)
+        result.thenBranch.shouldBeAtom("1", Types.int)
         result.sourceSection shouldBe sectionA
         result.elseBranch.shouldBeTypeOf<IfElse>().should {
-            it.condition.shouldBeAtom("false", OldType.bool)
-            it.thenBranch.shouldBeAtom("2", OldType.intType)
+            it.condition.shouldBeAtom("false", Types.bool)
+            it.thenBranch.shouldBeAtom("2", Types.int)
             it.sourceSection shouldBe sectionB
-            it.elseBranch.shouldNotBeNull().shouldBeAtom("0", OldType.intType)
+            it.elseBranch.shouldNotBeNull().shouldBeAtom("0", Types.int)
         }
     }
 
@@ -104,8 +105,8 @@ class FlowControlConversionsKtTest {
             convertWhile(defaultContext(), ParseWhile(condition = BoolValue(true), body = LongValue(1), testSection))
 
         // then
-        result.condition.shouldBeAtom("true", OldType.bool)
-        result.loop.shouldBeAtom("1", OldType.intType)
+        result.condition.shouldBeAtom("true", Types.bool)
+        result.loop.shouldBeAtom("1", Types.int)
         result.sourceSection shouldBe testSection
     }
 

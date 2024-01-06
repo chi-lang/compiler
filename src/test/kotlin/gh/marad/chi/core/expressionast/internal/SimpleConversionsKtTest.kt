@@ -2,6 +2,7 @@ package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.parser.readers.*
+import gh.marad.chi.core.types.Types
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -13,11 +14,11 @@ import org.junit.jupiter.api.Test
 class SimpleConversionsKtTest {
     @Test
     fun `generating simple atoms`() {
-        convertAtom(LongValue(10, testSection)).shouldBeAtom("10", OldType.intType, testSection)
-        convertAtom(FloatValue(0.5f, testSection)).shouldBeAtom("0.5", OldType.floatType, testSection)
-        convertAtom(BoolValue(true, testSection)).shouldBeAtom("true", OldType.bool, testSection)
-        convertAtom(BoolValue(false, testSection)).shouldBeAtom("false", OldType.bool, testSection)
-        convertAtom(StringValue("test", testSection)).shouldBeAtom("test", OldType.string, testSection)
+        convertAtom(LongValue(10, testSection)).shouldBeAtom("10", Types.int, testSection)
+        convertAtom(FloatValue(0.5f, testSection)).shouldBeAtom("0.5", Types.float, testSection)
+        convertAtom(BoolValue(true, testSection)).shouldBeAtom("true", Types.bool, testSection)
+        convertAtom(BoolValue(false, testSection)).shouldBeAtom("false", Types.bool, testSection)
+        convertAtom(StringValue("test", testSection)).shouldBeAtom("test", Types.string, testSection)
     }
 
     @Test
@@ -37,10 +38,10 @@ class SimpleConversionsKtTest {
         // then
         result.shouldBeTypeOf<InterpolatedString>() should {
             it.parts shouldHaveSize 2
-            it.parts[0].shouldBeAtom("test", OldType.string)
+            it.parts[0].shouldBeAtom("test", Types.string)
             it.parts[1].shouldBeTypeOf<Cast>().should {
-                it.expression.shouldBeAtom("10", OldType.intType)
-                it.targetType shouldBe OldType.string
+                it.expression.shouldBeAtom("10", Types.int)
+                it.targetType shouldBe Types.string
             }
         }
     }
@@ -48,15 +49,15 @@ class SimpleConversionsKtTest {
     @Test
     fun `string text in interpolation should be converted to simple string atom`() {
         convertStringText(StringText("test", testSection))
-            .shouldBeAtom("test", OldType.string, testSection)
+            .shouldBeAtom("test", Types.string, testSection)
     }
 
     @Test
     fun `code interpolations should be converted and cast to string`() {
         convertInterpolation(defaultContext(), ParseInterpolation(LongValue(10), testSection))
             .shouldBeTypeOf<Cast>() should {
-            it.targetType shouldBe OldType.string
-            it.expression.shouldBeAtom("10", OldType.intType)
+            it.targetType shouldBe Types.string
+            it.expression.shouldBeAtom("10", Types.int)
         }
     }
 
@@ -78,7 +79,6 @@ class SimpleConversionsKtTest {
         result.shouldNotBeNull().shouldBeTypeOf<Package>() should {
             it.moduleName shouldBe "my.mod"
             it.packageName shouldBe "my.pkg"
-            it.sourceSection shouldBe sectionC
         }
     }
 
@@ -86,7 +86,7 @@ class SimpleConversionsKtTest {
     fun `block conversion`() {
         convertBlock(defaultContext(), ParseBlock(listOf(LongValue(10)), testSection)) should {
             it.body shouldHaveSize 1
-            it.body[0].shouldBeAtom("10", OldType.intType)
+            it.body[0].shouldBeAtom("10", Types.int)
             it.sourceSection shouldBe testSection
         }
     }
@@ -106,8 +106,8 @@ class SimpleConversionsKtTest {
 
         // then
         result.op shouldBe "generic operation"
-        result.left.shouldBeAtom("hello", OldType.string)
-        result.right.shouldBeAtom("20", OldType.intType)
+        result.left.shouldBeAtom("hello", Types.string)
+        result.right.shouldBeAtom("20", Types.int)
         result.sourceSection shouldBe testSection
     }
 
@@ -124,8 +124,8 @@ class SimpleConversionsKtTest {
         )
 
         // then
-        result.expression.shouldBeAtom("10", OldType.intType)
-        result.targetType shouldBe OldType.string
+        result.expression.shouldBeAtom("10", Types.int)
+        result.targetType shouldBe Types.string
         result.sourceSection shouldBe sectionB
     }
 
@@ -133,7 +133,7 @@ class SimpleConversionsKtTest {
     fun `convert not`() {
         convertNot(defaultContext(), ParseNot(BoolValue(true), testSection)).should {
             it.op shouldBe "!"
-            it.expr.shouldBeAtom("true", OldType.bool)
+            it.expr.shouldBeAtom("true", Types.bool)
             it.sourceSection shouldBe testSection
         }
     }

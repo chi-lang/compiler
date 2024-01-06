@@ -1,133 +1,182 @@
 package gh.marad.chi.core.analyzer
 
-import gh.marad.chi.compile
-import gh.marad.chi.core.*
-import gh.marad.chi.core.CompilationDefaults.defaultModule
-import gh.marad.chi.core.CompilationDefaults.defaultPacakge
-import gh.marad.chi.core.namespace.CompilationScope
+import gh.marad.chi.addSymbol
+import gh.marad.chi.addSymbolInDefaultPackage
+import gh.marad.chi.addType
+import gh.marad.chi.core.compiler.VariantField
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.ScopeType
-import gh.marad.chi.core.namespace.SymbolType
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.collections.shouldContain
-import io.kotest.matchers.collections.shouldHaveSingleElement
+import gh.marad.chi.core.types.Types
+import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
+import org.junit.jupiter.api.Test
 
 @Suppress("unused")
-class SymbolCheckingSpec : FunSpec({
-    test("should check that variable in VariableAccess is defined in scope") {
-        val emptyCompilationScope = CompilationScope(ScopeType.Package)
-        val expr = VariableAccess(defaultModule, defaultPacakge, emptyCompilationScope, "x", isModuleLocal = true, null)
+class SymbolCheckingSpec {
+    @Test
+    fun `should check that name is defined`() {
+        // when
+        val result = messages("x")
 
-        val result = analyze(expr)
-
-        result shouldHaveSingleElement UnrecognizedName("x", null)
-    }
-
-    test("should not emit error message if the variable is defined in scope") {
-        val scope = CompilationScope(ScopeType.Package)
-        scope.addSymbol("x", OldType.intType, SymbolType.Local)
-        val expr = VariableAccess(defaultModule, defaultPacakge, scope, "x", isModuleLocal = true, null)
-
-        val result = analyze(expr)
-
-        result shouldHaveSize 0
-    }
-
-    test("should check that function in FnCall is defined in scope") {
-        val emptyCompilationScope = CompilationScope(ScopeType.Package)
-        val expr = FnCall(
-            VariableAccess(
-                defaultModule,
-                defaultPacakge,
-                emptyCompilationScope,
-                "funcName",
-                isModuleLocal = true,
-                null
-            ),
-            emptyList(),
-            emptyList(),
-            null
-        )
-
-        val result = analyze(expr)
-
-        result shouldContain NotAFunction(null)
-    }
-
-    test("should not emit error message if function is defined in scope") {
-        val scope = CompilationScope(ScopeType.Package)
-        scope.addSymbol("funcName", OldType.fn(OldType.unit), SymbolType.Local)
-        val expr = FnCall(
-            VariableAccess(defaultModule, defaultPacakge, scope, "funcName", isModuleLocal = true, null),
-            emptyList(),
-            emptyList(),
-            null
-        )
-
-        val result = analyze(expr)
-
-        result shouldHaveSize 0
-    }
-
-    test("should not allow using non-public variant constructors from other module") {
-        val namespace = GlobalCompilationNamespace()
-        val typeDef = """
-            package foo/bar
-            data Foo = Foo(i: int) | pub Bar(i: int)
-        """.trimIndent()
-        compile(typeDef, namespace)
-
-        val import = """
-            import foo/bar { Foo }
-            val bar = Bar(10)
-            val foo = Foo(20)
-        """.trimIndent()
-
-        val ast = compile(import, namespace, ignoreCompilationErrors = true).expressions
-
-        ast[0].shouldBeTypeOf<NameDeclaration>()
-            .name shouldBe "bar"
-        analyze(ast[0]) shouldHaveSize 0
-
-        ast[1].shouldBeTypeOf<NameDeclaration>()
-            .name shouldBe "foo"
-        analyze(ast[1]) should {
-            it shouldHaveSize 1
-            it[0].shouldBeTypeOf<CannotAccessInternalName>()
-                .name shouldBe "Foo"
+        // then
+        result shouldHaveSize 1
+        result.first().shouldBeTypeOf<UnrecognizedName>().should {
+            it.name shouldBe "x"
         }
     }
 
-    test("should not allow using non-public fields in type from other module") {
-        val namespace = GlobalCompilationNamespace()
-        val typeDef = """
-            package foo/bar
-            data pub Foo(pub i: int, f: float)
-        """.trimIndent()
-        compile(typeDef, namespace)
+    @Test
+    fun `should find variable defined before use`() {
+        // when
+        val result = messages("""
+            val x = 5
+            x
+        """.trimIndent())
 
-        val import = """
+        // then
+        result shouldHaveSize 0
+
+    }
+
+    @Test
+    fun `should find variable defined in package`() {
+        // given
+        val ns = GlobalCompilationNamespace()
+        ns.addSymbolInDefaultPackage("x", Types.int)
+
+        // when
+        val result = messages("x", ns)
+
+        // then
+        result shouldHaveSize 0
+    }
+
+    @Test
+    fun `should not accept variable defined in other scope`() {
+        // when
+        val result = messages("""
+            fn a() { 
+              val x = 5
+            }
+            
+            x
+        """.trimIndent())
+
+        // then
+        result shouldHaveSize 1
+        result.first().shouldBeTypeOf<UnrecognizedName>()
+            .name.shouldBe("x")
+    }
+
+    @Test
+    fun `should accept defined arguments`() {
+        // when
+        val result = messages("fn a(x: int) { x }")
+
+        // then
+        result shouldHaveSize 0
+    }
+
+    @Test
+    fun `should accept imported symbols`() {
+        // given
+        val ns = GlobalCompilationNamespace()
+        ns.addSymbol("foo", "bar", "x", Types.int, public = true)
+
+        // when
+        val result = messages("""
+            import foo/bar { x }
+            x
+        """.trimIndent(), ns)
+
+        // then
+        result shouldHaveSize 0
+    }
+
+    @Test
+    fun `should check that function in FnCall is defined in scope`() {
+        // when
+        val result = messages("f()")
+
+        // then
+        result shouldHaveSize 1
+        result.first().shouldBeTypeOf<UnrecognizedName>()
+            .name shouldBe "f"
+    }
+
+    @Test
+    fun `should not emit error message if function is defined in scope`() {
+        // given
+        val ns = GlobalCompilationNamespace()
+        ns.addSymbolInDefaultPackage("f", Types.fn(Types.int))
+
+        // when
+        val result = messages("f()", ns)
+
+        // then
+        result shouldHaveSize 0
+    }
+
+    @Test
+    fun `should accept using non-public symbols from the same module`() {
+        // given
+        val ns = GlobalCompilationNamespace()
+        val pkg = ns.getDefaultPackage()
+        ns.addSymbol(pkg.moduleName, "otherPackage", "x", Types.int, public = false)
+
+        // when
+        val result = messages("""
+            import ${pkg.moduleName}/otherPackage { x }
+            x
+        """.trimIndent(), ns)
+
+        // then
+        result shouldHaveSize 0
+    }
+
+    @Test
+    fun `should not accept using non-public symbols from other modules`() {
+        // given
+        val ns = GlobalCompilationNamespace()
+        ns.addSymbol("otherModule", "foo", "x", public = false)
+
+        // when
+        val result = messages("""
+            import otherModule/foo { x }
+            x 
+        """.trimIndent(), ns)
+
+        // then
+        result shouldHaveSize 1
+        result.first().shouldBeTypeOf<CannotAccessInternalName>()
+            .name shouldBe "x"
+    }
+
+    @Test
+    fun `should not allow using non-public fields in type from other module`() {
+        val ns = GlobalCompilationNamespace()
+        ns.addType("foo", "bar", "Foo",
+            public = true,
+            fields = listOf(
+                VariantField("i", Types.int, public = true),
+                VariantField("f", Types.float, public = false)
+            )
+        )
+
+        // when
+        val code = """
             import foo/bar { Foo }
             val foo = Foo(10, 10.0)
             foo.i
             foo.f
         """.trimIndent()
+        val result = messages(code, ns)
 
-        val ast = compile(import, namespace, ignoreCompilationErrors = true).expressions
-
-        ast[1].shouldBeTypeOf<FieldAccess>() should {
-            analyze(it) shouldHaveSize 0
-        }
-
-        ast[2].shouldBeTypeOf<FieldAccess>() should {
-            val msgs = analyze(it)
-            msgs shouldHaveSize 1
-            msgs[0].shouldBeTypeOf<CannotAccessInternalName>()
-                .name shouldBe "f"
-        }
+        // then
+        result shouldHaveSize 1
+        result.first().shouldBeTypeOf<CannotAccessInternalName>()
+            .name shouldBe "f"
     }
-})
+}

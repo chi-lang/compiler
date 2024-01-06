@@ -15,7 +15,7 @@ import org.antlr.v4.runtime.CommonTokenStream
 import org.junit.jupiter.api.Test
 
 
-class ProgramReaderTest {
+class ParseProgramReaderTest {
     @Test
     fun `read program`() {
         val code = """
@@ -60,7 +60,7 @@ class ProgramReaderTest {
     }
 }
 
-fun parseProgram(code: String): Program {
+fun parseProgram(code: String): ParseProgram {
     val source = ChiSource(code)
     val charStream = CharStreams.fromString(source.code)
 

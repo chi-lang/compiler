@@ -3,11 +3,16 @@ package gh.marad.chi.core.expressionast.internal
 import gh.marad.chi.core.FieldAccess
 import gh.marad.chi.core.OldType
 import gh.marad.chi.core.VariableAccess
+import gh.marad.chi.core.compiler.Symbol
+import gh.marad.chi.core.compiler.SymbolKind
+import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseFieldAccess
 import gh.marad.chi.core.parser.readers.ParseIndexOperator
 import gh.marad.chi.core.parser.readers.ParseVariableRead
 import gh.marad.chi.core.shouldBeAtom
+import gh.marad.chi.core.types.SimpleType
+import gh.marad.chi.core.types.Types
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.should
@@ -73,7 +78,7 @@ class VariablesConversionsKtTest {
         )
 
         result.variable.shouldBeVariable("variable")
-        result.index.shouldBeAtom("10", OldType.intType)
+        result.index.shouldBeAtom("10", Types.int)
         result.sourceSection shouldBe testSection
     }
 
@@ -112,13 +117,19 @@ class VariablesConversionsKtTest {
         val type = ctx.addTypeDefinition("SomeType")
         ctx.addPublicSymbol("object", type)
 
+        val ns = GlobalCompilationNamespace()
+        ns.getDefaultPackage().symbols.apply {
+            add(Symbol("user", "default", "object", SymbolKind.Local,
+                SimpleType("user", "default", "Obj"), 0, true, true))
+        }
+
         // when
-        val result = convertFieldAccess(
-            ctx,
+        val result = convertAst(
             sampleFieldAccess.copy(
                 receiver = ParseVariableRead("object"),
                 memberName = "field"
-            )
+            ),
+            ns
         )
 
         // then
@@ -126,7 +137,6 @@ class VariablesConversionsKtTest {
             it.receiver.shouldBeVariable("object")
             it.fieldName shouldBe "field"
             it.memberSection shouldBe sectionA
-            it.typeIsModuleLocal.shouldBeTrue()
         }
     }
 

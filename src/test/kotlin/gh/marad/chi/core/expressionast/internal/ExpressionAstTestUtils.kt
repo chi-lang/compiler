@@ -101,7 +101,7 @@ fun ConversionContext.addPublicSymbol(
     moduleName: ModuleName,
     packageName: PackageName,
     variableName: String,
-    type: OldType = OldType.intType
+    type: OldType = OldType.int
 ) = also {
     it.namespace.getOrCreatePackage(moduleName.name, packageName.name)
         .scope.addSymbol(variableName, type, SymbolType.Local, public = true, mutable = false)
@@ -109,7 +109,7 @@ fun ConversionContext.addPublicSymbol(
 
 fun ConversionContext.addPublicSymbol(
     variableName: String,
-    type: OldType = OldType.intType
+    type: OldType = OldType.int
 ) = this.addPublicSymbol(
     moduleName = ModuleName(currentModule, null),
     packageName = PackageName(currentPackage, null),

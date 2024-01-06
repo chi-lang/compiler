@@ -5,9 +5,9 @@ import gh.marad.chi.core.OldType
 import gh.marad.chi.core.analyzer.TypeIsNotIndexable
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.analyzer.analyze
-import gh.marad.chi.core.namespace.CompilationScope
-import gh.marad.chi.core.namespace.ScopeType
-import gh.marad.chi.core.namespace.SymbolType
+import gh.marad.chi.core.compiler.Symbol
+import gh.marad.chi.core.compiler.SymbolKind
+import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
@@ -16,8 +16,9 @@ import io.kotest.matchers.types.shouldBeTypeOf
 
 @Suppress("unused")
 class IndexOperatorSpec : FunSpec({
-    val scope = CompilationScope(ScopeType.Package).also {
-        it.addSymbol("arr", OldType.array(OldType.intType), SymbolType.Local)
+    val ns = GlobalCompilationNamespace()
+    ns.getDefaultPackage().symbols.apply {
+        add(Symbol("user", "default", "arr", SymbolKind.Local, Types.array(Types.int), 0, true, true))
     }
 
     test("should not allow to index arrays with types other than integer") {
@@ -25,12 +26,12 @@ class IndexOperatorSpec : FunSpec({
             ast(
                 """
                     arr["invalid-index"]
-                """.trimIndent(), ignoreCompilationErrors = true, scope = scope
+                """.trimIndent(), ns, ignoreCompilationErrors = true
             )
         ).should { msgs ->
             msgs shouldHaveSize 1
             msgs.first().shouldBeTypeOf<TypeMismatch>().should {
-                it.expected shouldBe OldType.intType
+                it.expected shouldBe OldType.int
                 it.actual shouldBe OldType.string
             }
         }
@@ -41,12 +42,12 @@ class IndexOperatorSpec : FunSpec({
             ast(
                 """
                     arr["invalid-index"] = 5
-                """.trimIndent(), ignoreCompilationErrors = true, scope = scope
+                """.trimIndent(), ns, ignoreCompilationErrors = true,
             )
         ).should { msgs ->
             msgs shouldHaveSize 1
             msgs.first().shouldBeTypeOf<TypeMismatch>().should {
-                it.expected shouldBe OldType.intType
+                it.expected shouldBe OldType.int
                 it.actual shouldBe OldType.string
             }
         }
@@ -62,7 +63,7 @@ class IndexOperatorSpec : FunSpec({
         ).should { msgs ->
             msgs shouldHaveSize 1
             msgs[0].shouldBeTypeOf<TypeIsNotIndexable>().should {
-                it.type shouldBe OldType.intType
+                it.type shouldBe OldType.int
             }
         }
     }
@@ -77,7 +78,7 @@ class IndexOperatorSpec : FunSpec({
         ).should { msgs ->
             msgs shouldHaveSize 1
             msgs[0].shouldBeTypeOf<TypeIsNotIndexable>().should {
-                it.type shouldBe OldType.intType
+                it.type shouldBe OldType.int
             }
         }
     }
@@ -87,12 +88,12 @@ class IndexOperatorSpec : FunSpec({
             ast(
                 """
                     arr[2] = "i should be an int"
-                """.trimIndent(), ignoreCompilationErrors = true, scope = scope
+                """.trimIndent(), ns, ignoreCompilationErrors = true,
             )
         ).should { msgs ->
             msgs shouldHaveSize 1
             msgs[0].shouldBeTypeOf<TypeMismatch>().should {
-                it.expected shouldBe OldType.intType
+                it.expected shouldBe OldType.int
                 it.actual shouldBe OldType.string
             }
         }

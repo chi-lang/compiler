@@ -17,7 +17,7 @@ class TypeResolverTest {
     @Test
     fun `should resolve type ref by name`() {
         val type = resolveRef(ref = nameRef("int"), getTypeByName = basicTypeMappings)
-        type shouldBe OldType.intType
+        type shouldBe OldType.int
     }
 
     @Test
@@ -39,7 +39,7 @@ class TypeResolverTest {
         val type = resolveRef(functionTypeRef)
 
         // then
-        type shouldBe OldType.fn(OldType.string, OldType.intType, OldType.bool)
+        type shouldBe OldType.fn(OldType.string, OldType.int, OldType.bool)
     }
 
     @Test
@@ -55,7 +55,7 @@ class TypeResolverTest {
         val type = resolveRef(typeConstructorRef)
 
         // then
-        type shouldBe OldType.array(OldType.intType)
+        type shouldBe OldType.array(OldType.int)
     }
 
     @Test
@@ -98,7 +98,7 @@ class TypeResolverTest {
     }
 
     private val basicTypeMappings = nameToTypeMapping(
-        "int" to OldType.intType,
+        "int" to OldType.int,
         "float" to OldType.floatType,
         "string" to OldType.string,
         "bool" to OldType.bool,

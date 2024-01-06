@@ -5,6 +5,7 @@ import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseFnCall
 import gh.marad.chi.core.parser.readers.ParseLambda
 import gh.marad.chi.core.shouldBeAtom
+import gh.marad.chi.core.types.Types
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
@@ -24,8 +25,8 @@ class FunctionConversionsKtFnCallTest {
         val call = convertFnCall(defaultContext(), fnCall)
 
         // then
-        call.parameters.first().shouldBeAtom("10", OldType.intType)
-        call.callTypeParameters.first() shouldBe OldType.intType
+        call.parameters.first().shouldBeAtom("10", Types.int)
+        call.callTypeParameters.first() shouldBe Types.int
     }
 
     private val sampleLambda = ParseLambda(

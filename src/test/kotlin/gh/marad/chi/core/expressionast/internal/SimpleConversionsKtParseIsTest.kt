@@ -8,6 +8,7 @@ import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseIs
 import gh.marad.chi.core.parser.readers.ParseVariableRead
 import gh.marad.chi.core.shouldBeAtom
+import gh.marad.chi.core.types.Types
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -28,7 +29,7 @@ class SimpleConversionsKtParseIsTest {
         )
 
         // then
-        result.value.shouldBeAtom("10", OldType.intType)
+        result.value.shouldBeAtom("10", Types.int)
         result.typeOrVariant shouldBe "string"
     }
 

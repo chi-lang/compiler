@@ -1,9 +1,13 @@
 package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.*
+import gh.marad.chi.core.compiler.Symbol
+import gh.marad.chi.core.compiler.SymbolKind
 import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parser.readers.*
+import gh.marad.chi.core.types.Types
+import gh.marad.chi.core.types.Types.int
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -15,14 +19,15 @@ class VariablesConversionsKtMethodInvocationSyntaxTest {
     @Test
     fun `conversion of simple method invocation`() {
         // given object of type int and method of type (int, int) -> int
-        val namespace = GlobalCompilationNamespace()
-        val ctx = ConversionContext(namespace)
-        ctx.addPublicSymbol("object", OldType.intType)
-        ctx.addPublicSymbol("method", OldType.fn(OldType.intType, OldType.intType, OldType.intType))
+        val ns = GlobalCompilationNamespace()
+        ns.getDefaultPackage().symbols.apply {
+            add(Symbol("user", "default", "object", SymbolKind.Local, int, 0, true, true))
+            add(Symbol("user", "default", "method", SymbolKind.Local, Types.fn(int, int, int), 0, true, true))
+        }
 
         // when
-        val expr = convertMethodInvocation(
-            ctx, ParseMethodInvocation(
+        val expr = convertAst(
+            ParseMethodInvocation(
                 receiverName = "object",
                 methodName = "method",
                 receiver = ParseVariableRead("object", null),
@@ -30,7 +35,8 @@ class VariablesConversionsKtMethodInvocationSyntaxTest {
                 arguments = listOf(LongValue(10, null)),
                 memberSection = null,
                 section = null
-            )
+            ),
+            ns
         )
 
         // then
@@ -39,7 +45,7 @@ class VariablesConversionsKtMethodInvocationSyntaxTest {
             call.callTypeParameters shouldBe emptyList()
             call.parameters shouldHaveSize 2
             call.parameters[0].shouldBeVariable("object")
-            call.parameters[1].shouldBeAtom("10", OldType.intType)
+            call.parameters[1].shouldBeAtom("10", int)
         }
     }
 
@@ -72,7 +78,7 @@ class VariablesConversionsKtMethodInvocationSyntaxTest {
             }
             call.callTypeParameters shouldBe emptyList()
             call.parameters shouldHaveSize 1
-            call.parameters[0].shouldBeAtom("10", OldType.intType)
+            call.parameters[0].shouldBeAtom("10", int)
         }
     }
 
@@ -88,7 +94,7 @@ class VariablesConversionsKtMethodInvocationSyntaxTest {
         ctx.addPublicSymbol(
             moduleName = testModule,
             packageName = testPackage,
-            "method", OldType.fn(OldType.intType, testType)
+            "method", OldType.fn(OldType.int, testType)
         )
 
         ctx.addPublicSymbol("object", testType)

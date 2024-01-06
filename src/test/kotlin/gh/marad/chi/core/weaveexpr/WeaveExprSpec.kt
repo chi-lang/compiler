@@ -9,6 +9,7 @@ import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.parser.shouldBeStringValue
 import gh.marad.chi.core.parser.testParse
+import gh.marad.chi.core.types.Types
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -88,7 +89,7 @@ class WeaveExprSpec {
 
         val body = expr.shouldBeTypeOf<Block>().body
         body[0].shouldBeTypeOf<NameDeclaration>()
-            .value.shouldBeAtom("2hello", string)
+            .value.shouldBeAtom("2hello", Types.string)
         val body2 = body[1].shouldBeTypeOf<Block>().body
         body2[0].shouldBeTypeOf<NameDeclaration>()
             .value.shouldBeTypeOf<FnCall>()

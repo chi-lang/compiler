@@ -3,7 +3,7 @@ package gh.marad.chi.core.namespace
 import gh.marad.chi.core.FnType
 import gh.marad.chi.core.OverloadedFnType
 import gh.marad.chi.core.OldType.Companion.fn
-import gh.marad.chi.core.OldType.Companion.intType
+import gh.marad.chi.core.OldType.Companion.int
 import gh.marad.chi.core.OldType.Companion.string
 import gh.marad.chi.core.OldType.Companion.unit
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -17,10 +17,10 @@ class CompilationScopeTest {
     fun `functions with the same parameter types and different return types will not create overloaded fn`() {
         // given
         val scope = CompilationScope(ScopeType.Package)
-        val paramTypes = arrayOf(intType, string)
+        val paramTypes = arrayOf(int, string)
         // when
         scope.addSymbol("func", fn(returnType = unit, *paramTypes), SymbolType.Local)
-        scope.addSymbol("func", fn(returnType = intType, *paramTypes), SymbolType.Local)
+        scope.addSymbol("func", fn(returnType = int, *paramTypes), SymbolType.Local)
         // then
         scope.getSymbolType("func")
             .shouldNotBeNull()
@@ -29,14 +29,14 @@ class CompilationScopeTest {
 
     @Test
     fun `test symbol type determining`() {
-        val intStringIntFn = fn(returnType = intType, intType, string)
-        val intStringUnitFn = fn(returnType = unit, intType, string)
-        val stringIntFn = fn(returnType = intType, string)
+        val intStringIntFn = fn(returnType = int, int, string)
+        val intStringUnitFn = fn(returnType = unit, int, string)
+        val stringIntFn = fn(returnType = int, string)
 
         // for different types - the provided one wins
-        determineSymbolType(intType, string) shouldBe string
-        determineSymbolType(intType, fn(unit)) shouldBe fn(unit)
-        determineSymbolType(fn(unit), intType) shouldBe intType
+        determineSymbolType(int, string) shouldBe string
+        determineSymbolType(int, fn(unit)) shouldBe fn(unit)
+        determineSymbolType(fn(unit), int) shouldBe int
         // for function types
         // identical type should stay the same
         determineSymbolType(intStringIntFn, intStringIntFn) shouldBe intStringIntFn

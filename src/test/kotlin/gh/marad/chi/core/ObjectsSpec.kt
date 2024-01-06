@@ -5,15 +5,16 @@ import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.MemberDoesNotExist
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.analyzer.analyze
-import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
+import org.junit.jupiter.api.Test
 
 @Suppress("unused")
-class ObjectsSpec : FunSpec({
-    test("should find that member doesn't exist") {
+class ObjectsSpec {
+    @Test
+    fun `should find that member doesn't exist`() {
         analyze(
             ast(
                 """
@@ -27,12 +28,13 @@ class ObjectsSpec : FunSpec({
             msgs[0].shouldBeTypeOf<MemberDoesNotExist>().should {
                 it.level shouldBe Level.ERROR
                 it.member shouldBe "somethingElse"
-                it.type.name shouldBe "user/default.Test"
+                it.type.toString() shouldBe "user::default::Test"
             }
         }
     }
 
-    test("check types for variant constructor invocation") {
+    @Test
+    fun `check types for variant constructor invocation`() {
         val msgs = analyze(
             ast(
                 """
@@ -45,8 +47,8 @@ class ObjectsSpec : FunSpec({
         msgs shouldHaveSize 1
         msgs[0].shouldBeTypeOf<TypeMismatch>() should {
             it.level shouldBe Level.ERROR
-            it.expected shouldBe OldType.intType
+            it.expected shouldBe OldType.int
             it.actual shouldBe OldType.string
         }
     }
-})
+}

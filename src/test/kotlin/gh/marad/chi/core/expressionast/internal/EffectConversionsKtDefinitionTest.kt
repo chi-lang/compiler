@@ -2,9 +2,16 @@ package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.EffectDefinition
 import gh.marad.chi.core.OldType
+import gh.marad.chi.core.Package
+import gh.marad.chi.core.compiler.ExprConversionVisitor
+import gh.marad.chi.core.compiler.SymbolTable
+import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parser.readers.ParseEffectDefinition
 import gh.marad.chi.core.parser.readers.TypeNameRef
 import gh.marad.chi.core.parser.readers.TypeParameterRef
+import gh.marad.chi.core.types.FunctionType
+import gh.marad.chi.core.types.TypeVariable
+import gh.marad.chi.core.types.Types
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -57,11 +64,18 @@ class EffectConversionsKtDefinitionTest {
         )
 
         // when
-        val result = convertEffectDefinition(defaultContext(), definition)
+        val ns = GlobalCompilationNamespace()
+        val pkg = ns.getDefaultPackage()
+        val result = ExprConversionVisitor(Package(pkg.moduleName, pkg.packageName), pkg.symbols, pkg.types)
+            .visit(definition)
             .shouldBeTypeOf<EffectDefinition>()
 
         // then
-        result.returnType shouldBe OldType.typeParameter("T")
+        val T = TypeVariable("T")
+        result.newType shouldBe FunctionType(
+            listOf(T),
+            listOf(T)
+        )
     }
 
     private val sampleEffectDefinition = ParseEffectDefinition(

@@ -2,7 +2,7 @@ package gh.marad.chi.core
 
 import gh.marad.chi.core.OldType.Companion.any
 import gh.marad.chi.core.OldType.Companion.fn
-import gh.marad.chi.core.OldType.Companion.intType
+import gh.marad.chi.core.OldType.Companion.int
 import gh.marad.chi.core.OldType.Companion.string
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.nulls.shouldBeNull
@@ -13,43 +13,43 @@ class FunctionOverloadingSpec : FunSpec({
     test("should choose function type with correct parameter types") {
         val overloadedFnType = OverloadedFnType(
             setOf(
-                fn(intType, intType),
-                fn(intType, string)
+                fn(int, int),
+                fn(int, string)
             )
         )
 
-        overloadedFnType.getType(listOf(intType)) shouldBe fn(intType, intType)
-        overloadedFnType.getType(listOf(string)) shouldBe fn(intType, string)
+        overloadedFnType.getType(listOf(int)) shouldBe fn(int, int)
+        overloadedFnType.getType(listOf(string)) shouldBe fn(int, string)
     }
 
     test("should match parameter count and order") {
         val overloadedFnType = OverloadedFnType(
             setOf(
-                fn(intType, intType),
-                fn(intType, intType, string),
-                fn(intType, string, intType)
+                fn(int, int),
+                fn(int, int, string),
+                fn(int, string, int)
             )
         )
 
 
-        overloadedFnType.getType(listOf(intType)) shouldBe fn(intType, intType)
-        overloadedFnType.getType(listOf(intType, string)) shouldBe fn(intType, intType, string)
-        overloadedFnType.getType(listOf(string, intType)) shouldBe fn(intType, string, intType)
+        overloadedFnType.getType(listOf(int)) shouldBe fn(int, int)
+        overloadedFnType.getType(listOf(int, string)) shouldBe fn(int, int, string)
+        overloadedFnType.getType(listOf(string, int)) shouldBe fn(int, string, int)
     }
 
     test("should prefer more concrete types over any") {
-        val overloadedFnType = OverloadedFnType(setOf(fn(intType, any), fn(intType, intType), fn(intType, string)))
-        overloadedFnType.getType(listOf(intType)) shouldBe fn(intType, intType)
+        val overloadedFnType = OverloadedFnType(setOf(fn(int, any), fn(int, int), fn(int, string)))
+        overloadedFnType.getType(listOf(int)) shouldBe fn(int, int)
     }
 
     test("should not find type if decision is not certain") {
         val overloadedFnType = OverloadedFnType(
             setOf(
-                fn(intType, any, intType),
-                fn(intType, intType, any),
+                fn(int, any, int),
+                fn(int, int, any),
             )
         )
 
-        overloadedFnType.getType(listOf(intType, intType)).shouldBeNull()
+        overloadedFnType.getType(listOf(int, int)).shouldBeNull()
     }
 })

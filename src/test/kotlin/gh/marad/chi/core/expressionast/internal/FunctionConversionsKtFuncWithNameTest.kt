@@ -5,6 +5,9 @@ import gh.marad.chi.core.NameDeclaration
 import gh.marad.chi.core.OldType
 import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.*
+import gh.marad.chi.core.types.FunctionType
+import gh.marad.chi.core.types.TypeVariable
+import gh.marad.chi.core.types.Types
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -51,7 +54,7 @@ class FunctionConversionsKtFuncWithNameTest {
             .shouldBeTypeOf<Fn>()
 
         // then
-        fn.returnType shouldBe OldType.unit
+        fn.newType shouldBe Types.fn(Types.unit)
     }
 
     @Test
@@ -73,7 +76,7 @@ class FunctionConversionsKtFuncWithNameTest {
         // then
         with(fn.fnScope) {
             getSymbol("a").shouldNotBeNull() should {
-                it.type shouldBe OldType.intType
+                it.type shouldBe OldType.int
                 it.symbolType shouldBe SymbolType.Argument
             }
             getSymbol("b").shouldNotBeNull() should {
@@ -98,7 +101,11 @@ class FunctionConversionsKtFuncWithNameTest {
             .shouldBeTypeOf<Fn>()
 
         // then
-        fn.returnType shouldBe OldType.typeParameter("T")
+        val T = TypeVariable("T")
+        fn.newType shouldBe FunctionType(
+            listOf(T), listOf(T)
+        )
+
     }
 
     @Test

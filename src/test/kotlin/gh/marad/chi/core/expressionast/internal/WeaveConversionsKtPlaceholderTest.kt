@@ -4,6 +4,7 @@ import gh.marad.chi.core.Atom
 import gh.marad.chi.core.OldType
 import gh.marad.chi.core.parser.readers.ParseWeavePlaceholder
 import gh.marad.chi.core.shouldBeAtom
+import gh.marad.chi.core.types.Types
 import org.junit.jupiter.api.Test
 
 class WeaveConversionsKtPlaceholderTest {
@@ -18,6 +19,6 @@ class WeaveConversionsKtPlaceholderTest {
         }
 
         // then
-        result.shouldBeAtom("10", OldType.intType, sectionA)
+        result.shouldBeAtom("10", Types.int, sectionA)
     }
 }

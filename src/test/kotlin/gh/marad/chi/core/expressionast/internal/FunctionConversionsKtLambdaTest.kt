@@ -7,6 +7,7 @@ import gh.marad.chi.core.parser.readers.FormalArgument
 import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseLambda
 import gh.marad.chi.core.shouldBeAtom
+import gh.marad.chi.core.types.Types
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -30,8 +31,8 @@ class FunctionConversionsKtLambdaTest {
 
         // then
         fn.parameters.shouldBeEmpty()
-        fn.returnType shouldBe OldType.intType
-        fn.body.body[0].shouldBeAtom("10", OldType.intType)
+//        fn.returnType shouldBe OldType.intType
+        fn.body.body[0].shouldBeAtom("10", Types.int)
         fn.fnScope.shouldNotBeNull()
         fn.sourceSection shouldBe testSection
     }
@@ -51,7 +52,7 @@ class FunctionConversionsKtLambdaTest {
         fn.parameters should {
             it shouldHaveSize 1
             it[0].name shouldBe "name"
-            it[0].type shouldBe OldType.intType
+            it[0].type shouldBe OldType.int
             it[0].sourceSection shouldBe sectionB
         }
     }
@@ -66,7 +67,7 @@ class FunctionConversionsKtLambdaTest {
         val fn = convertLambda(context, lambda)
 
         // then
-        fn.returnType shouldBe OldType.unit
+        fn.newType shouldBe OldType.unit
 
     }
 
@@ -86,7 +87,7 @@ class FunctionConversionsKtLambdaTest {
             getSymbol("a").shouldNotBeNull() should { a ->
                 a.scopeType shouldBe ScopeType.Function
                 a.symbolType shouldBe SymbolType.Argument
-                a.type shouldBe OldType.intType
+                a.type shouldBe OldType.int
             }
             getSymbol("b").shouldNotBeNull() should { b ->
                 b.scopeType shouldBe ScopeType.Function

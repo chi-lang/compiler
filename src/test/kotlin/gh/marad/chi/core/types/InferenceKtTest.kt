@@ -1,11 +1,15 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.core.*
-import gh.marad.chi.core.expressionast.ConversionContext
-import gh.marad.chi.core.expressionast.generateExpressionAst
+import gh.marad.chi.core.analyzer.Level
+import gh.marad.chi.core.compiler.Compiler2
+import gh.marad.chi.core.compiler.Symbol
+import gh.marad.chi.core.compiler.SymbolKind
+import gh.marad.chi.core.compiler.TypeTable
 import gh.marad.chi.core.namespace.CompilationScope
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.ScopeType
+import gh.marad.chi.core.utils.printAst
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
@@ -20,6 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
+import kotlin.AssertionError
 
 class InferenceKtTest {
     @Test
@@ -91,24 +96,13 @@ class InferenceKtTest {
     }
 
     @Test
-    fun `test error when name is not defined in an environment`() {
-        // given
-        val env = emptyMap<String, Type>()
-
-        // expect
-        shouldThrow<TypeInferenceFailed> {
-            testInference("x", env)
-        }
-    }
-
-    @Test
     fun `test name declaration type inference`() {
         // given
         val nameDecl = NameDeclaration(
             public = false,
             enclosingScope = CompilationScope(ScopeType.Package),
             name = "a",
-            value = Atom("5", OldType.intType, null),
+            value = Atom.int(5, null),
             mutable = false,
             expectedType = null,
             null)
@@ -125,17 +119,16 @@ class InferenceKtTest {
     @Test
     fun `test effect definition type inference`() {
         // given
-        val genPar = GenericTypeParameter("T")
+        val T = TypeVariable("T")
         val effectDef = EffectDefinition(
             moduleName = "user",
             packageName = "default",
             name = "hello",
             public = false,
-            genericTypeParameters = listOf(genPar),
+            typeVariables = listOf(T),
             parameters = listOf(
-                FnParam("param", type = genPar, null)
+                FnParam("param", type = T, null)
             ),
-            returnType = genPar,
             sourceSection = null
         )
 
@@ -143,20 +136,17 @@ class InferenceKtTest {
         val inferred = inferTypes(mapOf(), effectDef)
 
         // then
-        val a = TypeVariable("T")
-        val polyIdFuncType = FunctionType(types = listOf(a,a), typeSchemeVariables = listOf(a))
         inferred.constraints.shouldBeEmpty()
-        inferred.type.shouldBe(polyIdFuncType)
-        inferred.env["hello"].shouldBe(polyIdFuncType)
+        inferred.env["hello"].shouldBe(inferred.type)
     }
 
     @Test
     fun `test assignment type inference`() {
         // given
         val assignment = Assignment(
-            definitionScope = CompilationScope(ScopeType.Package),
             name = "x",
-            value = Atom("5", OldType.intType, null),
+            symbol = Symbol("","","",SymbolKind.Local,Types.int, 0, true, false),
+            value = Atom.int(5, null),
             sourceSection = null
         )
 
@@ -197,12 +187,11 @@ class InferenceKtTest {
         // given
         val lambda = Fn(
             fnScope = CompilationScope(ScopeType.Function),
-            genericTypeParameters = emptyList(),
+            typeVariables = emptyList(),
             parameters = listOf(
-                FnParam("param", OldType.intType, null)
+                FnParam("param", Types.int, null)
             ),
-            returnType = OldType.intType,
-            body = Block(listOf(Atom("5", OldType.intType, null)), null),
+            body = Block(listOf(Atom.int(5, null)), null),
             sourceSection = null
         )
 
@@ -216,6 +205,17 @@ class InferenceKtTest {
     }
 
     @Test
+    fun `test function definition inference`() {
+        // when
+        val result = testInference("""
+            fn hello(a: int): int { 5 }
+        """.trimIndent())
+
+        // then
+        result.firstExpr().newType shouldBe Types.fn(Types.int, Types.int)
+    }
+
+    @Test
     fun `test function call type inference`() {
         // given
         val env = mapOf("f" to FunctionType(listOf(Types.int, Types.bool)))
@@ -224,6 +224,7 @@ class InferenceKtTest {
         val result = testInference("f(5)", env)
 
         // then
+        printAst(result.block)
         result.block.newType.shouldBe(Types.bool)
         result.inferred.constraints shouldHaveSize 1
         result.inferred.constraints.first().should {
@@ -269,7 +270,7 @@ class InferenceKtTest {
         shouldThrow<TypeInferenceFailed> {
             testInference("""
                     if cond { thenBranch } else { elseBranch }
-                """.trimIndent(), env)
+                """.trimIndent(), env, ignoreErrors = true)
         }
     }
 
@@ -320,12 +321,12 @@ class InferenceKtTest {
 
         // expect
         assertThrows<TypeInferenceFailed> {
-            println(testInference("b $op i", env))
+            println(testInference("b $op i", env, ignoreErrors = true))
         }.section.shouldNotBeNull()
 
         // and
         assertThrows<TypeInferenceFailed> {
-            testInference("i $op b", env)
+            testInference("i $op b", env, ignoreErrors = true)
         }.section.shouldNotBeNull()
     }
 
@@ -372,7 +373,7 @@ class InferenceKtTest {
 
         // when
         val result = shouldThrow<TypeInferenceFailed> {
-            testInference("f $op f", env)
+            testInference("f $op f", env, ignoreErrors = true)
         }
 
 
@@ -383,10 +384,11 @@ class InferenceKtTest {
     fun `test handle effect typing`() {
         // when
         val result = testInference("""
-            effect eff(name: int): bool
+            effect eff[T](name: T): bool
             
             handle {
                 eff(5)
+                eff(false)
             } with {
                 eff(value) -> resume(true)
             }
@@ -415,7 +417,7 @@ class InferenceKtTest {
 
         // when
         shouldThrow<TypeInferenceFailed> {
-            testInference("!x".trimIndent(), env)
+            testInference("!x".trimIndent(), env, ignoreErrors = true)
         }
     }
 
@@ -516,7 +518,7 @@ class InferenceKtTest {
     fun `while loop condition should be bool`() {
         // expect
         shouldThrow<TypeInferenceFailed> {
-            testInference("while 5 { 5 }")
+            testInference("while 5 { 5 }", ignoreErrors = true)
         }
     }
 
@@ -528,7 +530,7 @@ class InferenceKtTest {
             constructors = listOf(
                 VariantTypeConstructor(true, "B", emptyList(), null),
                 VariantTypeConstructor(true, "C", listOf(
-                    VariantTypeField(true, "i", OldType.intType, null)
+                    VariantTypeField(true, "i", OldType.int, null)
                 ), null),
             ),
             null
@@ -546,15 +548,40 @@ class InferenceKtTest {
         ))
     }
 
-    fun testInference(code: String, env: Map<String, Type> = mapOf()): Result {
+    fun testInference(code: String, env: Map<String, Type> = mapOf(), ignoreErrors: Boolean = false): Result {
         val ns = GlobalCompilationNamespace()
-        val result = Compiler.compile(code, ns)
-        val expr = Block(result.program.expressions, result.program.sourceSection)
-        val infCtx = InferenceContext(TypeGraph())
+        val pkg = ns.getDefaultPackage()
+        env.forEach { name, type ->
+            pkg.symbols.add(
+                Symbol(
+                    moduleName = pkg.moduleName,
+                    packageName = pkg.packageName,
+                    name = name,
+                    kind = SymbolKind.Local,
+                    type = type,
+                    slot = 0,
+                    public = true,
+                    mutable = false
+                )
+            )
+        }
+
+        val (program, messages) = Compiler2.compile(code, ns)
+
+        if (messages.any { it.level == Level.ERROR } && !ignoreErrors) {
+            for (message in messages) {
+                println(Compiler2.formatCompilationMessage(code, message))
+            }
+            throw AssertionError("There were errors")
+        }
+
+        val expr = Block(program.expressions, program.sourceSection)
+        val infCtx = InferenceContext(TypeGraph(), TypeTable())
         val inferred = inferTypes(infCtx, env, expr)
         val solution = unify(infCtx.typeGraph, inferred.constraints)
-        expr.accept(TypeFiller(solution))
+        TypeFiller(solution).visit(expr)
         val finalType = applySubstitution(inferred.type, solution)
+
         return Result(inferred, solution, finalType, expr)
     }
 

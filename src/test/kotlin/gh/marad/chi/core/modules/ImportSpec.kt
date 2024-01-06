@@ -45,7 +45,7 @@ class ImportSpec : FunSpec({
         // given
         val ns = GlobalCompilationNamespace()
         ns.getOrCreatePackage("std", "time")
-            .scope.addSymbol("millis", OldType.fn(OldType.intType), SymbolType.Local)
+            .scope.addSymbol("millis", OldType.fn(OldType.int), SymbolType.Local)
 
         // when
         val result = compile(
@@ -71,7 +71,7 @@ class ImportSpec : FunSpec({
         // given
         val ns = GlobalCompilationNamespace()
         ns.getOrCreatePackage("std", "time")
-            .scope.addSymbol("millis", OldType.fn(OldType.intType), SymbolType.Local)
+            .scope.addSymbol("millis", OldType.fn(OldType.int), SymbolType.Local)
 
         // when
         val result = compile(
@@ -117,7 +117,7 @@ class ImportSpec : FunSpec({
         // given
         val ns = GlobalCompilationNamespace()
         ns.getOrCreatePackage("std", "time")
-            .scope.addSymbol("millis", OldType.fn(OldType.intType), SymbolType.Local)
+            .scope.addSymbol("millis", OldType.fn(OldType.int), SymbolType.Local)
 
         // when
         val result = compile(
