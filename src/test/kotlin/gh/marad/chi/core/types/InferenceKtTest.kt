@@ -578,7 +578,7 @@ class InferenceKtTest {
         val expr = Block(program.expressions, program.sourceSection)
         val infCtx = InferenceContext(TypeGraph(), TypeTable())
         val inferred = inferTypes(infCtx, env, expr)
-        val solution = unify(infCtx.typeGraph, inferred.constraints)
+        val solution = unify(infCtx.typeTable, inferred.constraints)
         TypeFiller(solution).visit(expr)
         val finalType = applySubstitution(inferred.type, solution)
 

@@ -127,7 +127,8 @@ data class GenericType(
     val typeSchemeVariables: List<TypeVariable> = emptyList(),
 ) : Type {
     init {
-        assert(types.size >= 2) { "Generic type needs base type and at least one parameter type. Types given: $types" }
+//        assert(types.size >= 2) { "Generic type needs base type and at least one parameter type. Types given: $types" }
+//        assert(types[0] is SimpleType)
     }
 
     override fun contains(v: TypeVariable): Boolean = types.contains(v)

@@ -11,7 +11,8 @@ data class Constraint(
     /// sections, to produce meaningful errors.
     /// It's also used for GenericType inference for
     /// generic type parameters
-    val paramSections: List<ChiSource.Section?>? = null
+    val paramSections: List<ChiSource.Section?>? = null,
+    val history: List<Constraint> = emptyList()
 ) {
     fun substitute(v: TypeVariable, t: Type) {
         actual = actual.substitute(v,t)

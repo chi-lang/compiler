@@ -87,12 +87,15 @@ object Compiler2 {
             typeTable.add(baseTypeInfo)
 
             typeDef.variantConstructors.forEach { ctor ->
-                val basicVariantType = SimpleType(packageDefinition.moduleName, packageDefinition.packageName, ctor.name)
+                val paramTypeNames = ctor.formalFields.flatMap { it.typeRef.findTypeNames() }
+                val ctorTypeSchemeVariables = typeSchemeVariables.filter { it.name in paramTypeNames }
+                val basicVariantType =
+                    SimpleType(packageDefinition.moduleName, packageDefinition.packageName, ctor.name)
                 val type = if (typeSchemeVariables.isEmpty()) {
                     basicVariantType
+                } else if (ctor.formalFields.isEmpty()){
+                    basicVariantType
                 } else {
-                    val paramTypeNames = ctor.formalFields.flatMap { it.typeRef.findTypeNames() }
-                    val ctorTypeSchemeVariables = typeSchemeVariables.filter { it.name in paramTypeNames }
                     GenericType(
                         listOf(basicVariantType, *ctorTypeSchemeVariables.toTypedArray()),
                         ctorTypeSchemeVariables
@@ -102,6 +105,28 @@ object Compiler2 {
                 val fields = ctor.formalFields.map { formalField ->
                     VariantField(formalField.name, resolveType(typeTable, typeSchemeVariables.map { it.name }, formalField.typeRef), formalField.public)
                 }
+
+                val symbolType = if (ctor.formalFields.isNotEmpty()) {
+                    FunctionType(
+                        fields.map { it.type } + type,
+                        ctorTypeSchemeVariables
+                    )
+                } else {
+                    basicVariantType
+                }
+
+                symbolTable.add(
+                    Symbol(
+                        moduleName = packageDefinition.moduleName,
+                        packageName = packageDefinition.packageName,
+                        name = ctor.name,
+                        SymbolKind.Local,
+                        slot = 0,
+                        type = symbolType,
+                        public = ctor.public,
+                        mutable = false
+                    )
+                )
 
                 typeTable.add(TypeInfo(
                     name = ctor.name,
@@ -190,8 +215,9 @@ object Compiler2 {
 
             is TypeConstructorRef -> {
                 val base = resolveType(typeTable, typeSchemeVariables, ref.baseType)
+                base as GenericType
                 val params = ref.typeParameters.map { resolveType(typeTable, typeSchemeVariables, it) }
-                val types = listOf(base, *params.toTypedArray())
+                val types = listOf(base.types.first(), *params.toTypedArray())
                 GenericType(
                     types,
                     types.flatMap { it.typeSchemeVariables() }

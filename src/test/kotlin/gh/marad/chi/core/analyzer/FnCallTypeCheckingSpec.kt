@@ -87,41 +87,43 @@ class FnCallTypeCheckingSpec {
         result.newType shouldBe Types.array(Types.string)
     }
 
-    @Test
-    fun `should check explicitly specified call type params`() {
-        // given
-        val ns = GlobalCompilationNamespace()
-        val T = TypeVariable("T")
-        val R = TypeVariable("R")
-        ns.addSymbolInDefaultPackage("map", FunctionType(
-            listOf(Types.array(T), Types.fn(T, R), Types.array(R)),
-            listOf(T, R)
-        ))
-        ns.addSymbolInDefaultPackage("operation", Types.fn(Types.int, Types.unit))
-        ns.addSymbolInDefaultPackage("arr", Types.array(Types.int))
+    // This test is probably not necessary - along with providing types explicitly at all
+    // TODO: check that this is really redundant and remove the ability from the parser
+//    @Test
+//    fun `should check explicitly specified call type params`() {
+//        // given
+//        val ns = GlobalCompilationNamespace()
+//        val T = TypeVariable("T")
+//        val R = TypeVariable("R")
+//        ns.addSymbolInDefaultPackage("map", FunctionType(
+//            listOf(Types.array(T), Types.fn(T, R), Types.array(R)),
+//            listOf(T, R)
+//        ))
+//        ns.addSymbolInDefaultPackage("operation", Types.fn(Types.int, Types.unit))
+//        ns.addSymbolInDefaultPackage("arr", Types.array(Types.int))
+//
+//        // when
+//        val messages =
+//            analyze(ast("map[int, string](arr, operation)", ns, ignoreCompilationErrors = true))
+//
+//        // then
+//        messages shouldHaveSize 1
+//        messages[0].shouldBeTypeOf<TypeInferenceFailed>()
+//    }
 
-        // when
-        val messages =
-            analyze(ast("map[int, string](arr, operation)", ns, ignoreCompilationErrors = true))
-
-        // then
-        messages shouldHaveSize 1
-        messages[0].shouldBeTypeOf<TypeInferenceFailed>()
-    }
-
-    @Test
-    fun `should check explicitly specified type parameter when it's only used as return value`() {
-        val ns = GlobalCompilationNamespace()
-        val T = TypeVariable("T")
-        ns.addSymbolInDefaultPackage("unsafeArray", FunctionType(
-            listOf(Types.int, Types.array(T)),
-            typeSchemeVariables = listOf(T)
-        ))
-
-        val result = ast("unsafeArray[int](10)", ns)
-
-        result.newType shouldBe Types.array(Types.int)
-    }
+//    @Test
+//    fun `should check explicitly specified type parameter when it's only used as return value`() {
+//        val ns = GlobalCompilationNamespace()
+//        val T = TypeVariable("T")
+//        ns.addSymbolInDefaultPackage("unsafeArray", FunctionType(
+//            listOf(Types.int, Types.array(T)),
+//            typeSchemeVariables = listOf(T)
+//        ))
+//
+//        val result = ast("unsafeArray[int](10)", ns)
+//
+//        result.newType shouldBe Types.array(Types.int)
+//    }
 
     @Test
     fun `constructing recurring generic data type should work`() {

@@ -1,15 +1,13 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.core.*
-import gh.marad.chi.core.analyzer.CompilerMessageException
-import gh.marad.chi.core.analyzer.TypeMismatch
-import gh.marad.chi.core.analyzer.toCodePoint
+import gh.marad.chi.core.analyzer.*
 import gh.marad.chi.core.compiler.TypeTable
 
 
 fun inferAndFillTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression) {
     val inferred = inferTypes(ctx, env, expr)
-    val solution = unify(ctx.typeGraph, inferred.constraints)
+    val solution = unify(ctx.typeTable, inferred.constraints)
     TypeFiller(solution).visit(expr)
 }
 
@@ -24,13 +22,14 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
         }
         is VariableAccess -> {
             val t = env[expr.name] ?: throw TypeInferenceFailed("Symbol ${expr.name} not found in scope.", expr.sourceSection)
-            expr.newType = t
-            InferenceResult(instantiate(ctx, t), emptySet(), env)
+            val finalType = instantiate(ctx, t)
+            expr.newType = finalType
+            InferenceResult(finalType, emptySet(), env)
         }
 
         is NameDeclaration -> {
             val valueType = inferTypes(ctx, env, expr.value)
-            val (updatedEnv, generalizedType) = generalize(ctx.typeGraph, valueType.constraints, env, expr.name, valueType.type)
+            val (updatedEnv, generalizedType) = generalize(ctx.typeTable, valueType.constraints, env, expr.name, valueType.type)
             val constraints = if (expr.expectedType != null) {
                 valueType.constraints + (Constraint(generalizedType, expr.expectedType, expr.sourceSection))
             } else {
@@ -46,7 +45,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
                 InferenceResult(type, emptySet(), env + (expr.name to type))
             } else {
                 val t = ctx.nextTypeVariable()
-                val (updatedEnv, generalizedType) = generalize(ctx.typeGraph, emptySet(), env, expr.name, t)
+                val (updatedEnv, generalizedType) = generalize(ctx.typeTable, emptySet(), env, expr.name, t)
                 expr.newType = generalizedType
                 InferenceResult(generalizedType, emptySet(), updatedEnv)
             }
@@ -115,8 +114,8 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
 
             val constraints = mutableSetOf<Constraint>()
             constraints.add(Constraint(
-                funcType.type,
-                FunctionType(paramTypes.map { it.type } + t),
+                actual = FunctionType(paramTypes.map { it.type } + t),
+                expected = funcType.type,
                 paramSections = expr.parameters.map { it.sourceSection },
                 section = expr.function.sourceSection
             ))
@@ -351,7 +350,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
         }
         is FieldAccess -> {
             val receiverInferred = inferTypes(ctx, env, expr.receiver)
-            val solution = unify(ctx.typeGraph, receiverInferred.constraints)
+            val solution = unify(ctx.typeTable, receiverInferred.constraints)
             val receiverType = applySubstitution(receiverInferred.type, solution)
             val name: String = when (receiverType) {
                 is SimpleType -> receiverType.name
@@ -366,7 +365,8 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
                 ?: throw TypeInferenceFailed("Unknown type $receiverType", expr.receiver.sourceSection)
 
             val field = typeInfo.fields.firstOrNull { it.name == expr.fieldName }
-                ?: throw TODO("Field ${expr.fieldName} not found in $receiverType")
+                ?: throw CompilerMessageException(MemberDoesNotExist(
+                    receiverType, expr.fieldName, expr.memberSection.toCodePoint()))
 
             expr.newType = field.type
             InferenceResult(field.type, receiverInferred.constraints, env)
@@ -381,80 +381,111 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
     }
 }
 
-fun unify(typeGraph: TypeGraph, constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
+fun unify(typeTable: TypeTable, constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
     var q = ArrayDeque(constraints)
     val substitutions = mutableListOf<Pair<TypeVariable, Type>>()
 
     while (q.isNotEmpty()) {
-        val (a, b, section, paramSections) = q.removeFirst()
-//            println("$a = $b")
-//            println(q)
-        if (a == b) {
+        val constraint = q.removeLast()
+
+        val (a, e, section, paramSections, history) = constraint
+        if (a == e) {
             // this is nothing interesting
             continue
-        } else if (a is SimpleType && b is SimpleType) {
-            val typesAreRelated = typeGraph.isSubtype(a.toString(), b.toString())
-                    || typeGraph.isSubtype(b.toString(), a.toString())
-            if (!typesAreRelated) {
-                throw CompilerMessageException(TypeMismatch(
-                    expected = b, actual = a, section.toCodePoint()
-                ))
+        } else if (a is SimpleType && e is SimpleType) {
+            val actualInfo = typeTable.get(a.name)
+            if (actualInfo != null && actualInfo.parent?.name == e.name) {
+                continue
+            } else {
+                throw CompilerMessageException(
+                    TypeMismatch(
+                        expected = e, actual = a, section.toCodePoint()
+                    )
+                )
             }
-        } else if (a is FunctionType && b is FunctionType) {
+
+//            }
+        } else if (a is FunctionType && e is FunctionType) {
             val aHead = a.types.first()
-            val bHead = b.types.first()
+            val bHead = e.types.first()
             val headSection = if (paramSections != null && paramSections.firstOrNull() != null) {
                 paramSections.first()
             } else {
                 section
             }
-            q.add(Constraint(aHead, bHead, headSection))
+            q.add(Constraint(aHead, bHead, headSection, history = history + constraint))
 
             val aTail = a.types.drop(1).let { if (it.size == 1) it[0] else FunctionType(it) }
-            val bTail = b.types.drop(1).let { if (it.size == 1) it[0] else FunctionType(it) }
+            val bTail = e.types.drop(1).let { if (it.size == 1) it[0] else FunctionType(it) }
             if (paramSections != null && paramSections.size == 2) {
                 // after taking one for head there is only single type left
                 // so aTail and bTail are going to be simple types (not FunctionType)
-                // so we can simply take the last section as
-                q.add(Constraint(aTail, bTail, paramSections.last()))
+                // so we can simply take the last param section as source section
+                q.add(Constraint(aTail, bTail, paramSections.last(), history = history + constraint))
             } else {
-                q.add(Constraint(aTail, bTail, section, paramSections?.drop(1)))
+                q.add(Constraint(aTail, bTail, section, paramSections?.drop(1), history = history + constraint))
             }
-        } else if (a is GenericType && b is GenericType) {
-            val aHead = a.types.first()
-            val bHead = b.types.first()
-            val headSection = if (paramSections != null && paramSections.firstOrNull() != null) {
-                paramSections.first()
-            } else {
-                section
-            }
-            q.add(Constraint(aHead, bHead, headSection))
+        } else if (a is GenericType && e is GenericType) {
+            a.types.zip(e.types).forEachIndexed { index, (actual, expected) ->
+                val section = paramSections?.get(index) ?: section
+                q.add(Constraint(actual, expected, section, history = history + constraint))
 
-            val aTail = a.types.drop(1).let { if (it.size == 1) it[0] else GenericType(it) }
-            val bTail = b.types.drop(1).let { if (it.size == 1) it[0] else GenericType(it) }
-            if (paramSections != null && paramSections.size == 2) {
-                // after taking one for head there is only single type left
-                // so aTail and bTail are going to be simple types (not FunctionType)
-                // so we can simply take the last section as
-                q.add(Constraint(aTail, bTail, paramSections.last()))
-            } else {
-                q.add(Constraint(aTail, bTail, section, paramSections?.drop(1)))
             }
+//            val aHead = a.types.first()
+//            val bHead = e.types.first()
+//            val headSection = if (paramSections != null && paramSections.firstOrNull() != null) {
+//                paramSections.first()
+//            } else {
+//                section
+//            }
+//            q.add(Constraint(aHead, bHead, headSection, history = history + constraint))
+//
+//            val aTail = a.types.drop(1).let { if (it.size == 1) it[0] else GenericType(it) }
+//            val bTail = e.types.drop(1).let { if (it.size == 1) it[0] else GenericType(it) }
+//            if (paramSections != null && paramSections.size == 2) {
+//                // after taking one for head there is only single type left
+//                // so aTail and bTail are going to be simple types (not FunctionType)
+//                // so we can simply take the last section as
+//                q.add(Constraint(aTail, bTail, paramSections.last(), history = history + constraint))
+//            } else {
+//                q.add(Constraint(aTail, bTail, section, paramSections?.drop(1), history = history + constraint))
+//            }
         } else if (a is TypeVariable) {
-            if (b.contains(a)) {
-                throw TypeInferenceFailed("$a is contained in $b", section)
+            if (e.contains(a)) {
+                throw TypeInferenceFailed("$a is contained in $e", section)
             }
-            q.forEach { it.substitute(a, b) }
-            substitutions.add(a to b)
-        } else if (b is TypeVariable) {
-            if (a.contains(b)) {
-                throw TypeInferenceFailed("$a is contained in $b", section)
+            q.forEach { it.substitute(a, e) }
+            substitutions.add(a to e)
+        } else if (e is TypeVariable) {
+            if (a.contains(e)) {
+                throw TypeInferenceFailed("$a is contained in $e", section)
             }
-            q.forEach { it.substitute(b, a) }
-            substitutions.add(b to a)
+            q.forEach { it.substitute(e, a) }
+            substitutions.add(e to a)
+        } else if (e is GenericType && a is SimpleType) {
+            val info = typeTable.find(a) ?: TODO("Type $a not found!")
+            if (info.parent != null && info.parent.type is GenericType) {
+                val actual = info.parent.type.copy(types = info.parent.type.types.drop(1))
+                val expected = e.copy(types = e.types.drop(1))
+                q.add(Constraint(actual, expected, section, paramSections?.drop(1), history = history + constraint))
+            } else {
+                throw CompilerMessageException(
+                    TypeMismatch(
+                        expected = e, actual = a, section.toCodePoint()
+                    )
+                )
+            }
+        } else if (e is SimpleType && a is GenericType) {
+            val info = typeTable.get(e.name)
+            if (info == null || info.type is SimpleType) {
+                throw CompilerMessageException(TypeMismatch(
+                    expected = e, actual = a, section.toCodePoint()
+                ))
+            }
+            q.add(Constraint(a, info.type, section, history = history + constraint))
         } else {
             throw CompilerMessageException(TypeMismatch(
-                expected = b, actual = a, section.toCodePoint()
+                expected = e, actual = a, section.toCodePoint()
             ))
         }
     }
@@ -479,13 +510,13 @@ private fun instantiate(ctx: InferenceContext, inputType: Type): Type =
     }
 
 private fun generalize(
-    typeGraph: TypeGraph,
+    typeTable: TypeTable,
     constraints: Set<Constraint>,
     env: Map<String, Type>,
     name: String,
     type: Type
 ): Pair<Map<String, Type>, Type> {
-    val unified = unify(typeGraph, constraints)
+    val unified = unify(typeTable, constraints)
     val typeVariablesNotToGeneralize = mutableSetOf<TypeVariable>()
     val newEnv = env.mapValues {
         val result = applySubstitution(it.value, unified)
