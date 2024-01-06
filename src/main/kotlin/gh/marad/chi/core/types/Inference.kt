@@ -2,9 +2,6 @@ package gh.marad.chi.core.types
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.compiler.TypeTable
-import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
-import gh.marad.chi.core.parser.ChiSource
-import java.lang.RuntimeException
 
 
 fun inferAndFillTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression) {
@@ -13,59 +10,6 @@ fun inferAndFillTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expre
     TypeFiller(solution).visit(expr)
 }
 
-data class Constraint(
-    var actual: Type,
-    var expected: Type,
-    val section: ChiSource.Section?,
-    /// This parameter has very specific use case. It's used
-    /// for FnCall type inference to convey the parameter
-    /// sections, to produce meaningful errors.
-    /// It's also used for GenericType inference for
-    /// generic type parameters
-    val paramSections: List<ChiSource.Section?>? = null
-) {
-    fun substitute(v: TypeVariable, t: Type) {
-        actual = actual.substitute(v,t)
-        expected = expected.substitute(v,t)
-    }
-    override fun toString(): String = "$actual = $expected"
-}
-
-data class InferenceResult(val type: Type, val constraints: Set<Constraint>, val env: Map<String, Type>)
-
-class InferenceContext(val typeGraph: TypeGraph, val typeTable: TypeTable) {
-    private var nextTypeVariableNum = 0
-    fun nextTypeVariable() = TypeVariable("t${nextTypeVariableNum++}")
-}
-
-class TypeFiller(private val solution: List<Pair<TypeVariable, Type>>) : DefaultExpressionVisitor {
-    override fun visit(expr: Expression) {
-        expr.accept(this)
-        assert(expr.newType != null) {
-            "Expression did not have type set: $expr"
-        }
-        expr.newType = applySubstitution(expr.newType!!, solution)
-        val startLetter = 'a'.code
-        expr.newType!!.typeSchemeVariables().distinctBy { it.name }.sortedBy { it.name }
-            .forEachIndexed { i, v ->
-                val newName = TypeVariable(Char(startLetter + i).toString())
-                SubstituteTypeVariable(v, newName).visit(expr)
-            }
-    }
-}
-
-class SubstituteTypeVariable(private val v: TypeVariable, private val t: Type) : DefaultExpressionVisitor {
-    override fun visit(expr: Expression) {
-        expr.newType = expr.newType?.substitute(v, t)
-        super.visit(expr)
-    }
-}
-
-
-class TypeInferenceFailed(
-    message: String,
-    val section: ChiSource.Section?
-) : RuntimeException(message + if (section != null) " at $section" else "")
 
 internal fun inferTypes(env: Map<String, Type>, expr: Expression): InferenceResult =
     inferTypes(InferenceContext(TypeGraph(), TypeTable()), env, expr)
