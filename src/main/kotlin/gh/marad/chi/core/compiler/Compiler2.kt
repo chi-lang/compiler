@@ -1,10 +1,9 @@
 package gh.marad.chi.core.compiler
 
 import gh.marad.chi.core.*
-import gh.marad.chi.core.analyzer.CannotAccessInternalName
-import gh.marad.chi.core.analyzer.Message
-import gh.marad.chi.core.analyzer.UnrecognizedName
-import gh.marad.chi.core.analyzer.toCodePoint
+import gh.marad.chi.core.analyzer.*
+import gh.marad.chi.core.compiler.checks.FnCallCheckingVisitor
+import gh.marad.chi.core.compiler.checks.VisibilityCheckingVisitor
 import gh.marad.chi.core.expressionast.internal.convertPackageDefinition
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parseSource
@@ -14,6 +13,7 @@ import gh.marad.chi.core.parser.readers.TypeConstructorRef
 import gh.marad.chi.core.parser.readers.TypeNameRef
 import gh.marad.chi.core.parser.readers.TypeRef
 import gh.marad.chi.core.types.*
+import gh.marad.chi.core.types.TypeInferenceFailed
 import java.lang.RuntimeException
 
 object Compiler2 {
@@ -159,16 +159,23 @@ object Compiler2 {
             inferAndFillTypes(inferenceContext, env, Block(expressions, parsedProgram.section))
         } catch (ex: TypeInferenceFailed) {
             resultMessages.add(gh.marad.chi.core.analyzer.TypeInferenceFailed(ex))
+        } catch (ex: CompilerMessageException) {
+            resultMessages.add(ex.msg)
         }
 
         // perform post construction checks
         // ================================
-        CheckAccessToToPublicFieldsOfTypesVisitor(packageDefinition.moduleName, typeTable)
+        VisibilityCheckingVisitor(packageDefinition.moduleName, typeTable)
             .check(expressions, resultMessages)
+        FnCallCheckingVisitor()
+            .check(expressions, resultMessages)
+
+        // make messages more informative
+        // ==============================
 
         return Pair(
             Program(packageDefinition, emptyList(), expressions, parsedProgram.section),
-            resultMessages,
+            refineMessages(resultMessages),
         )
     }
 
@@ -203,6 +210,15 @@ object Compiler2 {
             else -> throw RuntimeException("This should not happen!")
         }
     }
+
+    fun refineMessages(messages: List<Message>): List<Message> =
+        messages.map {
+            if (it is TypeMismatch && it.expected is FunctionType && it.actual !is FunctionType) {
+                NotAFunction(it.codePoint)
+            } else {
+                it
+            }
+        }
 
     @JvmStatic
     fun formatCompilationMessage(source: String, message: Message): String {

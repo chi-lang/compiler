@@ -1,6 +1,9 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.core.*
+import gh.marad.chi.core.analyzer.CompilerMessageException
+import gh.marad.chi.core.analyzer.TypeMismatch
+import gh.marad.chi.core.analyzer.toCodePoint
 import gh.marad.chi.core.compiler.TypeTable
 
 
@@ -393,10 +396,9 @@ fun unify(typeGraph: TypeGraph, constraints: Set<Constraint>): List<Pair<TypeVar
             val typesAreRelated = typeGraph.isSubtype(a.toString(), b.toString())
                     || typeGraph.isSubtype(b.toString(), a.toString())
             if (!typesAreRelated) {
-                throw TypeInferenceFailed(
-                    "Expected type was '$a' but got '$b'",
-                    section
-                )
+                throw CompilerMessageException(TypeMismatch(
+                    expected = b, actual = a, section.toCodePoint()
+                ))
             }
         } else if (a is FunctionType && b is FunctionType) {
             val aHead = a.types.first()
@@ -451,10 +453,9 @@ fun unify(typeGraph: TypeGraph, constraints: Set<Constraint>): List<Pair<TypeVar
             q.forEach { it.substitute(b, a) }
             substitutions.add(b to a)
         } else {
-            throw TypeInferenceFailed(
-                "Expected type was $b but got $a",
-                section
-            )
+            throw CompilerMessageException(TypeMismatch(
+                expected = b, actual = a, section.toCodePoint()
+            ))
         }
     }
 

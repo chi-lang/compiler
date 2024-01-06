@@ -30,11 +30,9 @@ class FnCallTypeCheckingSpec {
         messages("test(10, {})", ns).shouldBeEmpty()
         messages("test(10, 20)", ns).should {
             it.shouldHaveSize(1)
-            it.first().shouldBeTypeOf<TypeInferenceFailed>()
-
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe OldType.fn(OldType.unit)
-                error.actual shouldBe OldType.int
+                error.expected shouldBe Types.fn(Types.unit)
+                error.actual shouldBe Types.int
             }
         }
     }
@@ -43,11 +41,10 @@ class FnCallTypeCheckingSpec {
     fun `should check function arity`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbolInDefaultPackage("x", Types.int)
         ns.addSymbolInDefaultPackage("test", Types.fn(Types.int, Types.fn(Types.unit), Types.int))
 
         // expect
-        analyze(ast("test(1)", ns, ignoreCompilationErrors = true)).should {
+        messages("test(1)", ns).should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<FunctionArityError>().should { error ->
                 error.expectedCount shouldBe 2
@@ -64,7 +61,7 @@ class FnCallTypeCheckingSpec {
         ns.addSymbolInDefaultPackage("test", Types.fn(Types.int, Types.fn(Types.unit), Types.int))
 
         // expect
-        analyze(ast("x()", ns, ignoreCompilationErrors = true)).should {
+        messages("x()", ns).should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<NotAFunction>()
         }
@@ -76,34 +73,12 @@ class FnCallTypeCheckingSpec {
         val ns = GlobalCompilationNamespace()
         val T = TypeVariable("T")
         val R = TypeVariable("R")
-        ns.getDefaultPackage().symbols.apply {
-            add(
-                Symbol(
-                    "user", "default", "map", SymbolKind.Local,
-                    FunctionType(
-                        listOf(Types.array(T), Types.fn(T, R), Types.array(T)),
-                        typeSchemeVariables = listOf(T, R)
-                    ),
-                    0, true, true
-                )
-            )
-
-            add(
-                Symbol(
-                    "user",
-                    "default",
-                    "operation",
-                    SymbolKind.Local,
-                    Types.fn(Types.int, Types.string),
-                    0,
-                    true,
-                    true
-                )
-            )
-            add(Symbol("user", "default", "arr", SymbolKind.Local, Types.array(Types.int), 0, true, true))
-        }
-//            localScope.addSymbol("operation", OldType.fn(string, intType), SymbolType.Local)
-//            localScope.addSymbol("arr", array(intType), SymbolType.Local)
+        ns.addSymbolInDefaultPackage("map", FunctionType(
+            listOf(Types.array(T), Types.fn(T, R), Types.array(R)),
+            typeSchemeVariables = listOf(T, R)
+        ))
+        ns.addSymbolInDefaultPackage("operation", Types.fn(Types.int, Types.string))
+        ns.addSymbolInDefaultPackage("arr", Types.array(Types.int))
 
         // when
         val result = ast("map(arr, operation)", ns)

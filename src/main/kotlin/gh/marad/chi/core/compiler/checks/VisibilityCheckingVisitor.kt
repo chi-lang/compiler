@@ -1,4 +1,4 @@
-package gh.marad.chi.core.compiler
+package gh.marad.chi.core.compiler.checks
 
 import gh.marad.chi.core.Expression
 import gh.marad.chi.core.FieldAccess
@@ -6,13 +6,14 @@ import gh.marad.chi.core.FieldAssignment
 import gh.marad.chi.core.analyzer.CannotAccessInternalName
 import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.analyzer.toCodePoint
+import gh.marad.chi.core.compiler.TypeTable
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.types.GenericType
 import gh.marad.chi.core.types.SimpleType
 import gh.marad.chi.core.types.Type
 
-class CheckAccessToToPublicFieldsOfTypesVisitor(
+class VisibilityCheckingVisitor(
     private val currentModule: String,
     private val typeTable: TypeTable
 ) : DefaultExpressionVisitor {
