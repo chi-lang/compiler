@@ -8,7 +8,7 @@ import gh.marad.chi.core.parser.readers.TypeRef
 class TypeRegistry {
     private val types: MutableMap<String, OldType> = mutableMapOf(
         "any" to OldType.any,
-        "int" to OldType.intType,
+        "int" to OldType.int,
         "float" to OldType.floatType,
         "unit" to OldType.unit,
         "string" to OldType.string,
