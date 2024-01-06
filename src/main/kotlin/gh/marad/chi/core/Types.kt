@@ -1,6 +1,5 @@
 package gh.marad.chi.core
 
-import gh.marad.chi.core.analyzer.typesMatch
 import java.util.*
 
 sealed interface OldType {
@@ -30,7 +29,7 @@ sealed interface OldType {
 
     companion object {
         @JvmStatic
-        val intType = IntType()
+        val int = IntType()
 
         //        val i64 = I64Type()
         @JvmStatic
@@ -121,7 +120,7 @@ data class StringType(override val name: String = "string") : OldType {
     override fun isCompositeType(): Boolean = false
 
     override fun isIndexable(): Boolean = true
-    override fun expectedIndexType(): OldType = OldType.intType
+    override fun expectedIndexType(): OldType = OldType.int
     override fun indexedElementType(): OldType = OldType.string
     override fun getAllSubtypes(): List<OldType> = emptyList()
     override fun toString(): String = name
@@ -173,17 +172,14 @@ data class OverloadedFnType(val typeSet: Set<FnType>) : OldType {
 
     private fun findCandidates(actualTypes: List<OldType>): List<FnType> {
         val candidates = types.filter {
-            val genericParamToTypeFromPassedParameters =
-                matchCallTypes(
-                    it.fnType.paramTypes,
-                    actualTypes
-                )
+//            val genericParamToTypeFromPassedParameters =
+//                matchCallTypes(
+//                    it.fnType.paramTypes,
+//                    actualTypes
+//                )
             actualTypes.size == it.fnType.paramTypes.size
                     && it.fnType.paramTypes.zip(actualTypes).all { (expected, actual) ->
-                typesMatch(
-                    expected.construct(genericParamToTypeFromPassedParameters),
-                    actual,
-                )
+                        expected == actual
             }
         }
         val withScores =
@@ -244,7 +240,7 @@ data class ArrayType(val elementType: OldType) : OldType {
     override fun isNumber(): Boolean = false
     override fun isCompositeType(): Boolean = false
     override fun isIndexable(): Boolean = true
-    override fun expectedIndexType(): OldType = OldType.intType
+    override fun expectedIndexType(): OldType = OldType.int
     override fun indexedElementType(): OldType = elementType
     override fun getAllSubtypes(): List<OldType> = listOf(elementType)
     override fun isTypeConstructor(): Boolean = elementType.isTypeConstructor()
