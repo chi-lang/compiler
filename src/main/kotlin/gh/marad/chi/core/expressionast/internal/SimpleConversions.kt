@@ -5,6 +5,7 @@ import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.expressionast.generateExpressionAst
 import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.*
+import gh.marad.chi.core.types.Types
 
 
 fun convertAtom(value: BoolValue) =
@@ -26,7 +27,7 @@ fun convertInterpolatedString(ctx: ConversionContext, ast: ParseInterpolatedStri
 }
 
 fun convertInterpolation(ctx: ConversionContext, ast: ParseInterpolation): Expression {
-    return Cast(generateExpressionAst(ctx, ast.value), OldType.string, ast.section)
+    return Cast(generateExpressionAst(ctx, ast.value), Types.string, ast.section)
 }
 
 fun convertStringText(ast: StringText): Expression =
@@ -34,7 +35,7 @@ fun convertStringText(ast: StringText): Expression =
 
 fun convertPackageDefinition(ast: ParsePackageDefinition?): Package? =
     ast?.let {
-        Package(ast.moduleName.name, ast.packageName.name, ast.section)
+        Package(ast.moduleName.name, ast.packageName.name)
     }
 
 fun convertImportDefinition(ctx: ConversionContext, ast: ParseImportDefinition): Import {
@@ -73,7 +74,7 @@ fun convertBinaryOp(ctx: ConversionContext, ast: ParseBinaryOp): InfixOp =
 fun convertCast(ctx: ConversionContext, ast: ParseCast): Cast =
     Cast(
         expression = generateExpressionAst(ctx, ast.value),
-        targetType = ctx.resolveType(ast.typeRef),
+        targetType = Types.unit,
         sourceSection = ast.section
     )
 

@@ -22,7 +22,7 @@ fun convertWeave(ctx: ConversionContext, weave: ParseWeave): Expression {
         expectedType = null,
         sourceSection = weave.value.section
     )
-    ctx.currentScope.addSymbol(tempVarName, tempVariableDeclaration.type, SymbolType.Local, false)
+//    ctx.currentScope.addSymbol(tempVarName, tempVariableDeclaration.type, SymbolType.Local, false)
     val readVariable =
         VariableAccess(
             ctx.currentModule, ctx.currentPackage, ctx.currentScope, tempVarName,

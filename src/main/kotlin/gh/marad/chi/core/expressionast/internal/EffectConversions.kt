@@ -6,28 +6,30 @@ import gh.marad.chi.core.expressionast.generateExpressionAst
 import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.ParseEffectDefinition
 import gh.marad.chi.core.parser.readers.ParseHandle
+import gh.marad.chi.core.types.TypeVariable
+import gh.marad.chi.core.types.Types
 
 
 fun convertEffectDefinition(ctx: ConversionContext, ast: ParseEffectDefinition): Expression {
-    val typeParameters = ast.typeParameters.map { GenericTypeParameter(it.name) }
+    val typeParameters = ast.typeParameters.map { TypeVariable(it.name) }
     val typeParameterNames = typeParameters.map { it.name }.toSet()
     return EffectDefinition(
         moduleName = ctx.currentModule,
         packageName = ctx.currentPackage,
         name = ast.name,
         public = ast.public,
-        genericTypeParameters = typeParameters,
+        typeVariables = typeParameters,
         parameters = ast.formalArguments.map {
             FnParam(
                 it.name,
-                ctx.resolveType(it.typeRef, typeParameterNames),
+                Types.unit,
+                //ctx.resolveType(it.typeRef, typeParameterNames),
                 it.section
             )
         },
-        returnType = ast.returnTypeRef.let { ctx.resolveType(it, typeParameterNames) },
         sourceSection = ast.section
     ).also {
-        ctx.currentScope.addSymbol(it.name, it.type, SymbolType.Local, public = it.public, mutable = false)
+//        ctx.currentScope.addSymbol(it.name, it.type, SymbolType.Local, public = it.public, mutable = false)
     }
 }
 
@@ -45,7 +47,7 @@ fun convertHandle(ctx: ConversionContext, ast: ParseHandle): Expression {
                 ).scope.getSymbol(effectLookupResult.name)
                     ?: TODO("Effect ${it.effectName} not found!")
             val effectType = symbolInfo.type as FnType
-            caseScope.addSymbol("resume", OldType.fn(body.type, effectType.returnType), SymbolType.Local, public = false)
+//            caseScope.addSymbol("resume", OldType.fn(body.type, effectType.returnType), SymbolType.Local, public = false)
             it.argumentNames.zip(effectType.paramTypes).forEach { (name, type) ->
                 caseScope.addSymbol(name, type, SymbolType.Argument, public = false)
             }

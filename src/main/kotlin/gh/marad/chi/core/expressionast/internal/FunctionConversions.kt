@@ -5,24 +5,25 @@ import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.expressionast.generateExpressionAst
 import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.*
+import gh.marad.chi.core.types.TypeVariable
+import gh.marad.chi.core.types.Types
 
 fun convertLambda(ctx: ConversionContext, ast: ParseLambda): Fn {
     return ctx.withNewFunctionScope {
         val params = ast.formalArguments.map {
             FnParam(
                 it.name,
-                ctx.resolveType(it.typeRef),
+                Types.unit,
                 it.section
             ).also { param ->
-                ctx.currentScope.addSymbol(param.name, param.type, SymbolType.Argument, public = false, mutable = false)
+//                ctx.currentScope.addSymbol(param.name, param.type, SymbolType.Argument, public = false, mutable = false)
             }
         }
         val body = ast.body.map { generateExpressionAst(ctx, it) }
         Fn(
             fnScope = ctx.currentScope,
-            genericTypeParameters = emptyList(),
+            typeVariables = emptyList(),
             parameters = params,
-            returnType = body.lastOrNull()?.type ?: OldType.unit,
             body = Block(body, ast.section),
             sourceSection = ast.section,
         )
@@ -38,23 +39,23 @@ fun convertFuncWithName(ctx: ConversionContext, ast: ParseFuncWithName): NameDec
         value = ctx.withNewFunctionScope {
             Fn(
                 fnScope = ctx.currentScope,
-                genericTypeParameters = ast.typeParameters.map { GenericTypeParameter(it.name) },
+//                genericTypeParameters = ast.typeParameters.map { GenericTypeParameter(it.name) },
+                typeVariables = ast.typeParameters.map { TypeVariable(it.name) },
                 parameters = ast.formalArguments.map {
                     FnParam(
                         it.name,
-                        ctx.resolveType(it.typeRef, typeParameterNames),
+                        Types.unit,
                         it.section
                     ).also { param ->
-                        ctx.currentScope.addSymbol(
-                            param.name,
-                            param.type,
-                            SymbolType.Argument,
-                            public = false,
-                            mutable = false
-                        )
+//                        ctx.currentScope.addSymbol(
+//                            param.name,
+//                            param.type,
+//                            SymbolType.Argument,
+//                            public = false,
+//                            mutable = false
+//                        )
                     }
                 },
-                returnType = ast.returnTypeRef?.let { ctx.resolveType(it, typeParameterNames) } ?: OldType.unit,
                 body = ctx.withTypeParameters(typeParameterNames) { generateExpressionAst(ctx, ast.body) as Block },
                 sourceSection = ast.section
             )
@@ -68,7 +69,8 @@ fun convertFuncWithName(ctx: ConversionContext, ast: ParseFuncWithName): NameDec
 fun convertFnCall(ctx: ConversionContext, ast: ParseFnCall): FnCall {
     return FnCall(
         function = generateExpressionAst(ctx, ast.function),
-        callTypeParameters = ast.concreteTypeParameters.map { ctx.resolveType(it) },
+//        callTypeParameters = ast.concreteTypeParameters.map { ctx.resolveType(it) },
+        callTypeParameters = emptyList(),
         parameters = ast.arguments.map { generateExpressionAst(ctx, it) },
         sourceSection = ast.section
     )

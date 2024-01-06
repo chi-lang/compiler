@@ -1,72 +1,68 @@
 package gh.marad.chi.core.expressionast
 
-import gh.marad.chi.core.CompilationDefaults
 import gh.marad.chi.core.Expression
-import gh.marad.chi.core.automaticallyCastCompatibleTypes
 import gh.marad.chi.core.expressionast.internal.*
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.*
 
-fun generateExpressionsFromParsedProgram(program: Program, namespace: GlobalCompilationNamespace): gh.marad.chi.core.Program {
-    val packageDefinition = convertPackageDefinition(program.packageDefinition)
-    val moduleName = packageDefinition?.moduleName ?: CompilationDefaults.defaultModule
-    val packageName = packageDefinition?.packageName ?: CompilationDefaults.defaultPacakge
+//fun generateExpressionsFromParsedProgram(program: ParseProgram, namespace: GlobalCompilationNamespace): gh.marad.chi.core.Program {
+//    val packageDefinition = convertPackageDefinition(program.packageDefinition)
+//    val moduleName = packageDefinition?.moduleName ?: CompilationDefaults.defaultModule
+//    val packageName = packageDefinition?.packageName ?: CompilationDefaults.defaultPacakge
+//
+//    val context = ConversionContext(namespace)
+//    context.changeCurrentPackage(moduleName, packageName)
+//
+//    val imports = program.imports.map { convertImportDefinition(context, it) }
+//    val pkg = namespace.getOrCreatePackage(moduleName, packageName)
+//
+//    // define imports and package functions/variant type constructors
+//    imports.forEach { context.imports.addImport(it) }
+//
+//    pkg.typeRegistry.defineTypes(moduleName, packageName, program.typeDefinitions, context::resolveType)
+//
+//    val typeDefinitions = program.typeDefinitions.map { convertTypeDefinition(context, it) }
+//    registerPackageSymbols(context, program)
+//
+//    val blockBody = mutableListOf<Expression>()
+//    blockBody.addAll(typeDefinitions)
+//    blockBody.addAll(program.functions.map { generateExpressionAst(context, it) })
+//    blockBody.addAll(program.topLevelCode.map { generateExpressionAst(context, it) })
+//    return gh.marad.chi.core.Program(
+//        packageDefinition = packageDefinition,
+//        imports = imports,
+//        expressions = blockBody,
+//        program.section
+//    )
+//}
 
-    val context = ConversionContext(namespace)
-    context.changeCurrentPackage(moduleName, packageName)
-
-    val imports = program.imports.map { convertImportDefinition(context, it) }
-    val pkg = namespace.getOrCreatePackage(moduleName, packageName)
-
-    // define imports and package functions/variant type constructors
-    imports.forEach { context.imports.addImport(it) }
-
-    pkg.typeRegistry.defineTypes(moduleName, packageName, program.typeDefinitions, context::resolveType)
-
-    val typeDefinitions = program.typeDefinitions.map { convertTypeDefinition(context, it) }
-    registerPackageSymbols(context, program)
-
-    val blockBody = mutableListOf<Expression>()
-    blockBody.addAll(typeDefinitions)
-    blockBody.addAll(program.functions.map { generateExpressionAst(context, it) })
-    blockBody.addAll(program.topLevelCode.map { generateExpressionAst(context, it) })
-    return gh.marad.chi.core.Program(
-        packageDefinition = packageDefinition,
-        imports = imports,
-        expressions = blockBody.map { automaticallyCastCompatibleTypes(it) },
-        program.section
-    )
-}
-
-private fun registerPackageSymbols(ctx: ConversionContext, program: Program) {
-    program.typeDefinitions.forEach { typeDef ->
-        typeDef.variantConstructors.forEach { constructor ->
-            val typeParameterNames = typeDef.typeParameters.map { it.name }.toSet()
-            val constructorTypeRef = getVariantConstructorTypeRef(typeDef, constructor)
-            ctx.currentScope.addSymbol(
-                constructor.name,
-                ctx.resolveType(constructorTypeRef, typeParameterNames),
-                SymbolType.Local,
-                public = constructor.public,
-                mutable = false
-            )
-        }
-    }
-
-    program.functions.forEach {
-        val funcDesc = getFunctionTypeRef(it)
-        ctx.currentScope.addSymbol(
-            funcDesc.name, ctx.resolveType(funcDesc.type), SymbolType.Local,
-            public = when (it) {
-                is ParseFuncWithName -> it.public
-                is ParseEffectDefinition -> it.public
-                else -> TODO("Can't determine if function should be public: $it")
-            },
-            mutable = false
-        )
-    }
-}
+//private fun registerPackageSymbols(ctx: ConversionContext, program: ParseProgram) {
+//    program.typeDefinitions.forEach { typeDef ->
+//        typeDef.variantConstructors.forEach { constructor ->
+//            val typeParameterNames = typeDef.typeParameters.map { it.name }.toSet()
+//            val constructorTypeRef = getVariantConstructorTypeRef(typeDef, constructor)
+//            ctx.currentScope.addSymbol(
+//                constructor.name,
+//                ctx.resolveType(constructorTypeRef, typeParameterNames),
+//                SymbolType.Local,
+//                public = constructor.public,
+//                mutable = false
+//            )
+//        }
+//    }
+//
+//    program.functions.forEach {
+//        val funcDesc = getFunctionTypeRef(it)
+//        ctx.currentScope.addSymbol(
+//            funcDesc.name, ctx.resolveType(funcDesc.type), SymbolType.Local,
+//            public = when (it) {
+//                is ParseFuncWithName -> it.public
+//                is ParseEffectDefinition -> it.public
+//                else -> TODO("Can't determine if function should be public: $it")
+//            },
+//            mutable = false
+//        )
+//    }
+//}
 
 fun generateExpressionAst(ctx: ConversionContext, ast: ParseAst): Expression = when (ast) {
     is ParseFuncWithName -> convertFuncWithName(ctx, ast)

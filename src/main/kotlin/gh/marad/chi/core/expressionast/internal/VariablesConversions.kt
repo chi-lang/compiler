@@ -1,10 +1,14 @@
 package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.*
+import gh.marad.chi.core.compiler.Symbol
+import gh.marad.chi.core.compiler.SymbolKind
 import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.expressionast.generateExpressionAst
 import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.*
+import gh.marad.chi.core.types.Types
+import javax.sound.sampled.AudioFileFormat
 
 fun convertVariableRead(ctx: ConversionContext, ast: ParseVariableRead): VariableAccess {
     val lookup = ctx.lookup(ast.variableName)
@@ -25,18 +29,19 @@ fun convertNameDeclaration(ctx: ConversionContext, ast: ParseNameDeclaration): N
         name = ast.symbol.name,
         value = generateExpressionAst(ctx, ast.value),
         mutable = ast.mutable,
-        expectedType = ast.typeRef?.let { ctx.resolveType(it) },
+//        expectedType = ast.typeRef?.let { ctx.resolveType(it) },
+        expectedType = Types.any,
         sourceSection = ast.section
     ).also {
-        ctx.currentScope.addSymbol(it.name, it.type, SymbolType.Local, public = it.public, mutable = it.mutable)
+//        ctx.currentScope.addSymbol(it.name, it.type, SymbolType.Local, public = it.public, mutable = it.mutable)
     }
 }
 
 fun convertAssignment(ctx: ConversionContext, ast: ParseAssignment): Assignment =
     // TODO czy tutaj nie lepiej mieć zamiast `name` VariableAccess i mieć tam nazwę i pakiet?
     Assignment(
-        definitionScope = ctx.currentScope,
         name = ast.variableName,
+        symbol = Symbol("","", ast.variableName,SymbolKind.Local, Types.unit, 0, false, false),
         value = generateExpressionAst(ctx, ast.value),
         sourceSection = ast.section
     )
@@ -71,12 +76,12 @@ fun convertFieldAccess(ctx: ConversionContext, ast: ParseFieldAccess): Expressio
     }
 
     val receiver = generateExpressionAst(ctx, ast.receiver)
-    val scope = ctx.namespace.getOrCreatePackage(receiver.type.moduleName, receiver.type.packageName).scope
+    val scope = ctx.namespace.getOrCreatePackage(/*receiver.type.moduleName*/ "module", /*receiver.type.packageName*/ "package").scope
     if (scope.containsSymbol(ast.memberName)) {
         return VariableAccess(
-            isModuleLocal = receiver.type.moduleName == ctx.currentModule,
-            moduleName = receiver.type.moduleName,
-            packageName = receiver.type.packageName,
+            isModuleLocal = false, //receiver.type.moduleName == ctx.currentModule,
+            moduleName = "module", //receiver.type.moduleName,
+            packageName = "package", // receiver.type.packageName,
             definitionScope = scope,
             name = ast.memberName,
             sourceSection = ast.memberSection
@@ -86,7 +91,7 @@ fun convertFieldAccess(ctx: ConversionContext, ast: ParseFieldAccess): Expressio
     return FieldAccess(
         receiver,
         ast.memberName,
-        typeIsModuleLocal = ctx.currentModule == receiver.type.moduleName,
+        typeIsModuleLocal = false, //ctx.currentModule == receiver.type.moduleName,
         ast.section,
         ast.memberSection,
     )
@@ -110,12 +115,12 @@ fun convertMethodInvocation(ctx: ConversionContext, ast: ParseMethodInvocation):
             } else null
         },
         {
-            val scope = ctx.namespace.getOrCreatePackage(receiver.type.moduleName, receiver.type.packageName).scope
+            val scope = ctx.namespace.getOrCreatePackage(/*receiver.type.moduleName*/ "module", /*receiver.type.packageName*/ "package").scope
             if (scope.containsSymbol(ast.methodName)) {
                 VariableAccess(
-                    isModuleLocal = receiver.type.moduleName == ctx.currentModule,
-                    moduleName = receiver.type.moduleName,
-                    packageName = receiver.type.packageName,
+                    isModuleLocal = false, //receiver.type.moduleName == ctx.currentModule,
+                    moduleName = "module", // receiver.type.moduleName,
+                    packageName = "package", // receiver.type.packageName,
                     definitionScope = scope,
                     name = ast.methodName,
                     sourceSection = ast.memberSection
@@ -146,7 +151,7 @@ fun convertMethodInvocation(ctx: ConversionContext, ast: ParseMethodInvocation):
 
     return FnCall(
         function = function,
-        callTypeParameters = ast.concreteTypeParameters.map { ctx.resolveType(it) },
+        callTypeParameters = listOf(Types.unit),
         parameters = arguments,
         ast.memberSection
     )
@@ -158,7 +163,8 @@ fun convertFieldAssignment(ctx: ConversionContext, ast: ParseFieldAssignment): F
         receiver = generateExpressionAst(ctx, ast.receiver),
         fieldName = ast.memberName,
         value = generateExpressionAst(ctx, ast.value),
-        sourceSection = ast.section
+        sourceSection = ast.section,
+        memberSection = ast.memberSection
     )
 }
 
