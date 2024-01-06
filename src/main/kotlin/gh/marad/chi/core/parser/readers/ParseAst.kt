@@ -5,6 +5,7 @@ import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 sealed interface ParseAst {
     fun <T> accept(visitor: ParseAstVisitor<T>): T
+    fun children(): List<ParseAst>
     val section: ChiSource.Section?
 }
 

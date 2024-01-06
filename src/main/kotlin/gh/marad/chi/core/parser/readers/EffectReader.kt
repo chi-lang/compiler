@@ -58,6 +58,7 @@ data class ParseEffectDefinition(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitEffectDefinition(this)
+    override fun children(): List<ParseAst> = emptyList()
 }
 
 data class ParseHandle(
@@ -66,6 +67,7 @@ data class ParseHandle(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitHandle(this)
+    override fun children(): List<ParseAst> = listOf(body) + cases.map { it.body }
 }
 
 data class ParseHandleCase(

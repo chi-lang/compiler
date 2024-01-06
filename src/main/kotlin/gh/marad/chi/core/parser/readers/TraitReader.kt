@@ -32,6 +32,7 @@ data class ParseTraitDefinition(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitTraitDefinition(this)
+    override fun children(): List<ParseAst> = functions
 }
 
 data class ParseTraitFunctionDefinition(
@@ -41,4 +42,5 @@ data class ParseTraitFunctionDefinition(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitTraitFunctionDefinition(this)
+    override fun children(): List<ParseAst> = emptyList()
 }

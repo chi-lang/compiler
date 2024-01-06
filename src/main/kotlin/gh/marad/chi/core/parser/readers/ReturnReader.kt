@@ -19,4 +19,10 @@ data class ParseReturn(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitReturn(this)
+    override fun children(): List<ParseAst> =
+        if (value != null) {
+            listOf(value)
+        } else {
+            emptyList()
+        }
 }

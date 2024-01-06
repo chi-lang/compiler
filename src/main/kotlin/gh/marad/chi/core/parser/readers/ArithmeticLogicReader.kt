@@ -43,6 +43,7 @@ data class ParseNot(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitNot(this)
+    override fun children(): List<ParseAst> = listOf(value)
 }
 
 data class ParseBinaryOp(
@@ -52,4 +53,5 @@ data class ParseBinaryOp(
     override val section: ChiSource.Section?,
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitBinaryOperator(this)
+    override fun children(): List<ParseAst> = listOf(left, right)
 }

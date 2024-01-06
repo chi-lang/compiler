@@ -49,6 +49,7 @@ data class ParseLambda(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitLambda(this)
+    override fun children(): List<ParseAst> = body
 }
 
 data class ParseFuncWithName(
@@ -61,6 +62,7 @@ data class ParseFuncWithName(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitFuncWithName(this)
+    override fun children(): List<ParseAst> = listOf(body)
 }
 
 data class ParseFnCall(
@@ -71,4 +73,5 @@ data class ParseFnCall(
     override val section: ChiSource.Section?,
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitFnCall(this)
+    override fun children(): List<ParseAst> = listOf(function) + arguments
 }

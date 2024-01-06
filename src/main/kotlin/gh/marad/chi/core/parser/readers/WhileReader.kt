@@ -23,13 +23,16 @@ data class ParseWhile(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitWhile(this)
+    override fun children(): List<ParseAst> = listOf(condition, body)
 }
 
 data class ParseBreak(override val section: ChiSource.Section?) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitBreak(this)
+    override fun children(): List<ParseAst> = emptyList()
 }
 
 data class ParseContinue(override val section: ChiSource.Section?) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitContinue(this)
+    override fun children(): List<ParseAst> = emptyList()
 }
 

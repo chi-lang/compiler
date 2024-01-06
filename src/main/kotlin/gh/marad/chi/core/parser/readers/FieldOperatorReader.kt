@@ -22,7 +22,8 @@ internal object FieldOperatorReader {
             receiver = ctx.receiver.accept(parser),
             memberName = ctx.memberName.text,
             value = ctx.value.accept(parser),
-            section = getSection(source, ctx)
+            section = getSection(source, ctx),
+            memberSection = getSection(source, ctx.memberName)
         )
 
     fun readMethodInvocation(
@@ -50,6 +51,7 @@ data class ParseFieldAccess(
     override val section: ChiSource.Section?,
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitFieldAccess(this)
+    override fun children(): List<ParseAst> = listOf(receiver)
 }
 
 data class ParseFieldAssignment(
@@ -57,9 +59,11 @@ data class ParseFieldAssignment(
     val memberName: String,
     val receiver: ParseAst,
     val value: ParseAst,
+    val memberSection: ChiSource.Section?,
     override val section: ChiSource.Section?,
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitFieldAssignment(this)
+    override fun children(): List<ParseAst> = listOf(receiver, value)
 }
 
 data class ParseMethodInvocation(
@@ -72,4 +76,5 @@ data class ParseMethodInvocation(
     override val section: ChiSource.Section?,
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitMethodInvocation(this)
+    override fun children(): List<ParseAst> = listOf(receiver) + arguments
 }

@@ -21,10 +21,12 @@ data class ParseWeave(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitWeave(this)
+    override fun children(): List<ParseAst> = listOf(value, opTemplate)
 }
 
 data class ParseWeavePlaceholder(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitPlaceholder(this)
+    override fun children(): List<ParseAst> = emptyList()
 }

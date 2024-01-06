@@ -21,4 +21,5 @@ data class ParseCast(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitCast(this)
+    override fun children(): List<ParseAst> = listOf(value)
 }

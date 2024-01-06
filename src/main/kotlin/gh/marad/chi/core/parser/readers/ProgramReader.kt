@@ -36,4 +36,5 @@ data class ParseProgram(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitProgram(this)
+    override fun children(): List<ParseAst> = imports + typeDefinitions + traitDefinitions + functions + topLevelCode
 }

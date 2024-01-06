@@ -32,4 +32,5 @@ data class ParseNameDeclaration(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitNameDeclaration(this)
+    override fun children(): List<ParseAst> = listOf(value)
 }

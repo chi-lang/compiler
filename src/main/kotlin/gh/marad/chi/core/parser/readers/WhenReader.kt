@@ -44,13 +44,21 @@ data class ParseWhen(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitWhen(this)
+    override fun children(): List<ParseAst> =
+        if (elseCase != null) {
+            cases.flatMap { it.children() } + elseCase.body
+        } else {
+            cases.flatMap { it.children() }
+        }
 }
 
 data class ParseWhenCase(
     val condition: ParseAst,
     val body: ParseAst,
     val section: ChiSource.Section?
-)
+) {
+    fun children(): List<ParseAst> = listOf(condition, body)
+}
 
 data class ParseElseCase(
     val body: ParseAst,

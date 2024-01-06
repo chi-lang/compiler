@@ -41,5 +41,6 @@ data class ParseImportDefinition(
     data class Entry(val name: String, val alias: Alias?, val section: ChiSource.Section?)
 
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitImportDefinition(this)
+    override fun children(): List<ParseAst> = emptyList()
 }
 

@@ -31,4 +31,10 @@ data class ParseIfElse(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitIfElse(this)
+    override fun children(): List<ParseAst> =
+        if (elseBody != null) {
+            listOf(condition, thenBody, elseBody)
+        } else {
+            listOf(condition, thenBody)
+        }
 }

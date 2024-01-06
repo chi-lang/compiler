@@ -48,6 +48,7 @@ data class ParseAssignment(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitAssignment(this)
+    override fun children(): List<ParseAst> = listOf(value)
 }
 
 data class ParseIndexedAssignment(
@@ -57,6 +58,7 @@ data class ParseIndexedAssignment(
     override val section: ChiSource.Section?,
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitIndexedAssignment(this)
+    override fun children(): List<ParseAst> = listOf(variable, index, value)
 }
 
 data class ParseVariableRead(
@@ -64,6 +66,7 @@ data class ParseVariableRead(
     override val section: ChiSource.Section? = null
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitVariableRead(this)
+    override fun children(): List<ParseAst> = emptyList()
 }
 
 
@@ -73,4 +76,5 @@ data class ParseIndexOperator(
     override val section: ChiSource.Section?,
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitIndexOperator(this)
+    override fun children(): List<ParseAst> = listOf(variable, index)
 }

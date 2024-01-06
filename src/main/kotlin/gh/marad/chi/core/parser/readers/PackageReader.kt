@@ -18,5 +18,6 @@ data class ParsePackageDefinition(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitPackageDefinition(this)
+    override fun children(): List<ParseAst> = emptyList()
 }
 

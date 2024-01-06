@@ -100,27 +100,33 @@ internal object AtomReader {
 
 data class LongValue(val value: Long, override val section: ChiSource.Section? = null) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitLong(this)
+    override fun children(): List<ParseAst> = emptyList()
 }
 
 data class FloatValue(val value: Float, override val section: ChiSource.Section? = null) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitFloat(this)
+    override fun children(): List<ParseAst> = emptyList()
 }
 
 data class BoolValue(val value: Boolean, override val section: ChiSource.Section? = null) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitBool(this)
+    override fun children(): List<ParseAst> = emptyList()
 }
 
 data class StringValue(val value: String, override val section: ChiSource.Section? = null) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitString(this)
+    override fun children(): List<ParseAst> = emptyList()
 }
 
 sealed interface StringPart : ParseAst
 data class StringText(val text: String, override val section: ChiSource.Section?) : StringPart {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitInterpolatedStringText(this)
+    override fun children(): List<ParseAst> = emptyList()
 }
 
 data class ParseInterpolation(val value: ParseAst, override val section: ChiSource.Section?) : StringPart {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitStringInterpolation(this)
+    override fun children(): List<ParseAst> = listOf(value)
 }
 
 data class ParseInterpolatedString(
@@ -128,4 +134,5 @@ data class ParseInterpolatedString(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitInterpolatedString(this)
+    override fun children(): List<ParseAst> = parts
 }

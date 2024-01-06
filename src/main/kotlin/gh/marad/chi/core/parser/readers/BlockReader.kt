@@ -16,5 +16,6 @@ internal object BlockReader {
 
 data class ParseBlock(val body: List<ParseAst>, override val section: ChiSource.Section?) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitBlock(this)
+    override fun children(): List<ParseAst> = body
 }
 
