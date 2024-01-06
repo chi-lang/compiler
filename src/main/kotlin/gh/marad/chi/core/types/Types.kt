@@ -59,18 +59,14 @@ data class SimpleType(val moduleName: String, val packageName: String, val name:
     }
 }
 
-data class TypeVariable(val name: String, val typeScheme: Boolean = false) : Type {
+data class TypeVariable(val name: String) : Type {
     override fun contains(v: TypeVariable): Boolean = v == this
     override fun substitute(v: TypeVariable, t: Type): Type =
         if (v == this) { t } else { this }
-    override fun isTypeScheme(): Boolean = typeScheme
-    override fun typeSchemeVariables(): List<TypeVariable> = if (isTypeScheme()) listOf(this) else emptyList()
+    override fun isTypeScheme(): Boolean = false
+    override fun typeSchemeVariables(): List<TypeVariable> = emptyList()
     override fun findTypeVariables(): List<TypeVariable> = listOf(this)
-    override fun generalize(variables: List<TypeVariable>): Type = if (variables.contains(this)) {
-        copy(typeScheme = true)
-    } else {
-        this
-    }
+    override fun generalize(variables: List<TypeVariable>): Type = this
 
     override fun instantiate(mappings: List<Pair<TypeVariable, Type>>): Type =
         mappings.firstOrNull { it.first == this }

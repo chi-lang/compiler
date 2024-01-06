@@ -1,6 +1,7 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.core.*
+import gh.marad.chi.core.compiler.TypeTable
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
 import gh.marad.chi.core.parser.ChiSource
 import java.lang.RuntimeException
@@ -9,7 +10,7 @@ import java.lang.RuntimeException
 fun inferAndFillTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression) {
     val inferred = inferTypes(ctx, env, expr)
     val solution = unify(ctx.typeGraph, inferred.constraints)
-    expr.accept(TypeFiller(solution))
+    TypeFiller(solution).visit(expr)
 }
 
 data class Constraint(
@@ -32,13 +33,14 @@ data class Constraint(
 
 data class InferenceResult(val type: Type, val constraints: Set<Constraint>, val env: Map<String, Type>)
 
-class InferenceContext(val typeGraph: TypeGraph) {
+class InferenceContext(val typeGraph: TypeGraph, val typeTable: TypeTable) {
     private var nextTypeVariableNum = 0
     fun nextTypeVariable() = TypeVariable("t${nextTypeVariableNum++}")
 }
 
 class TypeFiller(private val solution: List<Pair<TypeVariable, Type>>) : DefaultExpressionVisitor {
     override fun visit(expr: Expression) {
+        expr.accept(this)
         assert(expr.newType != null) {
             "Expression did not have type set: $expr"
         }
@@ -47,7 +49,7 @@ class TypeFiller(private val solution: List<Pair<TypeVariable, Type>>) : Default
         expr.newType!!.typeSchemeVariables().distinctBy { it.name }.sortedBy { it.name }
             .forEachIndexed { i, v ->
                 val newName = TypeVariable(Char(startLetter + i).toString())
-                expr.accept(SubstituteTypeVariable(v, newName))
+                SubstituteTypeVariable(v, newName).visit(expr)
             }
     }
 }
@@ -55,6 +57,7 @@ class TypeFiller(private val solution: List<Pair<TypeVariable, Type>>) : Default
 class SubstituteTypeVariable(private val v: TypeVariable, private val t: Type) : DefaultExpressionVisitor {
     override fun visit(expr: Expression) {
         expr.newType = expr.newType?.substitute(v, t)
+        super.visit(expr)
     }
 }
 
@@ -65,12 +68,11 @@ class TypeInferenceFailed(
 ) : RuntimeException(message + if (section != null) " at $section" else "")
 
 internal fun inferTypes(env: Map<String, Type>, expr: Expression): InferenceResult =
-    inferTypes(InferenceContext(TypeGraph()), env, expr)
+    inferTypes(InferenceContext(TypeGraph(), TypeTable()), env, expr)
 
 internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression): InferenceResult {
     return when (expr) {
         is Atom -> {
-            expr.newType = expr.type.toNewType()
             InferenceResult(expr.newType!!, emptySet(), env)
         }
         is VariableAccess -> {
@@ -92,15 +94,15 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
         }
 
         is EffectDefinition -> {
-            val signatureTypes = mutableListOf<Type>()
-            expr.parameters.forEach {
-                signatureTypes.add(it.type!!)
+            if (expr.newType != null) {
+                val type = expr.newType!!
+                InferenceResult(type, emptySet(), env + (expr.name to type))
+            } else {
+                val t = ctx.nextTypeVariable()
+                val (updatedEnv, generalizedType) = generalize(ctx.typeGraph, emptySet(), env, expr.name, t)
+                expr.newType = generalizedType
+                InferenceResult(generalizedType, emptySet(), updatedEnv)
             }
-            signatureTypes.add(expr.returnType.toNewType())
-            val type = FunctionType(signatureTypes)
-            val (updatedEnv, generalizedType) = generalize(ctx.typeGraph, emptySet(), env, expr.name, type)
-            expr.newType = generalizedType
-            InferenceResult(generalizedType, emptySet(), updatedEnv)
         }
 
         is Assignment -> {
@@ -257,10 +259,8 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             InferenceResult(Types.unit, emptySet(), env)
         }
         is Cast -> {
-            val targetType = expr.targetType.toNewType()
             val inferred = inferTypes(ctx, env, expr.expression)
-            expr.newType = targetType
-            InferenceResult(targetType, inferred.constraints, env)
+            InferenceResult(expr.newType!!, inferred.constraints, env)
         }
         is Group -> {
             val value = inferTypes(ctx, env, expr.value)
@@ -403,10 +403,26 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             InferenceResult(Types.unit, setOf(), newEnv)
         }
         is FieldAccess -> {
-            val t = ctx.nextTypeVariable()
             val receiverInferred = inferTypes(ctx, env, expr.receiver)
-            expr.newType = t
-            InferenceResult(t, receiverInferred.constraints, env)
+            val solution = unify(ctx.typeGraph, receiverInferred.constraints)
+            val receiverType = applySubstitution(receiverInferred.type, solution)
+            val name: String = when (receiverType) {
+                is SimpleType -> receiverType.name
+                is GenericType -> (receiverType.types.first() as SimpleType).name
+                else ->
+                    throw TypeInferenceFailed(
+                        "Cannot determine the type name of receiver from $receiverType ",
+                        expr.receiver.sourceSection)
+            }
+
+            val typeInfo = ctx.typeTable.get(name)
+                ?: throw TypeInferenceFailed("Unknown type $receiverType", expr.receiver.sourceSection)
+
+            val field = typeInfo.fields.firstOrNull { it.name == expr.fieldName }
+                ?: throw TODO("Field ${expr.fieldName} not found in $receiverType")
+
+            expr.newType = field.type
+            InferenceResult(field.type, receiverInferred.constraints, env)
         }
         is FieldAssignment -> {
             val t = ctx.nextTypeVariable()
