@@ -71,7 +71,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             //      More info: https://www.youtube.com/watch?v=6tj9WrRqPeU
             val result = inferTypes(ctx, env, expr.value)
             expr.newType = result.type
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.newType?.sourceSection = expr.value.sourceSection
             result
         }
 

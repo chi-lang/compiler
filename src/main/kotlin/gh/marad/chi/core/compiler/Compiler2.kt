@@ -3,6 +3,7 @@ package gh.marad.chi.core.compiler
 import gh.marad.chi.core.*
 import gh.marad.chi.core.analyzer.*
 import gh.marad.chi.core.compiler.checks.FnCallCheckingVisitor
+import gh.marad.chi.core.compiler.checks.ImmutabilityCheckVisitor
 import gh.marad.chi.core.compiler.checks.VisibilityCheckingVisitor
 import gh.marad.chi.core.expressionast.internal.convertPackageDefinition
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
@@ -181,6 +182,8 @@ object Compiler2 {
             .check(expressions, resultMessages)
         FnCallCheckingVisitor()
             .check(expressions, resultMessages)
+        ImmutabilityCheckVisitor(resultMessages)
+            .check(expressions)
 
         // make messages more informative
         // ==============================

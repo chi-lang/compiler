@@ -130,6 +130,18 @@ class ExprConversionVisitor(
             ast.body.section
         )
 
+        val returnType = ast.returnTypeRef
+            ?.let { resolveType(typeTable, currentTypeSchemeVariables, it) }
+            ?: Types.unit
+
+        val funcTypes = params.map { it.type!! } + returnType
+
+        val funcType = FunctionType(
+            types = funcTypes,
+            typeSchemeVariables = funcTypes.flatMap { it.findTypeVariables() }
+                .filter { it.name in currentTypeSchemeVariables }
+        )
+
         currentTypeSchemeVariables = prevTypeSchemeVariables
 
         return NameDeclaration(
@@ -138,7 +150,7 @@ class ExprConversionVisitor(
             name = ast.name,
             value = function,
             mutable = false,
-            expectedType = null,
+            expectedType = funcType,
             sourceSection = ast.section
         ).also {
             currentSymbolTable.add(

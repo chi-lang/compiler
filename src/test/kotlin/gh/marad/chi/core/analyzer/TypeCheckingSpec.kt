@@ -7,12 +7,12 @@ import gh.marad.chi.compile
 import gh.marad.chi.core.OldType
 import gh.marad.chi.core.OldType.Companion.bool
 import gh.marad.chi.core.OldType.Companion.int
-import gh.marad.chi.core.OldType.Companion.string
 import gh.marad.chi.core.OldType.Companion.unit
 import gh.marad.chi.core.compiler.Symbol
 import gh.marad.chi.core.compiler.SymbolKind
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.types.Types
+import gh.marad.chi.messages
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
@@ -24,13 +24,10 @@ import org.junit.jupiter.api.Test
 class AssignmentTypeCheckingSpec  {
     @Test
     fun `should prohibit changing immutable values`() {
-        analyze(
-            ast(
-                """
-                        val x = 10
-                        x = 15
-                    """.trimIndent(), ignoreCompilationErrors = true
-            )
+        messages("""
+            val x = 10
+            x = 15
+        """.trimIndent()
         ).should { msgs ->
             msgs shouldHaveSize 1
             msgs[0].shouldBeTypeOf<CannotChangeImmutableVariable>().should {
@@ -40,123 +37,109 @@ class AssignmentTypeCheckingSpec  {
     }
 }
 
-class NameDeclarationTypeCheckingSpec : FunSpec() {
-    init {
-
-        test("should return nothing for simple atom and variable read") {
-            val ns = GlobalCompilationNamespace()
-            ns.getDefaultPackage().symbols.apply {
-                add(Symbol("user", "default", "x", SymbolKind.Local, Types.fn(Types.unit), 0, true, true))
-            }
-            analyze(ast("5", ns, ignoreCompilationErrors = true)).shouldBeEmpty()
-            analyze(ast("x", ns, ignoreCompilationErrors = true)).shouldBeEmpty()
+class NameDeclarationTypeCheckingSpec {
+    @Test
+    fun `should return nothing for simple atom and variable read`() {
+        val ns = GlobalCompilationNamespace()
+        ns.getDefaultPackage().symbols.apply {
+            add(Symbol("user", "default", "x", SymbolKind.Local, Types.fn(Types.unit), 0, true, true))
         }
+        analyze(ast("5", ns, ignoreCompilationErrors = true)).shouldBeEmpty()
+        analyze(ast("x", ns, ignoreCompilationErrors = true)).shouldBeEmpty()
+    }
 
-        test("should check if types match in name declaration with type definition") {
-            analyze(ast("val x: () -> int = 5", ignoreCompilationErrors = true)).should {
-                it.shouldHaveSize(1)
-                it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                    error.expected shouldBe OldType.fn(int)
-                    error.actual shouldBe int
-                }
-            }
+    @Test
+    fun `should check if types match in name declaration with type definition`() {
+        messages("val x: () -> int = 5").should {
+            it.shouldHaveSize(1)
+            it[0].shouldBeTypeOf<NotAFunction>()
         }
+    }
 
-        test("should pass valid name declarations") {
-            analyze(ast("val x: int = 5", ignoreCompilationErrors = true)).shouldBeEmpty()
-            analyze(ast("val x = 5", ignoreCompilationErrors = true)).shouldBeEmpty()
-        }
+    @Test
+    fun `should pass valid name declarations`() {
+        messages("val x: int = 5").shouldBeEmpty()
+        messages("val x = 5").shouldBeEmpty()
     }
 }
 
-class FnTypeCheckingSpec : FunSpec() {
-    init {
-        test("should not return errors on valid function definition") {
-            analyze(ast("{ x: int -> x }", ignoreCompilationErrors = true)).shouldBeEmpty()
-            analyze(ast("fn foo(x: int): int { x }", ignoreCompilationErrors = true)).shouldBeEmpty()
-        }
+class FnTypeCheckingSpec {
+    @Test
+    fun `should not return errors on valid function definition`() {
+        messages("{ x: int -> x }").shouldBeEmpty()
+        messages("fn foo(x: int): int { x }").shouldBeEmpty()
+    }
 
-        test("should check for missing return value only if function expects the return type") {
-            analyze(ast("fn foo() {}"))
-                .shouldBeEmpty()
-            analyze(ast("fn foo(): int {}", ignoreCompilationErrors = true)).should {
-                it.shouldHaveSize(1)
-                it[0].shouldBeTypeOf<MissingReturnValue>().should { error ->
-                    error.expectedType shouldBe int
-                }
+    @Test
+    fun `should check for missing return value only if function expects the return type`() {
+        messages("fn foo() {}").shouldBeEmpty()
+        messages("fn foo(): int {}").should {
+            it.shouldHaveSize(1)
+            it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
+                error.expected shouldBe Types.int
+                error.actual shouldBe Types.unit
             }
         }
+    }
 
-        test("should check that block return type matches what function expects") {
-            analyze(ast("fn foo(): int { {} }", ignoreCompilationErrors = true)).should {
-                it.shouldHaveSize(1)
-                it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                    error.expected shouldBe int
-                    error.actual shouldBe OldType.fn(unit)
-                }
-            }
-
-            // should point to '{' of the block when it's empty instead of last expression
-            analyze(ast("fn foo(): int {}", ignoreCompilationErrors = true)).should {
-                it.shouldHaveSize(1)
-                it[0].shouldBeTypeOf<MissingReturnValue>().should { error ->
-                    error.expectedType shouldBe int
-                }
+    @Test
+    fun `should check that block return type matches what function expects`() {
+        messages("fn foo(): int { {} }").should {
+            it.shouldHaveSize(1)
+            it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
+                error.expected shouldBe Types.int
+                error.actual shouldBe Types.fn(Types.unit)
             }
         }
+    }
 
-        test("should also check types for expressions in function body") {
-            analyze(
-                ast(
-                    """
-                        fn foo(x: int): int {
-                            val i: int = {}
-                            x
-                        }
-                    """.trimIndent(), ignoreCompilationErrors = true
-                )
-            ).should {
-                it.shouldHaveSize(1)
-                it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                    error.expected shouldBe int
-                    error.actual shouldBe OldType.fn(unit)
-                }
+    @Test
+    fun `should also check types for expressions in function body`() {
+        messages("""
+            fn foo(x: int): int {
+                val i: int = {}
+                x
+            }
+        """.trimIndent()
+        ).should {
+            it.shouldHaveSize(1)
+            it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
+                error.expected shouldBe Types.int
+                error.actual shouldBe Types.fn(Types.unit)
             }
         }
+    }
 
-        test("should check that return expression type matches the function return value") {
-            analyze(
-                ast(
-                    """
-                        fn foo(): int {
-                            return "hello"
-                            5
-                        }
-                    """.trimIndent(), ignoreCompilationErrors = true
-                )
-
-            ).should {
-                it.shouldHaveSize(1)
-                it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                    error.expected shouldBe int
-                    error.actual shouldBe string
-                }
+    @Test
+    fun `should check that return expression type matches the function return value`() {
+        messages( """
+            fn foo(): int {
+                return "hello"
+                5
+            }
+        """.trimIndent()
+        ).should {
+            it.shouldHaveSize(1)
+            it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
+                error.expected shouldBe Types.int
+                error.actual shouldBe Types.string
             }
         }
+    }
 
-        test("should accept return without any value") {
-            analyze(
-                ast(
-                    """
+    @Test
+    fun `should accept return without any value`() {
+        analyze(
+            ast(
+                """
                         fn foo() {
                             return
                             5
                         }
                     """.trimIndent()
-                )
-            ).should {
-                it.shouldHaveSize(0)
-            }
+            )
+        ).should {
+            it.shouldHaveSize(0)
         }
     }
 }
