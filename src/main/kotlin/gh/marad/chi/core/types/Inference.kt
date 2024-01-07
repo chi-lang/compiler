@@ -423,26 +423,37 @@ fun unify(typeTable: TypeTable, constraints: Set<Constraint>): List<Pair<TypeVar
             typeMismatch(expected = e, actual = a, section = section, history)
         } else if (a is FunctionType && e is FunctionType) {
             val aHead = a.types.first()
-            val bHead = e.types.first()
+            val eHead = e.types.first()
+
+            if (e.types.size == 1 && eHead == Types.unit && aHead !is TypeVariable) {
+                // if e.types.size == 1 then we are checking the return values
+                // if expected type (eHead) is unit we don't need to check further
+                // we accept any type returned - the value will be ignored
+                // We also check if the actual type (aHead) is not a type variable
+                // If it is, then we would want to resolve it to 'unit' so we don't continue
+                continue
+            }
+
             val headSection = if (paramSections != null && paramSections.firstOrNull() != null) {
                 paramSections.first()
             } else {
                 section
             }
-            q.add(Constraint(aHead, bHead, headSection, history = history + constraint))
+            q.add(Constraint(aHead, eHead, headSection, history = history + constraint))
 
             val aTail = a.copy(types = a.types.drop(1))
-            val bTail = a.copy(types = e.types.drop(1))
-            if (aTail.types.isEmpty() || bTail.types.isEmpty()) {
+            val eTail = a.copy(types = e.types.drop(1))
+            if (aTail.types.isEmpty() || eTail.types.isEmpty()) {
                 continue
             }
+
             if (paramSections != null && paramSections.size == 2) {
                 // after taking one for head there is only single type left
                 // so aTail and bTail are going to be simple types (not FunctionType)
                 // so we can simply take the last param section as source section
-                q.add(Constraint(aTail, bTail, paramSections.last(), history = history + constraint))
+                q.add(Constraint(aTail, eTail, paramSections.last(), history = history + constraint))
             } else {
-                q.add(Constraint(aTail, bTail, section, paramSections?.drop(1), history = history + constraint))
+                q.add(Constraint(aTail, eTail, section, paramSections?.drop(1), history = history + constraint))
             }
         } else if (a is TypeVariable) {
             if (e.contains(a)) {
