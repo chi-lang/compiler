@@ -264,7 +264,12 @@ class ExprConversionVisitor(
 
         val types = params.map { it.type!! } + resolveType(typeTable, currentTypeSchemeVariables, ast.returnTypeRef)
 
-        val type = FunctionType(types, currentTypeSchemeVariables.map { TypeVariable(it) })
+        val type = FunctionType(
+            types = types,
+            typeSchemeVariables = ast.typeParameters.map {
+                resolveType(typeTable, currentTypeSchemeVariables, it)  as TypeVariable
+            }
+        ).also { it.sourceSection = ast.section }
 
         currentTypeSchemeVariables = prevTypeSchemeVariables
 

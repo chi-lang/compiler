@@ -131,8 +131,8 @@ class InferenceKtHindleyMillnerUnificationTest {
     @Test
     fun `should fail inference if generic types don't match`() {
         // give
-        val a = Types.generic(SimpleType("std", "lang", "Map"), Types.string, Types.int)
-        val b = Types.generic(SimpleType("std", "lang", "Map"), Types.bool, Types.int)
+        val a = ProductType("std", "lang", "Map", typeParams = listOf(Types.string, Types.int), types = emptyList())
+        val b = ProductType("std", "lang", "Map", typeParams = listOf(Types.bool, Types.int), types = emptyList())
         val mapSection = randomSourceSection()
         val boolSection = randomSourceSection()
         val intSection = randomSourceSection()

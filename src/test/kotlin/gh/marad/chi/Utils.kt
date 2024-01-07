@@ -98,7 +98,6 @@ fun GlobalCompilationNamespace.addType(
             type,
             isPublic = true,
             isVariantConstructor = true,
-            parent = null,
             fields = fields
         )
     )

@@ -4,6 +4,7 @@ import gh.marad.chi.core.Expression
 import gh.marad.chi.core.FnCall
 import gh.marad.chi.core.analyzer.FunctionArityError
 import gh.marad.chi.core.analyzer.Message
+import gh.marad.chi.core.analyzer.NotAFunction
 import gh.marad.chi.core.analyzer.toCodePoint
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
 import gh.marad.chi.core.types.FunctionType
@@ -23,6 +24,8 @@ class FnCallCheckingVisitor : DefaultExpressionVisitor {
             if (expectedCount != actualCount) {
                 messages.add(FunctionArityError(expectedCount, actualCount, fnCall.sourceSection.toCodePoint()))
             }
+        } else {
+            messages.add(NotAFunction(fnCall.function.sourceSection.toCodePoint()))
         }
         super.visitFnCall(fnCall)
     }

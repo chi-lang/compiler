@@ -3,6 +3,7 @@ package gh.marad.chi.core.types
 import gh.marad.chi.core.*
 import gh.marad.chi.core.analyzer.*
 import gh.marad.chi.core.compiler.TypeTable
+import gh.marad.chi.core.parser.ChiSource
 
 
 fun inferAndFillTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression) {
@@ -18,12 +19,14 @@ internal fun inferTypes(env: Map<String, Type>, expr: Expression): InferenceResu
 internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression): InferenceResult {
     return when (expr) {
         is Atom -> {
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(expr.newType!!, emptySet(), env)
         }
         is VariableAccess -> {
             val t = env[expr.name] ?: throw TypeInferenceFailed("Symbol ${expr.name} not found in scope.", expr.sourceSection)
             val finalType = instantiate(ctx, t)
             expr.newType = finalType
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(finalType, emptySet(), env)
         }
 
@@ -31,21 +34,25 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             val valueType = inferTypes(ctx, env, expr.value)
             val (updatedEnv, generalizedType) = generalize(ctx.typeTable, valueType.constraints, env, expr.name, valueType.type)
             val constraints = if (expr.expectedType != null) {
+                expr.newType = expr.expectedType
                 valueType.constraints + (Constraint(generalizedType, expr.expectedType, expr.sourceSection))
             } else {
+                expr.newType = generalizedType
                 valueType.constraints
             }
-            expr.newType = generalizedType
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(generalizedType, constraints, updatedEnv)
         }
 
         is EffectDefinition -> {
             if (expr.newType != null) {
                 val type = expr.newType!!
+                type.sourceSection = expr.sourceSection
                 InferenceResult(type, emptySet(), env + (expr.name to type))
             } else {
                 val t = ctx.nextTypeVariable()
                 val (updatedEnv, generalizedType) = generalize(ctx.typeTable, emptySet(), env, expr.name, t)
+                generalizedType.sourceSection = expr.sourceSection
                 expr.newType = generalizedType
                 InferenceResult(generalizedType, emptySet(), updatedEnv)
             }
@@ -64,6 +71,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             //      More info: https://www.youtube.com/watch?v=6tj9WrRqPeU
             val result = inferTypes(ctx, env, expr.value)
             expr.newType = result.type
+            expr.newType?.sourceSection = expr.sourceSection
             result
         }
 
@@ -77,6 +85,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
                 result
             }.lastOrNull() ?: InferenceResult(Types.unit, setOf(), env)
             expr.newType = last.type
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(last.type, constraints, env)
         }
 
@@ -103,6 +112,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
 
             val inferredType = FunctionType(funcTypes)
             expr.newType = inferredType
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(inferredType, bodyType.constraints, env)
         }
 
@@ -123,6 +133,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             paramTypes.forEach { constraints.addAll(it.constraints) }
 
             expr.newType = t
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(t, constraints, env)
         }
 
@@ -159,6 +170,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             constraints.addAll(thenBranchType.constraints)
             constraints.addAll(elseBranchType.constraints)
             expr.newType = t
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(t, constraints, env)
         }
 
@@ -170,7 +182,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             when (expr.op) {
                 in listOf("==", "!=", "<", ">", "<=", ">=") -> {
                     constraints.add(Constraint(t, Types.bool, expr.sourceSection))
-                    constraints.add(Constraint(left.type, right.type, expr.sourceSection))
+                    constraints.add(Constraint(right.type, left.type, expr.sourceSection))
                 }
                 in listOf("&&", "||") -> {
                     constraints.add(Constraint(t, Types.bool, expr.sourceSection))
@@ -193,24 +205,30 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             constraints.addAll(left.constraints)
             constraints.addAll(right.constraints)
             expr.newType = t
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(t, constraints, env)
         }
 
         is Break -> {
             expr.newType = Types.unit
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(Types.unit, emptySet(), env)
         }
         is Continue -> {
             expr.newType = Types.unit
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(Types.unit, emptySet(), env)
         }
         is Cast -> {
             val inferred = inferTypes(ctx, env, expr.expression)
+            expr.newType = inferred.type
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(expr.newType!!, inferred.constraints, env)
         }
         is Group -> {
             val value = inferTypes(ctx, env, expr.value)
             expr.newType = value.type
+            expr.newType?.sourceSection = expr.sourceSection
             value
         }
         is Handle -> {
@@ -235,6 +253,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             }
 
             expr.newType = t
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(t, constraints, env)
         }
         is PrefixOp -> {
@@ -245,14 +264,14 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             val value = inferTypes(ctx, env, expr.expr)
             val type = value.type
             expr.newType = type
+            expr.newType?.sourceSection = expr.sourceSection
             value.copy(constraints =
                 value.constraints + Constraint(type, Types.bool, expr.expr.sourceSection)
             )
         }
         is IndexOperator -> {
-            val base = ctx.nextTypeVariable()
             val element = ctx.nextTypeVariable()
-            val t = Types.generic(base, element)
+            val t = Types.array(element)
 
             val variableType = inferTypes(ctx, env, expr.variable)
             val indexType = inferTypes(ctx, env, expr.index)
@@ -264,12 +283,12 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             constraints.addAll(indexType.constraints)
 
             expr.newType = element
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(element, constraints, env)
         }
         is IndexedAssignment -> {
-            val base = ctx.nextTypeVariable()
             val element = ctx.nextTypeVariable()
-            val t = Types.generic(base, element)
+            val t = Types.array(element)
 
             val variableType = inferTypes(ctx, env, expr.variable)
             val indexType = inferTypes(ctx, env, expr.index)
@@ -285,6 +304,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             constraints.addAll(valueType.constraints)
 
             expr.newType = element
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(element, constraints, env)
         }
         is InterpolatedString -> {
@@ -296,20 +316,24 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             }
 
             expr.newType = Types.string
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(Types.string, constraints, env)
         }
         is Is -> {
             val valueType = inferTypes(ctx, env, expr.value)
             expr.newType = Types.bool
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(Types.bool, valueType.constraints, env)
         }
         is Return -> {
             if (expr.value != null) {
                 val inferredValue = inferTypes(ctx, env, expr.value)
                 expr.newType = inferredValue.type
+                expr.newType?.sourceSection = expr.sourceSection
                 inferredValue
             } else {
                 expr.newType = Types.unit
+                expr.newType?.sourceSection = expr.sourceSection
                 InferenceResult(Types.unit, setOf(), env)
             }
         }
@@ -323,6 +347,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             constraints.addAll(loop.constraints)
 
             expr.newType = Types.unit
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(Types.unit, constraints, env)
         }
         is DefineVariantType -> {
@@ -346,6 +371,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             }
 
             expr.newType = Types.unit
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(Types.unit, setOf(), newEnv)
         }
         is FieldAccess -> {
@@ -354,7 +380,6 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             val receiverType = applySubstitution(receiverInferred.type, solution)
             val name: String = when (receiverType) {
                 is SimpleType -> receiverType.name
-                is GenericType -> (receiverType.types.first() as SimpleType).name
                 else ->
                     throw TypeInferenceFailed(
                         "Cannot determine the type name of receiver from $receiverType ",
@@ -369,6 +394,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
                     receiverType, expr.fieldName, expr.memberSection.toCodePoint()))
 
             expr.newType = field.type
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(field.type, receiverInferred.constraints, env)
         }
         is FieldAssignment -> {
@@ -376,6 +402,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             val receiverInferred = inferTypes(ctx, env, expr.receiver)
             val valueInferred = inferTypes(ctx, env, expr.value)
             expr.newType = t
+            expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(t, receiverInferred.constraints + valueInferred.constraints, env)
         }
     }
@@ -393,18 +420,7 @@ fun unify(typeTable: TypeTable, constraints: Set<Constraint>): List<Pair<TypeVar
             // this is nothing interesting
             continue
         } else if (a is SimpleType && e is SimpleType) {
-            val actualInfo = typeTable.get(a.name)
-            if (actualInfo != null && actualInfo.parent?.name == e.name) {
-                continue
-            } else {
-                throw CompilerMessageException(
-                    TypeMismatch(
-                        expected = e, actual = a, section.toCodePoint()
-                    )
-                )
-            }
-
-//            }
+            typeMismatch(expected = e, actual = a, section = section, history)
         } else if (a is FunctionType && e is FunctionType) {
             val aHead = a.types.first()
             val bHead = e.types.first()
@@ -415,8 +431,11 @@ fun unify(typeTable: TypeTable, constraints: Set<Constraint>): List<Pair<TypeVar
             }
             q.add(Constraint(aHead, bHead, headSection, history = history + constraint))
 
-            val aTail = a.types.drop(1).let { if (it.size == 1) it[0] else FunctionType(it) }
-            val bTail = e.types.drop(1).let { if (it.size == 1) it[0] else FunctionType(it) }
+            val aTail = a.copy(types = a.types.drop(1))
+            val bTail = a.copy(types = e.types.drop(1))
+            if (aTail.types.isEmpty() || bTail.types.isEmpty()) {
+                continue
+            }
             if (paramSections != null && paramSections.size == 2) {
                 // after taking one for head there is only single type left
                 // so aTail and bTail are going to be simple types (not FunctionType)
@@ -425,31 +444,6 @@ fun unify(typeTable: TypeTable, constraints: Set<Constraint>): List<Pair<TypeVar
             } else {
                 q.add(Constraint(aTail, bTail, section, paramSections?.drop(1), history = history + constraint))
             }
-        } else if (a is GenericType && e is GenericType) {
-            a.types.zip(e.types).forEachIndexed { index, (actual, expected) ->
-                val section = paramSections?.get(index) ?: section
-                q.add(Constraint(actual, expected, section, history = history + constraint))
-
-            }
-//            val aHead = a.types.first()
-//            val bHead = e.types.first()
-//            val headSection = if (paramSections != null && paramSections.firstOrNull() != null) {
-//                paramSections.first()
-//            } else {
-//                section
-//            }
-//            q.add(Constraint(aHead, bHead, headSection, history = history + constraint))
-//
-//            val aTail = a.types.drop(1).let { if (it.size == 1) it[0] else GenericType(it) }
-//            val bTail = e.types.drop(1).let { if (it.size == 1) it[0] else GenericType(it) }
-//            if (paramSections != null && paramSections.size == 2) {
-//                // after taking one for head there is only single type left
-//                // so aTail and bTail are going to be simple types (not FunctionType)
-//                // so we can simply take the last section as
-//                q.add(Constraint(aTail, bTail, paramSections.last(), history = history + constraint))
-//            } else {
-//                q.add(Constraint(aTail, bTail, section, paramSections?.drop(1), history = history + constraint))
-//            }
         } else if (a is TypeVariable) {
             if (e.contains(a)) {
                 throw TypeInferenceFailed("$a is contained in $e", section)
@@ -462,35 +456,65 @@ fun unify(typeTable: TypeTable, constraints: Set<Constraint>): List<Pair<TypeVar
             }
             q.forEach { it.substitute(e, a) }
             substitutions.add(e to a)
-        } else if (e is GenericType && a is SimpleType) {
-            val info = typeTable.find(a) ?: TODO("Type $a not found!")
-            if (info.parent != null && info.parent.type is GenericType) {
-                val actual = info.parent.type.copy(types = info.parent.type.types.drop(1))
-                val expected = e.copy(types = e.types.drop(1))
-                q.add(Constraint(actual, expected, section, paramSections?.drop(1), history = history + constraint))
+        } else if (e is SumType && a is SimpleType) {
+            if (e.moduleName == a.moduleName &&
+                e.packageName == a.packageName &&
+                e.subtypes.contains(a.name)
+            ) {
+                continue
             } else {
-                throw CompilerMessageException(
-                    TypeMismatch(
-                        expected = e, actual = a, section.toCodePoint()
+                typeMismatch(expected = e, actual = a, section, history)
+            }
+        } else if (e is SumType && a is ProductType) {
+            if (e.moduleName == a.moduleName &&
+                e.packageName == a.packageName &&
+                e.subtypes.contains(a.name)
+            ) {
+                e.typeParams.zip(a.typeParams).forEach { (expected, actual) ->
+                    q.add(
+                        Constraint(
+                            expected = expected,
+                            actual = actual,
+                            section = section,
+                            history = history + constraint
+                        )
                     )
-                )
+                }
+            } else {
+                typeMismatch(expected = e, actual = a, section, history)
             }
-        } else if (e is SimpleType && a is GenericType) {
-            val info = typeTable.get(e.name)
-            if (info == null || info.type is SimpleType) {
-                throw CompilerMessageException(TypeMismatch(
-                    expected = e, actual = a, section.toCodePoint()
-                ))
+        } else if (e is ProductType && a is ProductType) {
+            if (e.moduleName == a.moduleName &&
+                e.packageName == a.packageName &&
+                e.name == a.name &&
+                e.typeParams.size == a.typeParams.size
+            ) {
+
+                e.typeParams.zip(a.typeParams).forEach { (expected, actual) ->
+                    q.add(Constraint(actual, expected, section, paramSections, history = history + constraint))
+                }
+            } else {
+                typeMismatch(expected = e, actual = a, section, history)
             }
-            q.add(Constraint(a, info.type, section, history = history + constraint))
+        } else if (e is SumType && a is SumType) {
+            TODO("Not sure if this ever happens!")
+            // if module, package or name different - fail
+            // paramTypes should be equal
+            // zip param types together and create new constraints
         } else {
-            throw CompilerMessageException(TypeMismatch(
-                expected = e, actual = a, section.toCodePoint()
-            ))
+            typeMismatch(expected = e, actual = a, section = section, history)
         }
     }
 
     return substitutions
+}
+
+fun typeMismatch(expected: Type, actual: Type, section: ChiSource.Section?, history: List<Constraint>) {
+    val section = actual.sourceSection ?: section
+    throw CompilerMessageException(TypeMismatch(
+        expected = expected,
+        actual = actual,
+        codePoint = section.toCodePoint()))
 }
 
 fun applySubstitution(type: Type, solutions: List<Pair<TypeVariable, Type>>): Type {

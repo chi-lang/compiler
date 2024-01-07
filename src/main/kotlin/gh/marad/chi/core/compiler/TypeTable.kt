@@ -2,6 +2,7 @@ package gh.marad.chi.core.compiler
 
 import gh.marad.chi.core.types.SimpleType
 import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.TypeVariable
 import gh.marad.chi.core.types.Types
 
 class TypeTable {
@@ -14,7 +15,16 @@ class TypeTable {
         addSimpleType(Types.bool)
         addSimpleType(Types.unit)
         addSimpleType(Types.string)
-        addSimpleType(Types.array)
+        add(
+            TypeInfo(
+                name = "array",
+                type = Types.array(TypeVariable("T")),
+                isPublic = true,
+                isVariantConstructor = false,
+                fields = emptyList()
+            )
+
+        )
     }
 
     fun add(info: TypeInfo) {
@@ -38,7 +48,6 @@ class TypeTable {
                 type = t,
                 isPublic = true,
                 isVariantConstructor = false,
-                parent = null,
                 fields = emptyList()
             )
 
@@ -51,7 +60,6 @@ data class TypeInfo(
     val type: Type,
     val isPublic: Boolean,
     val isVariantConstructor: Boolean,
-    val parent: TypeInfo?,
     val fields: List<VariantField>
 )
 

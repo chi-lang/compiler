@@ -8,10 +8,7 @@ import gh.marad.chi.core.expressionast.internal.convertPackageDefinition
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parseSource
 import gh.marad.chi.core.parser.ChiSource
-import gh.marad.chi.core.parser.readers.FunctionTypeRef
-import gh.marad.chi.core.parser.readers.TypeConstructorRef
-import gh.marad.chi.core.parser.readers.TypeNameRef
-import gh.marad.chi.core.parser.readers.TypeRef
+import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.types.*
 import gh.marad.chi.core.types.TypeInferenceFailed
 import java.lang.RuntimeException
@@ -68,51 +65,49 @@ object Compiler2 {
         // add locally defined types
         parsedProgram.typeDefinitions.forEach { typeDef ->
             val typeSchemeVariables = typeDef.typeParameters.map { TypeVariable(it.name) }
-            val base = if(typeSchemeVariables.isEmpty()) {
-                SimpleType(packageDefinition.moduleName, packageDefinition.packageName, typeDef.typeName)
-            } else {
-                GenericType(
-                    listOf(SimpleType(packageDefinition.moduleName, packageDefinition.packageName, typeDef.typeName), *typeSchemeVariables.toTypedArray()),
-                    typeSchemeVariables)
-            }
+
+            val base = SumType(
+                moduleName = packageDefinition.moduleName,
+                packageName = packageDefinition.packageName,
+                name = typeDef.typeName,
+                typeParams = typeSchemeVariables,
+                subtypes = typeDef.variantConstructors.map { it.name },
+                typeSchemeVariables = typeSchemeVariables,
+            )
 
             val baseTypeInfo = TypeInfo(
                 name = typeDef.typeName,
                 type = base,
                 isPublic = true,
                 isVariantConstructor = false,
-                parent = null,
                 fields = emptyList()
             )
             typeTable.add(baseTypeInfo)
 
-            typeDef.variantConstructors.forEach { ctor ->
+            typeDef.variantConstructors.map { ctor ->
                 val paramTypeNames = ctor.formalFields.flatMap { it.typeRef.findTypeNames() }
                 val ctorTypeSchemeVariables = typeSchemeVariables.filter { it.name in paramTypeNames }
-                val basicVariantType =
-                    SimpleType(packageDefinition.moduleName, packageDefinition.packageName, ctor.name)
-                val type = if (typeSchemeVariables.isEmpty()) {
-                    basicVariantType
-                } else if (ctor.formalFields.isEmpty()){
-                    basicVariantType
-                } else {
-                    GenericType(
-                        listOf(basicVariantType, *ctorTypeSchemeVariables.toTypedArray()),
-                        ctorTypeSchemeVariables
-                    )
-                }
-
                 val fields = ctor.formalFields.map { formalField ->
                     VariantField(formalField.name, resolveType(typeTable, typeSchemeVariables.map { it.name }, formalField.typeRef), formalField.public)
                 }
 
-                val symbolType = if (ctor.formalFields.isNotEmpty()) {
-                    FunctionType(
-                        fields.map { it.type } + type,
-                        ctorTypeSchemeVariables
-                    )
+                val type = if (ctor.formalFields.isEmpty()) {
+                    SimpleType(packageDefinition.moduleName, packageDefinition.packageName, ctor.name)
                 } else {
-                    basicVariantType
+                    ProductType(
+                        moduleName = packageDefinition.moduleName,
+                        packageName = packageDefinition.packageName,
+                        name = ctor.name,
+                        types = fields.map { it.type },
+                        typeParams = ctorTypeSchemeVariables,
+                        typeSchemeVariables = ctorTypeSchemeVariables)
+                }
+
+
+                val constructorOrSymbolType = if (ctor.formalFields.isNotEmpty()) {
+                    FunctionType(fields.map { it.type } + type, ctorTypeSchemeVariables)
+                } else {
+                    type
                 }
 
                 symbolTable.add(
@@ -122,7 +117,7 @@ object Compiler2 {
                         name = ctor.name,
                         SymbolKind.Local,
                         slot = 0,
-                        type = symbolType,
+                        type = constructorOrSymbolType,
                         public = ctor.public,
                         mutable = false
                     )
@@ -133,9 +128,10 @@ object Compiler2 {
                     type = type,
                     isPublic = ctor.public,
                     isVariantConstructor = true,
-                    parent = baseTypeInfo,
                     fields = fields,
                 ))
+
+                return@map type
             }
         }
 
@@ -162,16 +158,7 @@ object Compiler2 {
         // infer types
         // ===========
         val typeGraph = TypeGraph() // add defined and imported types
-        typeTable.forEach {
-            if (!typeGraph.contains(it.type.toString())) {
-                val parent = if (it.parent != null) {
-                    it.parent.type
-                } else {
-                    Types.any
-                }
-                typeGraph.addSubtype(parent.toString(), it.type.toString())
-            }
-        }
+        // TODO do we even need the type graph?
         val inferenceContext = InferenceContext(typeGraph, typeTable)
         val env = mutableMapOf<String, Type>() // use global symbol table
         symbolTable.forEach {
@@ -206,32 +193,33 @@ object Compiler2 {
 
     fun resolveType(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef): Type {
         return when(ref) {
+            is TypeParameterRef -> TypeVariable(ref.name).also { it.sourceSection = ref.section }
             is TypeNameRef ->
                 if (ref.typeName in typeSchemeVariables) {
-                    TypeVariable(ref.typeName)
+                    TypeVariable(ref.typeName).also { it.sourceSection = ref.section }
                 } else {
-                    typeTable.get(ref.typeName)?.type ?: TODO("Type $ref not found.")
+                    typeTable.get(ref.typeName)?.type?.also { it.sourceSection = ref.section }
+                        ?: TODO("Type $ref not found.")
                 }
 
             is TypeConstructorRef -> {
                 val base = resolveType(typeTable, typeSchemeVariables, ref.baseType)
-                base as GenericType
-                val params = ref.typeParameters.map { resolveType(typeTable, typeSchemeVariables, it) }
-                val types = listOf(base.types.first(), *params.toTypedArray())
-                GenericType(
-                    types,
-                    types.flatMap { it.typeSchemeVariables() }
-                )
+                val typeParameters = ref.typeParameters.map { resolveType(typeTable, typeSchemeVariables, it) }
+                return when (base) {
+                    is SumType -> base.copy(typeParams = typeParameters)
+                    is ProductType -> base.copy(types = typeParameters)
+                    else -> TODO("INVALID TYPE CONSTRUCTOR - change this to compiler message")
+                }.also { it.sourceSection = ref.section }
             }
 
             is FunctionTypeRef -> {
                 val returnType = resolveType(typeTable, typeSchemeVariables, ref.returnType)
                 val params = ref.typeParameters.map { resolveType(typeTable, typeSchemeVariables, it) }
                 val types = listOf(*params.toTypedArray(), returnType)
-                GenericType(
+                FunctionType(
                     types,
-                    types.flatMap { it.typeSchemeVariables() }
-                )
+                    types.flatMap { it.typeSchemeVariables() },
+                ).also { it.sourceSection = ref.section }
             }
             else -> throw RuntimeException("This should not happen!")
         }

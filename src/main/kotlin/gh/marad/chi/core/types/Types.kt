@@ -1,5 +1,7 @@
 package gh.marad.chi.core.types
 
+import gh.marad.chi.core.parser.ChiSource
+
 object Types {
     val any = SimpleType("std", "lang", "any")
     val int = SimpleType("std", "lang", "int")
@@ -7,21 +9,18 @@ object Types {
     val bool = SimpleType("std", "lang", "bool")
     val unit = SimpleType("std", "lang", "unit")
     val string = SimpleType("std", "lang", "string")
-    val array = SimpleType("std", "lang", "array")
 
-    fun generic(vararg types: Type) = GenericType(types.toList())
     fun fn(vararg types: Type) = FunctionType(types.toList())
 
-    fun array(elementType: Type) = GenericType(
-        listOf(
-            array,
-            elementType
-        ),
-        if (elementType is TypeVariable) {
+    fun array(elementType: Type) = ProductType(
+        "std", "lang", "array",
+        types = listOf(),
+        typeParams = listOf(elementType),
+        typeSchemeVariables = if (elementType is TypeVariable) {
             listOf(elementType)
         } else {
             emptyList()
-        }
+        },
     )
 }
 
@@ -37,9 +36,11 @@ sealed interface Type {
     fun findTypeVariables(): List<TypeVariable>
     fun generalize(variables: List<TypeVariable>): Type
     fun instantiate(mappings: List<Pair<TypeVariable, Type>>): Type
+    var sourceSection: ChiSource.Section?
 }
 
 data class SimpleType(val moduleName: String, val packageName: String, val name: String) : Type {
+    override var sourceSection: ChiSource.Section? = null
     override fun contains(v: TypeVariable): Boolean = false
     override fun substitute(v: TypeVariable, t: Type) = this
     override fun isTypeScheme(): Boolean = false
@@ -60,6 +61,7 @@ data class SimpleType(val moduleName: String, val packageName: String, val name:
 }
 
 data class TypeVariable(val name: String) : Type {
+    override var sourceSection: ChiSource.Section? = null
     override fun contains(v: TypeVariable): Boolean = v == this
     override fun substitute(v: TypeVariable, t: Type): Type =
         if (v == this) { t } else { this }
@@ -90,23 +92,23 @@ data class TypeVariable(val name: String) : Type {
 }
 
 data class FunctionType(val types: List<Type>, val typeSchemeVariables: List<TypeVariable> = emptyList()) : Type {
+    override var sourceSection: ChiSource.Section? = null
     override fun contains(v: TypeVariable): Boolean = types.any { it.contains(v) }
     override fun substitute(v: TypeVariable, t: Type): Type =
-        copy(types = types.map { it.substitute(v, t) },
-            typeSchemeVariables = if (t is TypeVariable) {
-                typeSchemeVariables.map { it.substitute(v,t) as TypeVariable }
-            } else {
-                typeSchemeVariables
-            })
+        copy(
+            types = types.map { it.substitute(v, t) },
+            typeSchemeVariables = typeSchemeVariables.substitute(v, t)
+        ).also { it.sourceSection = sourceSection }
     override fun isTypeScheme(): Boolean = typeSchemeVariables.isNotEmpty()
     override fun typeSchemeVariables(): List<TypeVariable> = typeSchemeVariables
     override fun findTypeVariables(): List<TypeVariable> = types.flatMap { it.findTypeVariables() }
-    override fun generalize(variables: List<TypeVariable>): Type = copy(typeSchemeVariables = variables)
+    override fun generalize(variables: List<TypeVariable>): Type =
+        copy(typeSchemeVariables = variables).also { it.sourceSection = sourceSection }
     override fun instantiate(mappings: List<Pair<TypeVariable, Type>>): Type =
         copy(
             types = types.map { it.instantiate(mappings) },
-            typeSchemeVariables = typeSchemeVariables - mappings.map { it.first }.toSet()
-        )
+            typeSchemeVariables = typeSchemeVariables.instantiate(mappings)
+        ).also { it.sourceSection = sourceSection }
 
     override fun toString(): String {
         val sb = StringBuilder()
@@ -122,44 +124,101 @@ data class FunctionType(val types: List<Type>, val typeSchemeVariables: List<Typ
     }
 }
 
-data class GenericType(
-    val types: List<Type>,
-    val typeSchemeVariables: List<TypeVariable> = emptyList(),
-) : Type {
-    init {
-//        assert(types.size >= 2) { "Generic type needs base type and at least one parameter type. Types given: $types" }
-//        assert(types[0] is SimpleType)
+fun List<TypeVariable>.substitute(v: TypeVariable, t: Type) =
+    if (t is TypeVariable) {
+        this.map { it.substitute(v, t) as TypeVariable }
+    } else {
+        this
     }
 
-    override fun contains(v: TypeVariable): Boolean = types.contains(v)
-    override fun substitute(v: TypeVariable, t: Type): Type =
-        copy(types = types.map { it.substitute(v, t) },
-            typeSchemeVariables = if (t is TypeVariable) {
-                typeSchemeVariables.map { it.substitute(v,t) as TypeVariable }
-            } else {
-                typeSchemeVariables
-            })
+fun List<TypeVariable>.instantiate(mappings: List<Pair<TypeVariable, Type>>): List<TypeVariable> =
+    this - mappings.map { it.first }.toSet()
+//    this.map { it.instantiate(mappings) }.filterIsInstance<TypeVariable>()
 
+data class ProductType(
+    val moduleName: String,
+    val packageName: String,
+    val name: String,
+    val types: List<Type>,
+    val typeParams: List<Type>,
+    val typeSchemeVariables: List<TypeVariable> = emptyList(),
+) : Type {
+    override var sourceSection: ChiSource.Section? = null
+    override fun contains(v: TypeVariable): Boolean = types.any { it.contains(v) }
+
+    override fun substitute(v: TypeVariable, t: Type): Type =
+        copy(
+            types = types.map { it.substitute(v, t) },
+            typeParams = typeParams.map { it.substitute(v, t) },
+            typeSchemeVariables = typeSchemeVariables.substitute(v, t)
+        ).also { it.sourceSection = sourceSection }
     override fun isTypeScheme(): Boolean = typeSchemeVariables.isNotEmpty()
     override fun typeSchemeVariables(): List<TypeVariable> = typeSchemeVariables
     override fun findTypeVariables(): List<TypeVariable> = types.flatMap { it.findTypeVariables() }
-    override fun generalize(variables: List<TypeVariable>): Type = copy(typeSchemeVariables = variables)
+    override fun generalize(variables: List<TypeVariable>): Type =
+        copy(typeSchemeVariables = variables).also { it.sourceSection = sourceSection }
     override fun instantiate(mappings: List<Pair<TypeVariable, Type>>): Type =
         copy(
             types = types.map { it.instantiate(mappings) },
-            typeSchemeVariables = typeSchemeVariables - mappings.map { it.first }.toSet()
-        )
+            typeParams = typeParams.map { it.instantiate(mappings) },
+            typeSchemeVariables = typeSchemeVariables.instantiate(mappings)
+//            typeSchemeVariables = typeSchemeVariables - mappings.map { it.first }.toSet()
+        ).also { it.sourceSection = sourceSection }
 
     override fun toString(): String {
         val sb = StringBuilder()
-        sb.append(types.first())
-        val tail = types.drop(1)
-        if (tail.isNotEmpty()) {
+        sb.append(moduleName)
+        sb.append("::")
+        sb.append(packageName)
+        sb.append("::")
+        sb.append(name)
+        if (typeParams.isNotEmpty()) {
             sb.append('[')
-            sb.append(tail.joinToString(", "))
+            sb.append(typeParams.joinToString(", "))
             sb.append(']')
         }
         return sb.toString()
     }
 }
 
+data class SumType(
+    val moduleName: String,
+    val packageName: String,
+    val name: String,
+    val typeParams: List<Type>,
+    val subtypes: List<String>,
+    val typeSchemeVariables: List<TypeVariable>,
+) : Type {
+    override var sourceSection: ChiSource.Section? = null
+    override fun contains(v: TypeVariable): Boolean = typeParams.any { it.contains(v) }
+    override fun substitute(v: TypeVariable, t: Type): Type =
+        copy(
+            typeParams = typeParams.map { it.substitute(v, t) },
+            typeSchemeVariables = typeSchemeVariables.substitute(v, t)
+        ).also { it.sourceSection = sourceSection }
+    override fun isTypeScheme(): Boolean = typeSchemeVariables.isNotEmpty()
+    override fun typeSchemeVariables(): List<TypeVariable> = typeSchemeVariables
+    override fun findTypeVariables(): List<TypeVariable> = typeParams.flatMap { it.findTypeVariables() }
+    override fun generalize(variables: List<TypeVariable>): Type =
+        copy(typeSchemeVariables = variables).also { it.sourceSection = sourceSection }
+    override fun instantiate(mappings: List<Pair<TypeVariable, Type>>): Type =
+        copy(
+            typeParams = typeParams.map { it.instantiate(mappings) },
+            typeSchemeVariables = typeSchemeVariables.instantiate(mappings)
+        ).also { it.sourceSection = sourceSection }
+
+    override fun toString(): String {
+        val sb = StringBuilder()
+        sb.append(moduleName)
+        sb.append("::")
+        sb.append(packageName)
+        sb.append("::")
+        sb.append(name)
+        if (typeParams.isNotEmpty()) {
+            sb.append('[')
+            sb.append(typeParams.joinToString(", "))
+            sb.append(']')
+        }
+        return sb.toString()
+    }
+}

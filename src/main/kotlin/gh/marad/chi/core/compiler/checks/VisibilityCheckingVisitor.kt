@@ -9,7 +9,6 @@ import gh.marad.chi.core.analyzer.toCodePoint
 import gh.marad.chi.core.compiler.TypeTable
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
 import gh.marad.chi.core.parser.ChiSource
-import gh.marad.chi.core.types.GenericType
 import gh.marad.chi.core.types.SimpleType
 import gh.marad.chi.core.types.Type
 
@@ -44,8 +43,6 @@ class VisibilityCheckingVisitor(
     private fun verifyFieldAccessible(receiverType: Type, fieldName: String, sourceSection: ChiSource.Section?) {
         val simpleType: SimpleType = if(receiverType is SimpleType) {
             receiverType
-        } else if (receiverType is GenericType) {
-            receiverType.types.first() as SimpleType
         } else {
             TODO("Unexpected type: $receiverType")
         }

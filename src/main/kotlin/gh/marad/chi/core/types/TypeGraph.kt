@@ -15,7 +15,6 @@ class TypeGraph {
         addSubtype(Types.any.toString(), Types.string.toString())
         addSubtype(Types.any.toString(), Types.bool.toString())
         addSubtype(Types.any.toString(), Types.unit.toString())
-        addSubtype(Types.any.toString(), Types.array.toString())
     }
 
     fun addType(name: TypeName) {
