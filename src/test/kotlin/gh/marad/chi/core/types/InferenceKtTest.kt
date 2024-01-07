@@ -1,7 +1,9 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.core.*
+import gh.marad.chi.core.analyzer.CompilerMessageException
 import gh.marad.chi.core.analyzer.Level
+import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.compiler.Compiler2
 import gh.marad.chi.core.compiler.Symbol
 import gh.marad.chi.core.compiler.SymbolKind
@@ -228,8 +230,8 @@ class InferenceKtTest {
         result.block.newType.shouldBe(Types.bool)
         result.inferred.constraints shouldHaveSize 1
         result.inferred.constraints.first().should {
-            it.actual shouldBe FunctionType(listOf(Types.int, Types.bool))
-            it.expected shouldBe FunctionType(listOf(Types.int, TypeVariable("t0")))
+            it.expected shouldBe FunctionType(listOf(Types.int, Types.bool))
+            it.actual shouldBe FunctionType(listOf(Types.int, TypeVariable("t0")))
             it.section.shouldNotBeNull()
         }
 
@@ -267,11 +269,18 @@ class InferenceKtTest {
         )
 
         // when
-        shouldThrow<TypeInferenceFailed> {
+        val ex = shouldThrow<CompilerMessageException> {
             testInference("""
                     if cond { thenBranch } else { elseBranch }
                 """.trimIndent(), env, ignoreErrors = true)
         }
+
+        // then
+        ex.msg.shouldBeTypeOf<TypeMismatch>().should {
+            it.expected shouldBe Types.int
+            it.actual shouldBe Types.string
+        }
+
     }
 
     @Test
@@ -320,14 +329,20 @@ class InferenceKtTest {
         )
 
         // expect
-        assertThrows<TypeInferenceFailed> {
+        assertThrows<CompilerMessageException> {
             println(testInference("b $op i", env, ignoreErrors = true))
-        }.section.shouldNotBeNull()
+        }.msg.shouldBeTypeOf<TypeMismatch>().should {
+            it.expected shouldBe Types.bool
+            it.actual shouldBe Types.int
+        }
 
         // and
-        assertThrows<TypeInferenceFailed> {
+        assertThrows<CompilerMessageException> {
             testInference("i $op b", env, ignoreErrors = true)
-        }.section.shouldNotBeNull()
+        }.msg.shouldBeTypeOf<TypeMismatch>().should {
+            it.expected shouldBe Types.bool
+            it.actual shouldBe Types.int
+        }
     }
 
 
@@ -372,12 +387,15 @@ class InferenceKtTest {
         )
 
         // when
-        val result = shouldThrow<TypeInferenceFailed> {
+        val result = shouldThrow<CompilerMessageException> {
             testInference("f $op f", env, ignoreErrors = true)
         }
 
-
-        println(result)
+        // then
+        result.msg.shouldBeTypeOf<TypeMismatch>().should {
+            it.expected shouldBe Types.int
+            it.actual shouldBe Types.float
+        }
     }
 
     @Test
@@ -416,8 +434,14 @@ class InferenceKtTest {
         val env = mapOf("x" to Types.int)
 
         // when
-        shouldThrow<TypeInferenceFailed> {
+        val ex = shouldThrow<CompilerMessageException> {
             testInference("!x".trimIndent(), env, ignoreErrors = true)
+        }
+
+        // then
+        ex.msg.shouldBeTypeOf<TypeMismatch>().should {
+            it.expected shouldBe Types.bool
+            it.actual shouldBe Types.int
         }
     }
 
@@ -517,8 +541,11 @@ class InferenceKtTest {
     @Test
     fun `while loop condition should be bool`() {
         // expect
-        shouldThrow<TypeInferenceFailed> {
+        shouldThrow<CompilerMessageException> {
             testInference("while 5 { 5 }", ignoreErrors = true)
+        }.msg.shouldBeTypeOf<TypeMismatch>().should {
+            it.expected shouldBe Types.bool
+            it.actual shouldBe Types.int
         }
     }
 
