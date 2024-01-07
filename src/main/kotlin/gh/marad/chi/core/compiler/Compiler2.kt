@@ -1,9 +1,12 @@
 package gh.marad.chi.core.compiler
 
-import gh.marad.chi.core.*
+import gh.marad.chi.core.Block
+import gh.marad.chi.core.Package
+import gh.marad.chi.core.Program
 import gh.marad.chi.core.analyzer.*
 import gh.marad.chi.core.compiler.checks.FnCallCheckingVisitor
 import gh.marad.chi.core.compiler.checks.ImmutabilityCheckVisitor
+import gh.marad.chi.core.compiler.checks.ReturnTypeCheckVisitor
 import gh.marad.chi.core.compiler.checks.VisibilityCheckingVisitor
 import gh.marad.chi.core.expressionast.internal.convertPackageDefinition
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
@@ -12,7 +15,6 @@ import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.types.*
 import gh.marad.chi.core.types.TypeInferenceFailed
-import java.lang.RuntimeException
 
 object Compiler2 {
 
@@ -176,6 +178,13 @@ object Compiler2 {
             resultMessages.add(ex.msg)
         }
 
+        if (resultMessages.isNotEmpty()) {
+            return Pair(
+                Program(packageDefinition, emptyList(), emptyList(), parsedProgram.section),
+                resultMessages
+            )
+        }
+
         // perform post construction checks
         // ================================
         VisibilityCheckingVisitor(packageDefinition.moduleName, typeTable)
@@ -183,6 +192,8 @@ object Compiler2 {
         FnCallCheckingVisitor()
             .check(expressions, resultMessages)
         ImmutabilityCheckVisitor(resultMessages)
+            .check(expressions)
+        ReturnTypeCheckVisitor(resultMessages)
             .check(expressions)
 
         // make messages more informative

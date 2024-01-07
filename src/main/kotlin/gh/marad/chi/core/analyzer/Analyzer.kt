@@ -1,6 +1,8 @@
 package gh.marad.chi.core.analyzer
 
-import gh.marad.chi.core.*
+import gh.marad.chi.core.Expression
+import gh.marad.chi.core.Program
+import gh.marad.chi.core.forEachAst
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeInferenceFailed
@@ -18,6 +20,10 @@ sealed interface Message {
     val level: Level
     val message: String
     val codePoint: CodePoint?
+}
+
+data class ErrorMessage(override val message: String, override val codePoint: CodePoint?) : Message {
+    override val level: Level = Level.ERROR
 }
 
 data class InvalidImport(val details: String?, override val codePoint: CodePoint?) : Message {

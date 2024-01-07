@@ -4,7 +4,6 @@ package gh.marad.chi.core.analyzer
 
 import gh.marad.chi.ast
 import gh.marad.chi.compile
-import gh.marad.chi.core.OldType
 import gh.marad.chi.core.OldType.Companion.bool
 import gh.marad.chi.core.OldType.Companion.int
 import gh.marad.chi.core.OldType.Companion.unit
@@ -129,18 +128,13 @@ class FnTypeCheckingSpec {
 
     @Test
     fun `should accept return without any value`() {
-        analyze(
-            ast(
-                """
-                        fn foo() {
-                            return
-                            5
-                        }
-                    """.trimIndent()
-            )
-        ).should {
-            it.shouldHaveSize(0)
-        }
+        messages("""
+            fn foo() {
+                return
+                5
+            }
+        """.trimIndent()
+        ).shouldHaveSize(0)
     }
 }
 

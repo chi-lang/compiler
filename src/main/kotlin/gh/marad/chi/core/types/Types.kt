@@ -162,7 +162,6 @@ data class ProductType(
             types = types.map { it.instantiate(mappings) },
             typeParams = typeParams.map { it.instantiate(mappings) },
             typeSchemeVariables = typeSchemeVariables.instantiate(mappings)
-//            typeSchemeVariables = typeSchemeVariables - mappings.map { it.first }.toSet()
         ).also { it.sourceSection = sourceSection }
 
     override fun toString(): String {
