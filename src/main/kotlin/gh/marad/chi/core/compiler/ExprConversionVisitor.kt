@@ -139,7 +139,7 @@ class ExprConversionVisitor(
         val funcType = FunctionType(
             types = funcTypes,
             typeSchemeVariables = funcTypes.flatMap { it.findTypeVariables() }
-                .filter { it.name in currentTypeSchemeVariables }
+                .filter { it.name in currentTypeSchemeVariables }.distinct()
         )
 
         currentTypeSchemeVariables = prevTypeSchemeVariables

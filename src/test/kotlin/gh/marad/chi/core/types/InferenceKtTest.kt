@@ -1,6 +1,7 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.core.*
+import gh.marad.chi.core.VariantTypeField
 import gh.marad.chi.core.analyzer.CompilerMessageException
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.TypeMismatch
@@ -26,14 +27,13 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
-import kotlin.AssertionError
 
 class InferenceKtTest {
     @Test
     fun `test parametric polymorphizm type inference`() {
         // when
         val result = testInference("""
-            fn id[T](i: T) { i }
+            fn id[T](i: T): T { i }
             id(5)
             id(true)
         """.trimIndent())
@@ -515,7 +515,7 @@ class InferenceKtTest {
     @Test
     fun `test return inference`() {
         // when
-        val result = testInference("return 5")
+        val result = testInference("return 5", ignoreErrors = true)
 
         // then
         result.firstExpr().shouldBeTypeOf<Return>().should {

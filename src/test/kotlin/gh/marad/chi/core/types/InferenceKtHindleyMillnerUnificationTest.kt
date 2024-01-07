@@ -1,11 +1,15 @@
 package gh.marad.chi.core.types
 
+import gh.marad.chi.core.analyzer.CompilerMessageException
+import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.compiler.TypeTable
 import gh.marad.chi.core.parser.ChiSource
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.jupiter.api.Test
 import kotlin.random.Random
 
@@ -140,12 +144,15 @@ class InferenceKtHindleyMillnerUnificationTest {
         val section = randomSourceSection()
 
         // when
-        val ex = shouldThrow<TypeInferenceFailed> {
+        val ex = shouldThrow<CompilerMessageException> {
             unify(TypeTable(), setOf(Constraint(a, b, section, paramSections)))
         }
 
         // and
-        ex.section shouldBe boolSection
+        ex.msg.shouldBeTypeOf<TypeMismatch>().should {
+            it.expected shouldBe Types.bool
+            it.actual shouldBe Types.string
+        }
     }
 
     private fun randomSourceSection(): ChiSource.Section {

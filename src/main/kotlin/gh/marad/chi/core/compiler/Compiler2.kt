@@ -180,7 +180,7 @@ object Compiler2 {
 
         if (resultMessages.isNotEmpty()) {
             return Pair(
-                Program(packageDefinition, emptyList(), emptyList(), parsedProgram.section),
+                Program(packageDefinition, emptyList(), expressions, parsedProgram.section),
                 resultMessages
             )
         }
