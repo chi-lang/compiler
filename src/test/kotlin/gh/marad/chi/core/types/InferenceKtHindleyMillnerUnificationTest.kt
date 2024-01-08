@@ -66,9 +66,12 @@ class InferenceKtHindleyMillnerUnificationTest {
         val section = randomSourceSection()
 
         // expect
-        shouldThrow<TypeInferenceFailed> {
+        shouldThrow<CompilerMessageException> {
             unify(setOf(Constraint(a, b, section)))
-        }.section shouldBe section
+        }.msg.shouldBeTypeOf<TypeMismatch>().should {
+            it.expected shouldBe Types.bool
+            it.actual shouldBe Types.int
+        }
     }
 
     @Test
@@ -79,9 +82,12 @@ class InferenceKtHindleyMillnerUnificationTest {
         val section = randomSourceSection()
 
         // expect
-        shouldThrow<TypeInferenceFailed> {
+        shouldThrow<CompilerMessageException> {
             unify(setOf(Constraint(a, b, section)))
-        }.section shouldBe section
+        }.msg.shouldBeTypeOf<TypeMismatch>().should {
+            it.expected shouldBe b
+            it.actual shouldBe a
+        }
     }
 
     @Test
@@ -109,12 +115,15 @@ class InferenceKtHindleyMillnerUnificationTest {
         val fnParamSections = listOf(floatParamSection, intParamSection, boolParamSection)
 
         // when
-        val ex = shouldThrow<TypeInferenceFailed> {
+        val ex = shouldThrow<CompilerMessageException> {
             unify(setOf(Constraint(a, b, randomSourceSection(), fnParamSections)))
         }
 
         // then
-        ex.section shouldBe intParamSection
+        ex.msg.shouldBeTypeOf<TypeMismatch>().should {
+            it.expected shouldBe Types.string
+            it.actual shouldBe Types.int
+        }
     }
 
     @Test
