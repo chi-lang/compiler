@@ -35,8 +35,7 @@ fun convertNameDeclaration(ctx: ConversionContext, ast: ParseNameDeclaration): N
 fun convertAssignment(ctx: ConversionContext, ast: ParseAssignment): Assignment =
     // TODO czy tutaj nie lepiej mieć zamiast `name` VariableAccess i mieć tam nazwę i pakiet?
     Assignment(
-        name = ast.variableName,
-        symbol = Symbol("","", ast.variableName, Types.unit, false, false),
+        target = PackageSymbol(Symbol("","", ast.variableName, Types.unit, false, false)),
         value = generateExpressionAst(ctx, ast.value),
         sourceSection = ast.section
     )

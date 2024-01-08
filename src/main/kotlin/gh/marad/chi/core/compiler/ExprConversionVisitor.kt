@@ -149,11 +149,8 @@ class ExprConversionVisitor(
         )
 
     override fun visitAssignment(parseAssignment: ParseAssignment): Expression =
-        // TODO czy tutaj nie lepiej mieć zamiast `name` VariableAccess i mieć tam nazwę i pakiet?
         Assignment(
-            parseAssignment.variableName,
-//            symbol = getPackageSymbol(parseAssignment.variableName, parseAssignment.section),
-            symbol = Symbol("", "", "", null, false, false), // TODO fix this
+            target = getSymbol(parseAssignment.variableName, parseAssignment.section),
             value = parseAssignment.value.accept(this),
             sourceSection = parseAssignment.section
         )
@@ -166,10 +163,11 @@ class ExprConversionVisitor(
             sourceSection = parseIndexedAssignment.section
         )
 
-    override fun visitVariableRead(parseVariableRead: ParseVariableRead): Expression {
-        val target = getSymbol(parseVariableRead.variableName, parseVariableRead.section)
-        return VariableAccess(target, parseVariableRead.section)
-    }
+    override fun visitVariableRead(parseVariableRead: ParseVariableRead): Expression =
+        VariableAccess(
+            target = getSymbol(parseVariableRead.variableName, sourceSection = parseVariableRead.section),
+            sourceSection = parseVariableRead.section
+        )
 
     override fun visitIndexOperator(parseIndexOperator: ParseIndexOperator): Expression =
         IndexOperator(

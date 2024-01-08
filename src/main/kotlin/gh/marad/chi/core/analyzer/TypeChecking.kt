@@ -30,7 +30,7 @@ fun checkImports(import: Import, messages: MutableList<Message>) {
 }
 
 fun checkThatAssignmentDoesNotChangeImmutableValue(expr: Expression, messages: MutableList<Message>) {
-    if (expr is Assignment && !expr.symbol.mutable) {
+    if (expr is Assignment && !expr.target.mutable) {
         messages.add(CannotChangeImmutableVariable(expr.sourceSection.toCodePoint()))
     }
 }

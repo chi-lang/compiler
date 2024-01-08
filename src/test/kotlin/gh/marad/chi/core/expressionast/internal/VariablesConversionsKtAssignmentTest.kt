@@ -1,12 +1,9 @@
 package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.addSymbolInDefaultPackage
-import gh.marad.chi.core.Assignment
-import gh.marad.chi.core.FieldAssignment
-import gh.marad.chi.core.IndexedAssignment
+import gh.marad.chi.core.*
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parser.readers.*
-import gh.marad.chi.core.shouldBeAtom
 import gh.marad.chi.core.types.Types
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -30,9 +27,9 @@ class VariablesConversionsKtAssignmentTest {
         ).shouldBeTypeOf<Assignment>()
 
         // then
-        result.name shouldBe "variable"
+        result.target.name shouldBe "variable"
+        result.target.shouldBeTypeOf<PackageSymbol>()
         result.value.shouldBeAtom("10", Types.int)
-        result.symbol shouldBe ns.getDefaultPackage().symbols.get("variable")
         result.sourceSection shouldBe testSection
     }
 

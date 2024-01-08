@@ -14,7 +14,7 @@ class ImmutabilityCheckVisitor(val messages: MutableList<Message>) : DefaultExpr
     }
 
     override fun visitAssignment(assignment: Assignment) {
-        if (!assignment.symbol.mutable) {
+        if (!assignment.target.mutable) {
             messages.add(CannotChangeImmutableVariable(assignment.sourceSection.toCodePoint()))
         }
         super.visitAssignment(assignment)
