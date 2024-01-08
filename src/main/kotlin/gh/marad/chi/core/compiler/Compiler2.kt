@@ -30,6 +30,13 @@ object Compiler2 {
         val resultMessages = messages.toMutableList()
         resultMessages.addAll(messages)
 
+        if (packageDefinition.moduleName.isEmpty()) {
+            resultMessages.add(InvalidModuleName(packageDefinition.moduleName, CodePoint(1, 0)))
+        }
+        if (packageDefinition.packageName.isEmpty()) {
+            resultMessages.add(InvalidPackageName(packageDefinition.packageName, CodePoint(1, 0)))
+        }
+
         // TODO verify package declaration and imports
         // ==========================
         // TODO check that imported names exist and are public

@@ -5,15 +5,16 @@ import gh.marad.chi.core.analyzer.InvalidModuleName
 import gh.marad.chi.core.analyzer.InvalidPackageName
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.messages
-import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
+import org.junit.jupiter.api.Test
 
-@Suppress("unused")
-class PackageSpec : FunSpec({
-    test("should set current module and package and define name there") {
+class PackageSpec {
+    @Test
+    fun `should set current module and package and define name there`() {
         // when
         val namespace = GlobalCompilationNamespace()
         compile(
@@ -25,14 +26,15 @@ class PackageSpec : FunSpec({
         )
 
         // then
-        val targetScope = namespace.getOrCreatePackage("my.module", "some.system").scope
-        targetScope.containsSymbol("millis") shouldBe true
+        val targetSymbolTable = namespace.getOrCreatePackage("my.module", "some.system").symbols
+        targetSymbolTable.hasSymbol("millis").shouldBeTrue()
 
-        val defaultScope = namespace.getDefaultPackage().scope
-        defaultScope.containsSymbol("millis") shouldBe false
+        val defaultSymbolTable = namespace.getDefaultPackage().symbols
+        defaultSymbolTable.hasSymbol("millis") shouldBe false
     }
 
-    test("should not allow empty module name") {
+    @Test
+    fun `should not allow empty module name`() {
         // when
         val messages = messages(
             """
@@ -47,7 +49,8 @@ class PackageSpec : FunSpec({
             .should { it.moduleName shouldBe "" }
     }
 
-    test("should not allow empty package name") {
+    @Test
+    fun `should not allow empty package name`() {
         // when
         val messages = messages(
             """
@@ -60,4 +63,4 @@ class PackageSpec : FunSpec({
         messages[0].shouldBeTypeOf<InvalidPackageName>()
             .should { it.packageName shouldBe "" }
     }
-})
+}
