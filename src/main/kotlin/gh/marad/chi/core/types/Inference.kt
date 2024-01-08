@@ -421,6 +421,9 @@ fun unify(constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
             // this is nothing interesting
             continue
         } else if (a is SimpleType && e is SimpleType) {
+            if (e == Types.any) {
+                continue
+            }
             typeMismatch(expected = e, actual = a, section = section, history)
         } else if (a is FunctionType && e is FunctionType) {
             val aHead = a.types.first()
