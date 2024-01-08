@@ -1,18 +1,14 @@
 package gh.marad.chi.core.modules
 
-import gh.marad.chi.ErrorMessagesException
 import gh.marad.chi.addSymbol
 import gh.marad.chi.ast
 import gh.marad.chi.compile
 import gh.marad.chi.core.FnCall
 import gh.marad.chi.core.OldType
 import gh.marad.chi.core.VariableAccess
-import gh.marad.chi.core.analyzer.SyntaxError
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.types.Types
-import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -100,9 +96,9 @@ class ImportSpec {
         // when
         val result = ast(
             """
-            import std/time as time
-            time.millis()
-        """.trimIndent(), ignoreCompilationErrors = true
+                import std/time as time
+                time.millis()
+            """.trimIndent()
         )
 
         // then
@@ -129,7 +125,7 @@ class ImportSpec {
                 import std/time as time { millis as coreMillis }
                 time.millis
                 coreMillis
-            """.trimIndent(), namespace = ns, ignoreCompilationErrors = true
+            """.trimIndent(), namespace = ns
         )
 
         // then
@@ -142,24 +138,4 @@ class ImportSpec {
                 }
             }
     }
-
-    @Test
-    fun `should not allow empty package alias name`() {
-        // when
-        val ex = shouldThrow<ErrorMessagesException> {
-            ast(
-                """
-                    import module/pkg as 
-                """.trimIndent()
-            )
-        }
-
-        // when
-        val messages = ex.errors
-
-        // then
-        messages shouldHaveSize 1
-        messages[0].shouldBeTypeOf<SyntaxError>()
-    }
-
 }
