@@ -280,6 +280,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
         is IndexOperator -> {
             val element = ctx.nextTypeVariable()
             val t = Types.array(element)
+            t.sourceSection = expr.sourceSection
 
             val variableType = inferTypes(ctx, env, expr.variable)
             val indexType = inferTypes(ctx, env, expr.index)
@@ -304,9 +305,9 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
 
             val constraints = mutableSetOf<Constraint>()
 
-            constraints.add(Constraint(variableType.type, t, expr.variable.sourceSection))
             constraints.add(Constraint(indexType.type, Types.int, expr.index.sourceSection))
             constraints.add(Constraint(valueType.type, element, expr.value.sourceSection))
+            constraints.add(Constraint(variableType.type, t, expr.variable.sourceSection))
             constraints.addAll(variableType.constraints)
             constraints.addAll(indexType.constraints)
             constraints.addAll(valueType.constraints)

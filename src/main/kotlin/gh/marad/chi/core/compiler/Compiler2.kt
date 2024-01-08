@@ -138,7 +138,7 @@ object Compiler2 {
         if (resultMessages.isNotEmpty()) {
             return Pair(
                 Program(packageDefinition, emptyList(), emptyList(), parsedProgram.section),
-                resultMessages
+                refineMessages(resultMessages)
             )
         }
 
@@ -174,7 +174,7 @@ object Compiler2 {
         if (resultMessages.isNotEmpty()) {
             return Pair(
                 Program(packageDefinition, emptyList(), expressions, parsedProgram.section),
-                resultMessages
+                refineMessages(resultMessages)
             )
         }
 
@@ -236,7 +236,9 @@ object Compiler2 {
         messages.map {
             if (it is TypeMismatch && it.expected is FunctionType && it.actual !is FunctionType) {
                 NotAFunction(it.codePoint)
-            } else {
+            } else if (it is TypeMismatch && it.expected is ProductType && it.expected.name == "array") {
+                TypeIsNotIndexable(it.actual, it.codePoint)
+            }  else {
                 it
             }
         }

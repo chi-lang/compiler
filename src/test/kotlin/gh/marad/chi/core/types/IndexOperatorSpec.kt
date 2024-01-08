@@ -1,101 +1,114 @@
 package gh.marad.chi.core.types
 
-import gh.marad.chi.ast
-import gh.marad.chi.core.OldType
+import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.core.analyzer.TypeIsNotIndexable
 import gh.marad.chi.core.analyzer.TypeMismatch
-import gh.marad.chi.core.analyzer.analyze
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.Symbol
-import gh.marad.chi.core.namespace.SymbolKind
-import io.kotest.core.spec.style.FunSpec
+import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
+import org.junit.jupiter.api.Test
 
 @Suppress("unused")
-class IndexOperatorSpec : FunSpec({
-    val ns = GlobalCompilationNamespace()
-    ns.getDefaultPackage().symbols.apply {
-        add(Symbol("user", "default", "arr", SymbolKind.Local, Types.array(Types.int), 0, true, true))
+class IndexOperatorSpec {
+    val ns = GlobalCompilationNamespace().also {
+        it.addSymbolInDefaultPackage("arr", Types.array(Types.int))
     }
 
-    test("should not allow to index arrays with types other than integer") {
-        analyze(
-            ast(
-                """
-                    arr["invalid-index"]
-                """.trimIndent(), ns, ignoreCompilationErrors = true
-            )
-        ).should { msgs ->
+    @Test
+    fun `should not allow to index arrays with types other than integer`() {
+        // when
+        val result = messages(
+            """
+                arr["invalid-index"]
+            """.trimIndent(),
+            ns
+        )
+
+        // then
+        result.should { msgs ->
             msgs shouldHaveSize 1
             msgs.first().shouldBeTypeOf<TypeMismatch>().should {
-                it.expected shouldBe OldType.int
-                it.actual shouldBe OldType.string
+                it.expected shouldBe Types.int
+                it.actual shouldBe Types.string
             }
         }
     }
 
-    test("should not allow indexing arrays in assignment with non-integer types") {
-        analyze(
-            ast(
-                """
-                    arr["invalid-index"] = 5
-                """.trimIndent(), ns, ignoreCompilationErrors = true,
-            )
-        ).should { msgs ->
+    @Test
+    fun `should not allow indexing arrays in assignment with non-integer types`() {
+        // when
+        val result = messages(
+            """
+                arr["invalid-index"] = 5
+            """.trimIndent(),
+            ns
+        )
+
+        // then
+        result.should { msgs ->
             msgs shouldHaveSize 1
             msgs.first().shouldBeTypeOf<TypeMismatch>().should {
-                it.expected shouldBe OldType.int
-                it.actual shouldBe OldType.string
+                it.expected shouldBe Types.int
+                it.actual shouldBe Types.string
             }
         }
     }
 
-    test("should not allow indexing non-indexable types") {
-        analyze(
-            ast(
-                """
-                    5[2]
-                """.trimIndent(), ignoreCompilationErrors = true
-            )
-        ).should { msgs ->
+    @Test
+    fun `should not allow indexing non-indexable types`() {
+        // when
+        val result = messages(
+            """
+                5[2]
+            """.trimIndent()
+        )
+
+        // then
+        result.should { msgs ->
             msgs shouldHaveSize 1
             msgs[0].shouldBeTypeOf<TypeIsNotIndexable>().should {
-                it.type shouldBe OldType.int
+                it.type shouldBe Types.int
             }
         }
     }
 
-    test("should not allow assign by index to non-indexable types") {
-        analyze(
-            ast(
-                """
-                    5[2] = 10
-                """.trimIndent(), ignoreCompilationErrors = true
-            )
-        ).should { msgs ->
+    @Test
+    fun `should not allow assign by index to non-indexable types`() {
+        // when
+        val result = messages(
+            """
+                5[2] = 10
+            """.trimIndent()
+        )
+
+        // then
+        result.should { msgs ->
             msgs shouldHaveSize 1
             msgs[0].shouldBeTypeOf<TypeIsNotIndexable>().should {
-                it.type shouldBe OldType.int
+                it.type shouldBe Types.int
             }
         }
     }
 
-    test("assigned value should match the element type") {
-        analyze(
-            ast(
-                """
-                    arr[2] = "i should be an int"
-                """.trimIndent(), ns, ignoreCompilationErrors = true,
-            )
-        ).should { msgs ->
+    @Test
+    fun `assigned value should match the element type`() {
+        // when
+        val result = messages(
+            """
+                arr[2] = "i should be an int"
+            """.trimIndent(), ns
+        )
+
+        // then
+        result.should { msgs ->
             msgs shouldHaveSize 1
             msgs[0].shouldBeTypeOf<TypeMismatch>().should {
-                it.expected shouldBe OldType.int
-                it.actual shouldBe OldType.string
+                it.expected shouldBe Types.int
+                it.actual shouldBe Types.string
             }
         }
     }
-})
+}
