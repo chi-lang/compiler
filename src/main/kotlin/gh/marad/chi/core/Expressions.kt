@@ -1,8 +1,8 @@
 package gh.marad.chi.core
 
-import gh.marad.chi.core.compiler.Symbol
 import gh.marad.chi.core.expressionast.ExpressionVisitor
 import gh.marad.chi.core.namespace.CompilationScope
+import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeVariable

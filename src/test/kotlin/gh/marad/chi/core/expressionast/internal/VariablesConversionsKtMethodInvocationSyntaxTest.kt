@@ -1,10 +1,10 @@
 package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.*
-import gh.marad.chi.core.compiler.Symbol
-import gh.marad.chi.core.compiler.SymbolKind
 import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.Symbol
+import gh.marad.chi.core.namespace.SymbolKind
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.types.Types
 import gh.marad.chi.core.types.Types.int

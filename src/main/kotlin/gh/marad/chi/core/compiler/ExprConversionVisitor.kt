@@ -2,8 +2,8 @@ package gh.marad.chi.core.compiler
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.compiler.Compiler2.resolveType
-import gh.marad.chi.core.namespace.CompilationScope
-import gh.marad.chi.core.namespace.ScopeType
+import gh.marad.chi.core.namespace.*
+import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.parser.visitor.ParseAstVisitor

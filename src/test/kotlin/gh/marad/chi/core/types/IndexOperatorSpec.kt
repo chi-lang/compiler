@@ -5,9 +5,9 @@ import gh.marad.chi.core.OldType
 import gh.marad.chi.core.analyzer.TypeIsNotIndexable
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.analyzer.analyze
-import gh.marad.chi.core.compiler.Symbol
-import gh.marad.chi.core.compiler.SymbolKind
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.Symbol
+import gh.marad.chi.core.namespace.SymbolKind
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should

@@ -3,8 +3,8 @@ package gh.marad.chi.core.analyzer
 import gh.marad.chi.addSymbol
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.addType
-import gh.marad.chi.core.compiler.VariantField
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.VariantField
 import gh.marad.chi.core.types.Types
 import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldHaveSize

@@ -3,6 +3,7 @@ package gh.marad.chi.core.compiler
 import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.analyzer.UnrecognizedName
 import gh.marad.chi.core.analyzer.toCodePoint
+import gh.marad.chi.core.namespace.SymbolTable
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.parser.visitor.DefaultParseAstVisitor
 

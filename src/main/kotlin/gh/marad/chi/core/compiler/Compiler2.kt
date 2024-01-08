@@ -9,7 +9,8 @@ import gh.marad.chi.core.compiler.checks.ImmutabilityCheckVisitor
 import gh.marad.chi.core.compiler.checks.ReturnTypeCheckVisitor
 import gh.marad.chi.core.compiler.checks.VisibilityCheckingVisitor
 import gh.marad.chi.core.expressionast.internal.convertPackageDefinition
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.*
+import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.parseSource
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.*

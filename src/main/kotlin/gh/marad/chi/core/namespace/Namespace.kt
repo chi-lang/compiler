@@ -2,8 +2,6 @@ package gh.marad.chi.core.namespace
 
 import gh.marad.chi.core.CompilationDefaults
 import gh.marad.chi.core.Package
-import gh.marad.chi.core.compiler.SymbolTable
-import gh.marad.chi.core.compiler.TypeTable
 
 class GlobalCompilationNamespace(private val prelude: List<PreludeImport> = emptyList()) {
     private val modules: MutableMap<String, ModuleDescriptor> = mutableMapOf()
@@ -11,10 +9,6 @@ class GlobalCompilationNamespace(private val prelude: List<PreludeImport> = empt
 
     init {
         getDefaultPackage().typeRegistry
-    }
-
-    fun setPackageScope(moduleName: String, packageName: String, scope: CompilationScope) {
-        getOrCreateModule(moduleName).setPackageScope(packageName, scope)
     }
 
     fun createCompileTimeImports(): CompileTimeImports =

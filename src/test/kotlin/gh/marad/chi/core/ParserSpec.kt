@@ -1,11 +1,10 @@
 package gh.marad.chi.core
 
 import gh.marad.chi.ast
-import gh.marad.chi.core.compiler.Symbol
-import gh.marad.chi.core.compiler.SymbolKind
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.Symbol
+import gh.marad.chi.core.namespace.SymbolKind
 import gh.marad.chi.core.types.Types
-import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe

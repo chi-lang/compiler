@@ -5,11 +5,7 @@ import gh.marad.chi.core.analyzer.CompilerMessageException
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.compiler.Compiler2
-import gh.marad.chi.core.compiler.Symbol
-import gh.marad.chi.core.compiler.SymbolKind
-import gh.marad.chi.core.namespace.CompilationScope
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.ScopeType
+import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.utils.printAst
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -145,7 +141,7 @@ class InferenceKtTest {
         // given
         val assignment = Assignment(
             name = "x",
-            symbol = Symbol("","","",SymbolKind.Local,Types.int, 0, true, false),
+            symbol = Symbol("","","", SymbolKind.Local,Types.int, 0, true, false),
             value = Atom.int(5, null),
             sourceSection = null
         )

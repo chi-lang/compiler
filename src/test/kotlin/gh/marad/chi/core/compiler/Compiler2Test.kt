@@ -1,10 +1,11 @@
 package gh.marad.chi.core.compiler
 
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.Symbol
+import gh.marad.chi.core.namespace.SymbolKind
 import gh.marad.chi.core.types.Types
 import gh.marad.chi.core.utils.printAst
 import org.junit.jupiter.api.Test
-import java.lang.AssertionError
 
 class Compiler2Test {
     @Test

@@ -1,14 +1,12 @@
 package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.*
-import gh.marad.chi.core.compiler.Symbol
-import gh.marad.chi.core.compiler.SymbolKind
 import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.expressionast.generateExpressionAst
-import gh.marad.chi.core.namespace.SymbolType
+import gh.marad.chi.core.namespace.Symbol
+import gh.marad.chi.core.namespace.SymbolKind
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.types.Types
-import javax.sound.sampled.AudioFileFormat
 
 fun convertVariableRead(ctx: ConversionContext, ast: ParseVariableRead): VariableAccess {
     val lookup = ctx.lookup(ast.variableName)
@@ -41,7 +39,7 @@ fun convertAssignment(ctx: ConversionContext, ast: ParseAssignment): Assignment 
     // TODO czy tutaj nie lepiej mieć zamiast `name` VariableAccess i mieć tam nazwę i pakiet?
     Assignment(
         name = ast.variableName,
-        symbol = Symbol("","", ast.variableName,SymbolKind.Local, Types.unit, 0, false, false),
+        symbol = Symbol("","", ast.variableName, SymbolKind.Local, Types.unit, 0, false, false),
         value = generateExpressionAst(ctx, ast.value),
         sourceSection = ast.section
     )

@@ -1,11 +1,10 @@
 package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.FieldAccess
-import gh.marad.chi.core.OldType
 import gh.marad.chi.core.VariableAccess
-import gh.marad.chi.core.compiler.Symbol
-import gh.marad.chi.core.compiler.SymbolKind
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.Symbol
+import gh.marad.chi.core.namespace.SymbolKind
 import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseFieldAccess
 import gh.marad.chi.core.parser.readers.ParseIndexOperator
@@ -119,8 +118,10 @@ class VariablesConversionsKtTest {
 
         val ns = GlobalCompilationNamespace()
         ns.getDefaultPackage().symbols.apply {
-            add(Symbol("user", "default", "object", SymbolKind.Local,
-                SimpleType("user", "default", "Obj"), 0, true, true))
+            add(
+                Symbol("user", "default", "object", SymbolKind.Local,
+                SimpleType("user", "default", "Obj"), 0, true, true)
+            )
         }
 
         // when

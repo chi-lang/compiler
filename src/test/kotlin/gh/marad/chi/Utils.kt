@@ -4,8 +4,8 @@ import gh.marad.chi.core.Expression
 import gh.marad.chi.core.Program
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.Message
-import gh.marad.chi.core.compiler.*
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.compiler.Compiler2
+import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.types.SimpleType
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.Types

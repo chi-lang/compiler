@@ -1,4 +1,4 @@
-package gh.marad.chi.core.compiler
+package gh.marad.chi.core.namespace
 
 import gh.marad.chi.core.types.Type
 
