@@ -588,7 +588,7 @@ class InferenceKtTest {
         }
 
         val expr = Block(program.expressions, program.sourceSection)
-        val infCtx = InferenceContext(TypeLookupTable(ns))
+        val infCtx = InferenceContext(ns, TypeLookupTable(ns))
         val inferred = inferTypes(infCtx, env, expr)
         val solution = unify(inferred.constraints)
         TypeFiller(solution).visit(expr)

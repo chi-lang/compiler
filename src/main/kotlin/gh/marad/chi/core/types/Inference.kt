@@ -16,8 +16,10 @@ fun inferAndFillTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expre
 }
 
 
-internal fun inferTypes(env: Map<String, Type>, expr: Expression): InferenceResult =
-    inferTypes(InferenceContext(TypeLookupTable(GlobalCompilationNamespace())), env, expr)
+internal fun inferTypes(env: Map<String, Type>, expr: Expression): InferenceResult {
+    val ns = GlobalCompilationNamespace()
+    return inferTypes(InferenceContext(ns, TypeLookupTable(ns)), env, expr)
+}
 
 internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression): InferenceResult {
     return when (expr) {

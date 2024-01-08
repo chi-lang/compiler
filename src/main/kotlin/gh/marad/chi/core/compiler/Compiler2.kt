@@ -164,7 +164,7 @@ object Compiler2 {
         // infer types
         // ===========
         val typeLookupTable = TypeLookupTable(ns)
-        val inferenceContext = InferenceContext(typeLookupTable)
+        val inferenceContext = InferenceContext(ns, typeLookupTable)
         val env = mutableMapOf<String, Type>() // use global symbol table
         tables.localSymbolTable.forEach { name, symbol ->
             if (symbol.type != null) {
