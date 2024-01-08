@@ -43,10 +43,7 @@ class NameDeclarationTypeCheckingSpec {
     fun `should check if types match in name declaration with type definition`() {
         messages("val x: () -> int = 5").should {
             it.shouldHaveSize(1)
-            it[0].shouldBeTypeOf<TypeMismatch>().should {
-                it.expected shouldBe Types.fn(Types.int)
-                it.actual shouldBe Types.int
-            }
+            it[0].shouldBeTypeOf<NotAFunction>()
         }
     }
 
@@ -263,9 +260,9 @@ class IsExprSpec {
         val result = messages(code, namespace)
 
         result shouldHaveSize 2
-        result[0].shouldBeTypeOf<ImportInternal>()
-            .symbolName shouldBe "foo"
-        result[1].shouldBeTypeOf<ImportInternal>()
-            .symbolName shouldBe "bar"
+        result[0].shouldBeTypeOf<CannotAccessInternalName>()
+            .name shouldBe "foo"
+        result[1].shouldBeTypeOf<CannotAccessInternalName>()
+            .name shouldBe "bar"
     }
 }

@@ -253,6 +253,9 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
                 val effectType = env.getType(handleCase.effectName, handleCase.sourceSection)
                 if (effectType is FunctionType) {
                     env.withNewLocalEnv {
+                        handleCase.argumentNames.zip(effectType.types.dropLast(1)).forEach { (name, type) ->
+                            env.setType(name, type)
+                        }
                         val effectReturnType = effectType.types.last()
                         env.setType("resume", FunctionType(listOf(effectReturnType, t)))
                         val inferred = inferTypes(ctx, env, handleCase.body)

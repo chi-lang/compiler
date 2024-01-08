@@ -254,6 +254,9 @@ class ExprConversionVisitor(
             cases = ast.cases.map {
                 val info = getSymbol(it.effectName, ast.section) as PackageSymbol
                 addLocalSymbol("resume", type = null, isMutable = false, isPublic = true)
+                it.argumentNames.forEach {
+                    addLocalSymbol(it, type = null, isMutable = false, isPublic = true)
+                }
 
                 HandleCase(
                     moduleName = info.moduleName,
@@ -265,6 +268,9 @@ class ExprConversionVisitor(
                     sourceSection = it.section
                 ).also {
                     removeLocalSymbol("resume")
+                    it.argumentNames.forEach {
+                        removeLocalSymbol(it)
+                    }
                 }
             },
             sourceSection = ast.section

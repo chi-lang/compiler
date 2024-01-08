@@ -51,9 +51,12 @@ class CheckNamesVisitor(private val node: ParseAst, symbolTable: SymbolTable) : 
         super.visitEffectDefinition(parseEffectDefinition)
     }
     override fun visitHandle(parseHandle: ParseHandle) {
-        withNewScope {
-            definedNames.add("resume")
-            super.visitHandle(parseHandle)
+        parseHandle.cases.forEach { case ->
+            withNewScope {
+                definedNames.add("resume")
+                definedNames.addAll(case.argumentNames)
+                case.body.accept(this)
+            }
         }
     }
 

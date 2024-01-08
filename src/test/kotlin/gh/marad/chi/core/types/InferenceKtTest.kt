@@ -411,7 +411,10 @@ class InferenceKtTest {
                 eff(5)
                 eff(false)
             } with {
-                eff(value) -> resume(true)
+                eff(value) -> {
+                    value
+                    resume(true)
+                }
             }
         """.trimIndent())
 
