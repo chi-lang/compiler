@@ -9,35 +9,36 @@ import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parser.ChiSource
 
 
-fun inferAndFillTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression) {
+fun inferAndFillTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expression) {
     val inferred = inferTypes(ctx, env, expr)
     val solution = unify(inferred.constraints)
     TypeFiller(solution).visit(expr)
 }
 
 
-internal fun inferTypes(env: Map<String, Type>, expr: Expression): InferenceResult {
+internal fun inferTypes(env: InferenceEnv, expr: Expression): InferenceResult {
     val ns = GlobalCompilationNamespace()
     return inferTypes(InferenceContext(ns, TypeLookupTable(ns)), env, expr)
 }
 
-internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression): InferenceResult {
+internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expression): InferenceResult {
     return when (expr) {
         is Atom -> {
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(expr.newType!!, emptySet(), env)
+            InferenceResult(expr.newType!!, emptySet())
         }
         is VariableAccess -> {
-            val t = env[expr.target.name] ?: throw TypeInferenceFailed("Symbol ${expr.target.name} not found in scope.", expr.sourceSection)
+//            val t = env[expr.target.name] ?: throw TypeInferenceFailed("Symbol ${expr.target.name} not found in scope.", expr.sourceSection)
+            val t = env.getType(expr.target, expr.sourceSection)
             val finalType = instantiate(ctx, t)
             expr.newType = finalType
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(finalType, emptySet(), env)
+            InferenceResult(finalType, emptySet())
         }
 
         is NameDeclaration -> {
             val valueType = inferTypes(ctx, env, expr.value)
-            val (updatedEnv, generalizedType) = generalize(valueType.constraints, env, expr.name, valueType.type)
+            val generalizedType = generalize(valueType.constraints, env, expr.name, valueType.type)
             val constraints = if (expr.expectedType != null) {
                 expr.newType = expr.expectedType
                 valueType.constraints + (Constraint(generalizedType, expr.expectedType, expr.sourceSection))
@@ -46,20 +47,21 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
                 valueType.constraints
             }
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(generalizedType, constraints, updatedEnv)
+            InferenceResult(generalizedType, constraints)
         }
 
         is EffectDefinition -> {
             if (expr.newType != null) {
                 val type = expr.newType!!
                 type.sourceSection = expr.sourceSection
-                InferenceResult(type, emptySet(), env + (expr.name to type))
+                env.setType(expr.name, type)
+                InferenceResult(type, emptySet())
             } else {
                 val t = ctx.nextTypeVariable()
-                val (updatedEnv, generalizedType) = generalize(emptySet(), env, expr.name, t)
+                val generalizedType = generalize(emptySet(), env, expr.name, t)
                 generalizedType.sourceSection = expr.sourceSection
                 expr.newType = generalizedType
-                InferenceResult(generalizedType, emptySet(), updatedEnv)
+                InferenceResult(generalizedType, emptySet())
             }
         }
 
@@ -81,17 +83,15 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
         }
 
         is Block -> {
-            var currentEnv = env
             val constraints = mutableSetOf<Constraint>()
             val last = expr.body.map {
-                val result = inferTypes(ctx, currentEnv, it)
-                currentEnv = result.env
+                val result = inferTypes(ctx, env, it)
                 constraints.addAll(result.constraints)
                 result
-            }.lastOrNull() ?: InferenceResult(Types.unit, setOf(), env)
+            }.lastOrNull() ?: InferenceResult(Types.unit, setOf())
             expr.newType = last.type
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(last.type, constraints, env)
+            InferenceResult(last.type, constraints)
         }
 
         is Fn -> {
@@ -106,11 +106,12 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
                     }
                 }
 
-            val extEnv = mutableMapOf<String, Type>()
-            extEnv.putAll(env)
-            extEnv.putAll(paramNamesAndTypes)
-
-            val bodyType = inferTypes(ctx, extEnv, expr.body)
+            val bodyType = env.withNewLocalEnv {
+                paramNamesAndTypes.forEach { (name, type) ->
+                    env.setType(name, type)
+                }
+                inferTypes(ctx, env, expr.body)
+            }
 
             val funcTypes = paramNamesAndTypes.map { it.second }.toMutableList()
             funcTypes.add(bodyType.type)
@@ -118,7 +119,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             val inferredType = FunctionType(funcTypes)
             expr.newType = inferredType
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(inferredType, bodyType.constraints, env)
+            InferenceResult(inferredType, bodyType.constraints)
         }
 
         is FnCall -> {
@@ -139,7 +140,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
 
             expr.newType = t
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(t, constraints, env)
+            InferenceResult(t, constraints)
         }
 
         is IfElse -> {
@@ -151,7 +152,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             val condType = inferTypes(ctx, env, expr.condition)
             val thenBranchType = inferTypes(ctx, env, expr.thenBranch)
             val elseBranchType = expr.elseBranch?.let { inferTypes(ctx, env, it) }
-                ?: InferenceResult(Types.unit, setOf(), env)
+                ?: InferenceResult(Types.unit, setOf())
 
             val constraints = mutableSetOf<Constraint>()
             constraints.add(Constraint(
@@ -176,7 +177,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             constraints.addAll(elseBranchType.constraints)
             expr.newType = t
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(t, constraints, env)
+            InferenceResult(t, constraints)
         }
 
         is InfixOp -> {
@@ -211,29 +212,27 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             constraints.addAll(right.constraints)
             expr.newType = t
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(t, constraints, env)
+            InferenceResult(t, constraints)
         }
 
         is Break -> {
             expr.newType = Types.unit
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(Types.unit, emptySet(), env)
+            InferenceResult(Types.unit, emptySet())
         }
         is Continue -> {
             expr.newType = Types.unit
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(Types.unit, emptySet(), env)
+            InferenceResult(Types.unit, emptySet())
         }
         is Cast -> {
             val inferred = inferTypes(ctx, env, expr.expression)
             expr.newType = expr.targetType
             expr.newType?.sourceSection = expr.sourceSection
-            val newEnv = if (expr.expression is VariableAccess) {
-                env + (expr.expression.target.name to expr.targetType)
-            } else {
-                env
+            if (expr.expression is VariableAccess) {
+                env.setType(expr.expression.target.name, expr.targetType)
             }
-            InferenceResult(expr.newType!!, inferred.constraints, newEnv)
+            InferenceResult(expr.newType!!, inferred.constraints)
         }
         is Group -> {
             val value = inferTypes(ctx, env, expr.value)
@@ -250,13 +249,16 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             constraints.addAll(body.constraints)
 
             expr.cases.forEach { handleCase ->
-                val effectType = env[handleCase.effectName] ?: throw TypeInferenceFailed("Symbol ${handleCase.effectName} not found in scope.", handleCase.sourceSection)
+//                val effectType = env[handleCase.effectName] ?: throw TypeInferenceFailed("Symbol ${handleCase.effectName} not found in scope.", handleCase.sourceSection)
+                val effectType = env.getType(handleCase.effectName, handleCase.sourceSection)
                 if (effectType is FunctionType) {
-                    val effectReturnType = effectType.types.last()
-                    val caseEnv = env + ("resume" to FunctionType(listOf(effectReturnType, t)))
-                    val inferred = inferTypes(ctx, caseEnv, handleCase.body)
-                    constraints.add(Constraint(inferred.type, t, handleCase.sourceSection))
-                    constraints.addAll(inferred.constraints)
+                    env.withNewLocalEnv {
+                        val effectReturnType = effectType.types.last()
+                        env.setType("resume", FunctionType(listOf(effectReturnType, t)))
+                        val inferred = inferTypes(ctx, env, handleCase.body)
+                        constraints.add(Constraint(inferred.type, t, handleCase.sourceSection))
+                        constraints.addAll(inferred.constraints)
+                    }
                 } else {
                     throw TypeInferenceFailed("Symbol ${handleCase.effectName} has type $effectType but a function type was expected!", handleCase.sourceSection)
                 }
@@ -264,7 +266,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
 
             expr.newType = t
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(t, constraints, env)
+            InferenceResult(t, constraints)
         }
         is PrefixOp -> {
             if (expr.op != "!") {
@@ -295,7 +297,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
 
             expr.newType = element
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(element, constraints, env)
+            InferenceResult(element, constraints)
         }
         is IndexedAssignment -> {
             val element = ctx.nextTypeVariable()
@@ -316,7 +318,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
 
             expr.newType = element
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(element, constraints, env)
+            InferenceResult(element, constraints)
         }
         is InterpolatedString -> {
             val constraints = mutableSetOf<Constraint>()
@@ -328,13 +330,13 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
 
             expr.newType = Types.string
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(Types.string, constraints, env)
+            InferenceResult(Types.string, constraints)
         }
         is Is -> {
             val valueType = inferTypes(ctx, env, expr.value)
             expr.newType = Types.bool
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(Types.bool, valueType.constraints, env)
+            InferenceResult(Types.bool, valueType.constraints)
         }
         is Return -> {
             if (expr.value != null) {
@@ -345,7 +347,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             } else {
                 expr.newType = Types.unit
                 expr.newType?.sourceSection = expr.sourceSection
-                InferenceResult(Types.unit, setOf(), env)
+                InferenceResult(Types.unit, setOf())
             }
         }
         is WhileLoop -> {
@@ -359,31 +361,30 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
 
             expr.newType = Types.unit
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(Types.unit, constraints, env)
+            InferenceResult(Types.unit, constraints)
         }
         is DefineVariantType -> {
-            val newEnv = env.toMutableMap()
-            val base = expr.baseVariantType
-            val typeSchemeVariables = base.genericTypeParameters.map { it.toNewType() as TypeVariable }
-            val baseType = SimpleType(base.moduleName, base.packageName, expr.name)
-            newEnv[expr.name] = baseType
-
-            expr.constructors.forEach { constructor ->
-                val type = SimpleType(base.moduleName, base.packageName, constructor.name)
-                if (constructor.fields.isEmpty()) {
-                    newEnv[constructor.name] = type
-                } else {
-                    val paramVariables = constructor.fields.map { it.type.toNewType() }
-                    newEnv[constructor.name] = FunctionType(
-                        paramVariables + type,
-                        typeSchemeVariables.filter { paramVariables.contains(it) }
-                    )
-                }
-            }
-
+//            val newEnv = env.toMutableMap()
+//            val base = expr.baseVariantType
+//            val typeSchemeVariables = base.genericTypeParameters.map { it.toNewType() as TypeVariable }
+//            val baseType = SimpleType(base.moduleName, base.packageName, expr.name)
+//            newEnv[expr.name] = baseType
+//
+//            expr.constructors.forEach { constructor ->
+//                val type = SimpleType(base.moduleName, base.packageName, constructor.name)
+//                if (constructor.fields.isEmpty()) {
+//                    newEnv[constructor.name] = type
+//                } else {
+//                    val paramVariables = constructor.fields.map { it.type.toNewType() }
+//                    newEnv[constructor.name] = FunctionType(
+//                        paramVariables + type,
+//                        typeSchemeVariables.filter { paramVariables.contains(it) }
+//                    )
+//                }
+//            }
             expr.newType = Types.unit
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(Types.unit, setOf(), newEnv)
+            InferenceResult(Types.unit, setOf(),)
         }
         is FieldAccess -> {
             val receiverInferred = inferTypes(ctx, env, expr.receiver)
@@ -399,7 +400,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
 
             expr.newType = field.type
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(field.type, receiverInferred.constraints, env)
+            InferenceResult(field.type, receiverInferred.constraints)
         }
         is FieldAssignment -> {
             val t = ctx.nextTypeVariable()
@@ -407,7 +408,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             val valueInferred = inferTypes(ctx, env, expr.value)
             expr.newType = t
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(t, receiverInferred.constraints + valueInferred.constraints, env)
+            InferenceResult(t, receiverInferred.constraints + valueInferred.constraints)
         }
     }
 }
@@ -553,21 +554,18 @@ private fun instantiate(ctx: InferenceContext, inputType: Type): Type =
 
 private fun generalize(
     constraints: Set<Constraint>,
-    env: Map<String, Type>,
+    env: InferenceEnv,
     name: String,
     type: Type
-): Pair<Map<String, Type>, Type> {
+): Type {
     val unified = unify(constraints)
-    val typeVariablesNotToGeneralize = mutableSetOf<TypeVariable>()
-    val newEnv = env.mapValues {
-        val result = applySubstitution(it.value, unified)
-        typeVariablesNotToGeneralize.addAll(result.findTypeVariables())
-        result
-    }
+    env.applySubstitutionToAllTypes(unified)
+    val typeVariablesNotToGeneralize = env.findAllTypeVariables()
     val newType = applySubstitution(type, unified)
-    val generalizedTypeVariables = newType.findTypeVariables().toSet() - typeVariablesNotToGeneralize
+    val generalizedTypeVariables = newType.findTypeVariables().toSet() - typeVariablesNotToGeneralize.toSet()
     val generalizedType = newType.generalize(generalizedTypeVariables.toList())
-    return Pair(newEnv + (name to generalizedType), generalizedType)
+    env.setType(name, generalizedType)
+    return generalizedType
 }
 
 internal fun OldType.toNewType(): Type {

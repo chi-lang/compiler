@@ -165,12 +165,7 @@ object Compiler2 {
         // ===========
         val typeLookupTable = TypeLookupTable(ns)
         val inferenceContext = InferenceContext(ns, typeLookupTable)
-        val env = mutableMapOf<String, Type>() // use global symbol table
-        tables.localSymbolTable.forEach { name, symbol ->
-            if (symbol.type != null) {
-                env[name] = symbol.type
-            }
-        }
+        val env = InferenceEnv(packageDefinition, tables, ns)
 
         try {
             inferAndFillTypes(inferenceContext, env, Block(expressions, parsedProgram.section))

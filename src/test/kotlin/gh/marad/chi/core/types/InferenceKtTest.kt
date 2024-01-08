@@ -5,6 +5,7 @@ import gh.marad.chi.core.*
 import gh.marad.chi.core.analyzer.CompilerMessageException
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.TypeMismatch
+import gh.marad.chi.core.compiler.CompileTables
 import gh.marad.chi.core.compiler.Compiler2
 import gh.marad.chi.core.namespace.CompilationScope
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
@@ -13,7 +14,6 @@ import gh.marad.chi.core.utils.printAst
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.maps.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -106,11 +106,13 @@ class InferenceKtTest {
             expectedType = null,
             null)
 
+        val env = emptyEnv()
+
         // when
-        val inferred = inferTypes(mapOf(), nameDecl)
+        val inferred = inferTypes(env, nameDecl)
 
         // then
-        inferred.env["a"].shouldBe(Types.int)
+        env.getType("a", null) shouldBe Types.int
         inferred.constraints.shouldBeEmpty()
         inferred.type.shouldBe(Types.int)
     }
@@ -131,12 +133,14 @@ class InferenceKtTest {
             sourceSection = null
         )
 
+        val env = emptyEnv()
+
         // when
-        val inferred = inferTypes(mapOf(), effectDef)
+        val inferred = inferTypes(env, effectDef)
 
         // then
         inferred.constraints.shouldBeEmpty()
-        inferred.env["hello"].shouldBe(inferred.type)
+        env.getType("hello", null) shouldBe inferred.type
     }
 
     @Test
@@ -148,7 +152,8 @@ class InferenceKtTest {
             sourceSection = null
         )
 
-        val env = mapOf("x" to Types.int)
+        val env = emptyEnv()
+        env.setType("x", Types.int)
 
         // when
         val inferred = inferTypes(env, assignment)
@@ -193,13 +198,15 @@ class InferenceKtTest {
             sourceSection = null
         )
 
+        val env = emptyEnv()
+
         // when
-        val result = inferTypes(mapOf(), lambda)
+        val result = inferTypes(env, lambda)
 
         // then
         result.type.shouldBe(FunctionType(listOf(Types.int, Types.int)))
         result.constraints.shouldBeEmpty()
-        result.env.shouldBeEmpty()
+        env.getNames().shouldBeEmpty()
     }
 
     @Test
@@ -545,35 +552,37 @@ class InferenceKtTest {
         }
     }
 
-    @Test
-    fun `variant type definitions should define constructors in env`() {
-        // given
-        val typeDefinition = DefineVariantType(
-            baseVariantType = VariantType("user", "default", "A", emptyList(), emptyMap(), null),
-            constructors = listOf(
-                VariantTypeConstructor(true, "B", emptyList(), null),
-                VariantTypeConstructor(true, "C", listOf(
-                    VariantTypeField(true, "i", OldType.int, null)
-                ), null),
-            ),
-            null
-        )
-        // when
-        val result = inferTypes(emptyMap(), typeDefinition)
+    // This is done by Compiler before inference
+//    @Test
+//    fun `variant type definitions should define constructors in env`() {
+//        // given
+//        val typeDefinition = DefineVariantType(
+//            baseVariantType = VariantType("user", "default", "A", emptyList(), emptyMap(), null),
+//            constructors = listOf(
+//                VariantTypeConstructor(true, "B", emptyList(), null),
+//                VariantTypeConstructor(true, "C", listOf(
+//                    VariantTypeField(true, "i", OldType.int, null)
+//                ), null),
+//            ),
+//            null
+//        )
+//        val env = emptyEnv()
+//
+//        // when
+//        val result = inferTypes(env, typeDefinition)
+//
+//        // then
+//        env.getType("A", null) shouldBe SimpleType("user", "default", "A")
+//        env.getType("B", null) shouldBe SimpleType("user", "default", "B")
+//        env.getType("C", null) shouldBe FunctionType(types = listOf(
+//            Types.int,
+//            SimpleType("user", "default", "C")
+//        ))
+//    }
 
-        // then
-        val env = result.env
-        env["A"] shouldBe SimpleType("user", "default", "A")
-        env["B"] shouldBe SimpleType("user", "default", "B")
-        env["C"] shouldBe FunctionType(types = listOf(
-            Types.int,
-            SimpleType("user", "default", "C")
-        ))
-    }
-
-    fun testInference(code: String, env: Map<String, Type> = mapOf(), ignoreErrors: Boolean = false): Result {
+    fun testInference(code: String, givenEnv: Map<String, Type> = mapOf(), ignoreErrors: Boolean = false): Result {
         val ns = GlobalCompilationNamespace()
-        env.forEach { (name, type) ->
+        givenEnv.forEach { (name, type) ->
             ns.addSymbolInDefaultPackage(name, type, public = true)
         }
 
@@ -588,6 +597,8 @@ class InferenceKtTest {
 
         val expr = Block(program.expressions, program.sourceSection)
         val infCtx = InferenceContext(ns, TypeLookupTable(ns))
+        val tables = CompileTables(program.packageDefinition, ns)
+        val env = InferenceEnv(program.packageDefinition, tables, ns)
         val inferred = inferTypes(infCtx, env, expr)
         val solution = unify(inferred.constraints)
         TypeFiller(solution).visit(expr)
@@ -606,6 +617,16 @@ class InferenceKtTest {
     }
 
     companion object {
+        fun emptyEnv(): InferenceEnv {
+            val ns = GlobalCompilationNamespace()
+            val pkg = Package(ns.getDefaultPackage().moduleName, ns.getDefaultPackage().packageName)
+            return InferenceEnv(
+                pkg,
+                CompileTables(pkg, ns),
+                ns
+            )
+        }
+
         @JvmStatic
         fun booleanOperators() = Stream.of(
             Arguments.of("&&"), // bool -> bool -> bool

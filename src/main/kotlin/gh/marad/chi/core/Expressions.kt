@@ -16,7 +16,7 @@ sealed interface Expression {
 }
 
 data class Program(
-    val packageDefinition: Package?,
+    val packageDefinition: Package,
     val imports: List<Import>,
     val expressions: List<Expression>,
     val sourceSection: ChiSource.Section? = null)
@@ -107,12 +107,16 @@ data class PackageSymbol(
     val packageName: String,
     override val name: String,
     override val mutable: Boolean
-) : Target
+) : Target {
+    override fun toString(): String = "$moduleName::$packageName::$name"
+}
 
 data class LocalSymbol(
     override val name: String,
     override val mutable: Boolean,
-) : Target
+) : Target {
+    override fun toString(): String = name
+}
 
 data class VariableAccess(
     val target: Target,
