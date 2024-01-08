@@ -26,7 +26,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             InferenceResult(expr.newType!!, emptySet(), env)
         }
         is VariableAccess -> {
-            val t = env[expr.localName] ?: throw TypeInferenceFailed("Symbol ${expr.localName} not found in scope.", expr.sourceSection)
+            val t = env[expr.target.name] ?: throw TypeInferenceFailed("Symbol ${expr.target.name} not found in scope.", expr.sourceSection)
             val finalType = instantiate(ctx, t)
             expr.newType = finalType
             expr.newType?.sourceSection = expr.sourceSection
@@ -227,7 +227,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
             expr.newType = expr.targetType
             expr.newType?.sourceSection = expr.sourceSection
             val newEnv = if (expr.expression is VariableAccess) {
-                env + (expr.expression.name to expr.targetType)
+                env + (expr.expression.target.name to expr.targetType)
             } else {
                 env
             }

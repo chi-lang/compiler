@@ -107,8 +107,6 @@ object Compiler2 {
                     moduleName = packageDefinition.moduleName,
                     packageName = packageDefinition.packageName,
                     name = ctor.name,
-                    SymbolKind.Local,
-                    slot = 0,
                     type = constructorOrSymbolType,
                     public = ctor.public,
                     mutable = false
@@ -147,7 +145,7 @@ object Compiler2 {
         val converter = ExprConversionVisitor(packageDefinition, tables)
         val functions = parsedProgram.functions.map { converter.visit(it) }
         val code = parsedProgram.topLevelCode.map { converter.visit(it) }
-        var expressions = functions + code
+        val expressions = functions + code
 
         // autocast & unit insert
         // ======================

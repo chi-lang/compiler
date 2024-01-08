@@ -34,16 +34,10 @@ data class Symbol(
     val moduleName: String,
     val packageName: String,
     val name: String,
-    val kind: SymbolKind,
     val type: Type?,
-    val slot: Int,
     val public: Boolean,
     val mutable: Boolean
 ) {
     fun qualifiedName() = "$moduleName::$packageName::$name"
 }
 
-enum class SymbolKind {
-    Local,
-    Argument
-}

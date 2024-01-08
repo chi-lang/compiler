@@ -1,9 +1,8 @@
 package gh.marad.chi.core
 
+import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.ast
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.Symbol
-import gh.marad.chi.core.namespace.SymbolKind
 import gh.marad.chi.core.types.Types
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
@@ -33,11 +32,9 @@ class ParserSpec {
     @Test
     fun `should read nested function invocations`() {
         val ns = GlobalCompilationNamespace()
-        ns.getDefaultPackage().symbols.apply {
-            add(Symbol("user", "default", "a", SymbolKind.Local, Types.fn(Types.int, Types.int), 0, true, true))
-            add(Symbol("user", "default", "b", SymbolKind.Local, Types.fn(Types.int, Types.int), 0, true, true))
-            add(Symbol("user", "default", "x", SymbolKind.Local, Types.int, 0, true, true))
-        }
+        ns.addSymbolInDefaultPackage("a", Types.fn(Types.int, Types.int))
+        ns.addSymbolInDefaultPackage("b", Types.fn(Types.int, Types.int))
+        ns.addSymbolInDefaultPackage("x", Types.int)
         ast("a(b(x))", ns)
             .shouldBeTypeOf<FnCall>()
             .should { aFnCall ->
@@ -50,7 +47,7 @@ class ParserSpec {
                             .first()
                             .shouldBeTypeOf<VariableAccess>()
                             .should {
-                                it.name.shouldBe("x")
+                                it.target.name.shouldBe("x")
                             }
                     }
             }

@@ -2,6 +2,7 @@ package gh.marad.chi.core
 
 import gh.marad.chi.core.expressionast.ExpressionVisitor
 import gh.marad.chi.core.namespace.CompilationScope
+import gh.marad.chi.core.namespace.FnSymbol
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.types.Type
@@ -98,13 +99,21 @@ data class InterpolatedString(val parts: List<Expression>, override val sourceSe
     override fun children(): List<Expression> = parts
 }
 
+sealed interface Target {
+    val name : String
+    val type : Type?
+}
+data class PackageSymbol(val symbol: Symbol) : Target {
+    override val name: String get() =  symbol.name
+    override val type: Type? get() = symbol.type
+}
+data class LocalSymbol(val symbol: FnSymbol) : Target {
+    override val name: String get() =  symbol.name
+    override val type: Type? get() = symbol.type
+}
+
 data class VariableAccess(
-    val moduleName: String,
-    val packageName: String,
-    val definitionScope: CompilationScope,
-    val name: String,
-    val localName: String,
-    val isModuleLocal: Boolean,
+    val target: Target,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
     override var newType: Type? = null

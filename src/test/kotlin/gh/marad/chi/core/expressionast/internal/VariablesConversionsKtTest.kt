@@ -1,10 +1,12 @@
 package gh.marad.chi.core.expressionast.internal
 
+import gh.marad.chi.addSymbol
+import gh.marad.chi.addSymbolInDefaultPackage
+import gh.marad.chi.ast
 import gh.marad.chi.core.FieldAccess
+import gh.marad.chi.core.PackageSymbol
 import gh.marad.chi.core.VariableAccess
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.Symbol
-import gh.marad.chi.core.namespace.SymbolKind
 import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseFieldAccess
 import gh.marad.chi.core.parser.readers.ParseIndexOperator
@@ -13,7 +15,6 @@ import gh.marad.chi.core.shouldBeAtom
 import gh.marad.chi.core.types.SimpleType
 import gh.marad.chi.core.types.Types
 import io.kotest.matchers.booleans.shouldBeFalse
-import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -23,46 +24,38 @@ import org.junit.jupiter.api.Test
 class VariablesConversionsKtTest {
     @Test
     fun `convert local variable read`() {
-        val ctx = defaultContext()
-        convertVariableRead(ctx, ParseVariableRead("variable", testSection))
-            .shouldBeTypeOf<VariableAccess>().should {
-                it.name shouldBe "variable"
-                it.moduleName shouldBe ctx.currentModule
-                it.packageName shouldBe ctx.currentPackage
-                it.isModuleLocal.shouldBeTrue()
-                it.definitionScope shouldBe ctx.currentScope
-                it.sourceSection shouldBe testSection
+        // given
+        val ns = GlobalCompilationNamespace()
+        ns.addSymbolInDefaultPackage("variable", null)
+
+        // when
+        convertAst(ParseVariableRead("variable", testSection), ns)
+            .shouldBeTypeOf<VariableAccess>()
+            .target.shouldBeTypeOf<PackageSymbol>()
+            .should {
+                it.symbol.name shouldBe "variable"
+                it.symbol.moduleName shouldBe ns.getDefaultPackage().moduleName
+                it.symbol.packageName shouldBe ns.getDefaultPackage().packageName
             }
     }
 
     @Test
     fun `convert variable read from another package in the same module`() {
         // given
-        val ctx = defaultContext()
-        ctx.importSymbol(defaultModule, otherPackage, "variable")
+        val ns = GlobalCompilationNamespace()
+        ns.addSymbol("foo", "bar", "variable", Types.int)
 
         // when
-        val result = convertVariableRead(ctx, ParseVariableRead("variable", null))
+        val result = ast("""
+            import foo/bar { variable }
+            variable
+        """.trimIndent(), ns).shouldBeTypeOf<VariableAccess>()
 
         // then
-        result.isModuleLocal.shouldBeTrue()
-        result.moduleName shouldBe defaultModule.name
-        result.packageName shouldBe otherPackage.name
-    }
-
-    @Test
-    fun `convert variable read from other module`() {
-        // given
-        val ctx = defaultContext()
-        ctx.importSymbol(otherModule, defaultPackage, "variable")
-
-        // when
-        val result = convertVariableRead(ctx, ParseVariableRead("variable", null))
-
-        // then
-        result.isModuleLocal.shouldBeFalse()
-        result.moduleName shouldBe otherModule.name
-        result.packageName shouldBe defaultPackage.name
+        result.target.shouldBeTypeOf<PackageSymbol>().should {
+            it.symbol.moduleName shouldBe defaultModule.name
+            it.symbol.packageName shouldBe otherPackage.name
+        }
     }
 
     @Test
@@ -84,28 +77,21 @@ class VariablesConversionsKtTest {
     @Test
     fun `should generate variable access through package name`() {
         // given
-        val ctx = defaultContext()
-        ctx.addPackageAlias(otherModule, otherPackage, "pkg")
-        ctx.addPublicSymbol(otherModule, otherPackage, "variable")
+        val ns = GlobalCompilationNamespace()
+        ns.addSymbol("foo", "bar", "variable", public = true)
 
         // when
-        val result = convertFieldAccess(
-            ctx,
-            sampleFieldAccess.copy(
-                receiverName = "pkg",
-                memberName = "variable"
-            )
-        )
+        val result = ast("""
+            import foo/bar as bar
+            bar.variable
+        """.trimIndent(), ns).shouldBeTypeOf<VariableAccess>()
+
 
         // then
-        result.shouldBeTypeOf<VariableAccess>() should {
-            it.name shouldBe "variable"
-            it.moduleName shouldBe otherModule.name
-            it.packageName shouldBe otherPackage.name
-            it.definitionScope shouldBe ctx.namespace.getOrCreatePackage(
-                otherModule.name, otherPackage.name
-            ).scope
-            it.isModuleLocal.shouldBeFalse()
+        result.target.shouldBeTypeOf<PackageSymbol>() should {
+            it.symbol.name shouldBe "variable"
+            it.symbol.moduleName shouldBe otherModule.name
+            it.symbol.packageName shouldBe otherPackage.name
         }
     }
 
@@ -117,12 +103,7 @@ class VariablesConversionsKtTest {
         ctx.addPublicSymbol("object", type)
 
         val ns = GlobalCompilationNamespace()
-        ns.getDefaultPackage().symbols.apply {
-            add(
-                Symbol("user", "default", "object", SymbolKind.Local,
-                SimpleType("user", "default", "Obj"), 0, true, true)
-            )
-        }
+        ns.addSymbolInDefaultPackage("object", SimpleType("user", "default", "Obj"))
 
         // when
         val result = convertAst(

@@ -1,10 +1,10 @@
 package gh.marad.chi.core.expressionast.internal
 
+import gh.marad.chi.addSymbol
+import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.core.*
 import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.Symbol
-import gh.marad.chi.core.namespace.SymbolKind
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.types.Types
 import gh.marad.chi.core.types.Types.int
@@ -20,10 +20,9 @@ class VariablesConversionsKtMethodInvocationSyntaxTest {
     fun `conversion of simple method invocation`() {
         // given object of type int and method of type (int, int) -> int
         val ns = GlobalCompilationNamespace()
-        ns.getDefaultPackage().symbols.apply {
-            add(Symbol("user", "default", "object", SymbolKind.Local, int, 0, true, true))
-            add(Symbol("user", "default", "method", SymbolKind.Local, Types.fn(int, int, int), 0, true, true))
-        }
+        ns.addSymbol("user", "default", "object", int, )
+        ns.addSymbolInDefaultPackage("object", int)
+        ns.addSymbolInDefaultPackage("method", Types.fn(int, int, int))
 
         // when
         val expr = convertAst(
@@ -72,9 +71,11 @@ class VariablesConversionsKtMethodInvocationSyntaxTest {
         // then
         expr.shouldBeTypeOf<FnCall>() should { call ->
             call.function.shouldBeTypeOf<VariableAccess>() should {
-                it.name shouldBe "func"
-                it.moduleName shouldBe "foo"
-                it.packageName shouldBe "bar"
+                it.target.shouldBeTypeOf<PackageSymbol>().should {
+                    it.symbol.name shouldBe "func"
+                    it.symbol.moduleName shouldBe "foo"
+                    it.symbol.packageName shouldBe "bar"
+                }
             }
             call.callTypeParameters shouldBe emptyList()
             call.parameters shouldHaveSize 1
@@ -114,11 +115,12 @@ class VariablesConversionsKtMethodInvocationSyntaxTest {
 
         // then
         expr.shouldBeTypeOf<FnCall>() should { call ->
-            call.function.shouldBeTypeOf<VariableAccess>() should {
-                it.moduleName shouldBe testType.moduleName
-                it.packageName shouldBe testType.packageName
-                it.name shouldBe "method"
-            }
+            call.function.shouldBeTypeOf<VariableAccess>()
+                .target.shouldBeTypeOf<PackageSymbol>().should {
+                    it.symbol.moduleName shouldBe testType.moduleName
+                    it.symbol.packageName shouldBe testType.packageName
+                    it.symbol.name shouldBe "method"
+                }
         }
     }
 }

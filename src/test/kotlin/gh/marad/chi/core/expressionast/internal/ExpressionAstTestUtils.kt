@@ -35,7 +35,7 @@ fun stringArg(name: String) = FormalArgument(name, stringTypeRef, sectionA)
 
 fun Expression.shouldBeVariable(name: String, section: ChiSource.Section? = null) {
     this.shouldBeTypeOf<VariableAccess>() should {
-        it.name shouldBe name
+        it.target.name shouldBe name
         if (section != null) {
             it.sourceSection shouldBe section
         }

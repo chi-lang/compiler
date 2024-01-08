@@ -3,6 +3,7 @@ package gh.marad.chi.core.expressionast.internal
 import gh.marad.chi.core.*
 import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.expressionast.generateExpressionAst
+import gh.marad.chi.core.namespace.FnSymbol
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.namespace.SymbolKind
 import gh.marad.chi.core.parser.readers.*
@@ -11,12 +12,7 @@ import gh.marad.chi.core.types.Types
 fun convertVariableRead(ctx: ConversionContext, ast: ParseVariableRead): VariableAccess {
     val lookup = ctx.lookup(ast.variableName)
     return VariableAccess(
-        isModuleLocal = lookup.moduleName == ctx.currentModule,
-        moduleName = lookup.moduleName,
-        packageName = lookup.packageName,
-        definitionScope = lookup.scope, // TODO: czy ten compilation scope jest potrzebny?
-        name = lookup.name,
-        localName = ast.variableName,
+        target = LocalSymbol(FnSymbol("", SymbolKind.Local, null, false)),
         sourceSection = ast.section
     )
 }
@@ -40,7 +36,7 @@ fun convertAssignment(ctx: ConversionContext, ast: ParseAssignment): Assignment 
     // TODO czy tutaj nie lepiej mieć zamiast `name` VariableAccess i mieć tam nazwę i pakiet?
     Assignment(
         name = ast.variableName,
-        symbol = Symbol("","", ast.variableName, SymbolKind.Local, Types.unit, 0, false, false),
+        symbol = Symbol("","", ast.variableName, Types.unit, false, false),
         value = generateExpressionAst(ctx, ast.value),
         sourceSection = ast.section
     )
@@ -65,12 +61,7 @@ fun convertFieldAccess(ctx: ConversionContext, ast: ParseFieldAccess): Expressio
 
     if (pkg != null) {
         return VariableAccess(
-            isModuleLocal = pkg.module == ctx.currentModule,
-            moduleName = pkg.module,
-            packageName = pkg.pkg,
-            definitionScope = ctx.namespace.getOrCreatePackage(pkg.module, pkg.pkg).scope,
-            name = ast.memberName,
-            localName = ast.memberName,
+            target = LocalSymbol(FnSymbol("", SymbolKind.Local, null, false)),
             sourceSection = ast.section
         )
     }
@@ -79,12 +70,7 @@ fun convertFieldAccess(ctx: ConversionContext, ast: ParseFieldAccess): Expressio
     val scope = ctx.namespace.getOrCreatePackage(/*receiver.type.moduleName*/ "module", /*receiver.type.packageName*/ "package").scope
     if (scope.containsSymbol(ast.memberName)) {
         return VariableAccess(
-            isModuleLocal = false, //receiver.type.moduleName == ctx.currentModule,
-            moduleName = "module", //receiver.type.moduleName,
-            packageName = "package", // receiver.type.packageName,
-            definitionScope = scope,
-            name = ast.memberName,
-            localName = ast.memberName,
+            target = LocalSymbol(FnSymbol("", SymbolKind.Local, null, false)),
             sourceSection = ast.memberSection
         )
     }
@@ -106,12 +92,7 @@ fun convertMethodInvocation(ctx: ConversionContext, ast: ParseMethodInvocation):
         {
             if (pkg != null) {
                 VariableAccess(
-                    isModuleLocal = pkg.module == ctx.currentModule,
-                    moduleName = pkg.module,
-                    packageName = pkg.pkg,
-                    definitionScope = ctx.namespace.getOrCreatePackage(pkg.module, pkg.pkg).scope,
-                    name = ast.methodName,
-                    localName = ast.methodName,
+                    target = LocalSymbol(FnSymbol("", SymbolKind.Local, null, false)),
                     sourceSection = ast.memberSection
                 )
             } else null
@@ -120,12 +101,7 @@ fun convertMethodInvocation(ctx: ConversionContext, ast: ParseMethodInvocation):
             val scope = ctx.namespace.getOrCreatePackage(/*receiver.type.moduleName*/ "module", /*receiver.type.packageName*/ "package").scope
             if (scope.containsSymbol(ast.methodName)) {
                 VariableAccess(
-                    isModuleLocal = false, //receiver.type.moduleName == ctx.currentModule,
-                    moduleName = "module", // receiver.type.moduleName,
-                    packageName = "package", // receiver.type.packageName,
-                    definitionScope = scope,
-                    name = ast.methodName,
-                    localName = ast.methodName,
+                    target = LocalSymbol(FnSymbol("", SymbolKind.Local, null, false)),
                     sourceSection = ast.memberSection
                 )
             } else null
@@ -134,12 +110,7 @@ fun convertMethodInvocation(ctx: ConversionContext, ast: ParseMethodInvocation):
             val methodLookup = ctx.lookup(ast.methodName)
             val methodPkg = ctx.namespace.getOrCreatePackage(methodLookup.moduleName, methodLookup.packageName)
             VariableAccess(
-                isModuleLocal = methodLookup.moduleName == ctx.currentModule,
-                moduleName = methodLookup.moduleName,
-                packageName = methodLookup.packageName,
-                definitionScope = methodPkg.scope,
-                name = ast.methodName,
-                localName = ast.methodName,
+                target = LocalSymbol(FnSymbol("", SymbolKind.Local, null, false)),
                 sourceSection = ast.memberSection
             )
         }

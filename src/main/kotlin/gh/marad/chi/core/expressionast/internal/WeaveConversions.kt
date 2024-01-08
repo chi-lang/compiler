@@ -1,11 +1,10 @@
 package gh.marad.chi.core.expressionast.internal
 
-import gh.marad.chi.core.Block
-import gh.marad.chi.core.Expression
-import gh.marad.chi.core.NameDeclaration
-import gh.marad.chi.core.VariableAccess
+import gh.marad.chi.core.*
 import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.expressionast.generateExpressionAst
+import gh.marad.chi.core.namespace.FnSymbol
+import gh.marad.chi.core.namespace.SymbolKind
 import gh.marad.chi.core.parser.readers.ParseWeave
 import gh.marad.chi.core.parser.readers.ParseWeavePlaceholder
 
@@ -24,9 +23,7 @@ fun convertWeave(ctx: ConversionContext, weave: ParseWeave): Expression {
 //    ctx.currentScope.addSymbol(tempVarName, tempVariableDeclaration.type, SymbolType.Local, false)
     val readVariable =
         VariableAccess(
-            ctx.currentModule, ctx.currentPackage, ctx.currentScope, tempVarName,
-            localName = tempVarName,
-            isModuleLocal = true,
+            target = LocalSymbol(FnSymbol("", SymbolKind.Local, null, false)),
             weave.value.section
         )
     val filledTemplate = ctx.withWeaveInput(readVariable) {

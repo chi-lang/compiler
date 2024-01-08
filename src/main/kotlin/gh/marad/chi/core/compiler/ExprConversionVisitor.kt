@@ -1,13 +1,17 @@
 package gh.marad.chi.core.compiler
 
 import gh.marad.chi.core.*
+import gh.marad.chi.core.Target
 import gh.marad.chi.core.compiler.Compiler2.resolveType
-import gh.marad.chi.core.namespace.*
+import gh.marad.chi.core.namespace.CompilationScope
+import gh.marad.chi.core.namespace.FnSymbolTable
+import gh.marad.chi.core.namespace.ScopeType
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 import gh.marad.chi.core.types.FunctionType
+import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeVariable
 import gh.marad.chi.core.types.Types
 
@@ -17,7 +21,7 @@ class ExprConversionVisitor(
 ) : ParseAstVisitor<Expression> {
 
     private val typeTable = tables.localTypeTable
-    private var currentSymbolTable = tables.localSymbolTable
+    private var currentFnSymbolTable: FnSymbolTable? = null
     private var currentTypeSchemeVariables = emptyList<String>()
 
     override fun visit(node: ParseAst): Expression = node.accept(this)
@@ -65,27 +69,14 @@ class ExprConversionVisitor(
         Atom.string(stringText.text, stringText.section)
 
     override fun visitLambda(parseLambda: ParseLambda): Expression {
-        val fnSymbolTable = SymbolTable()
-        var nextSlot = 0
+        val fnSymbolTable = FnSymbolTable()
         val params = parseLambda.formalArguments.map {
             val type = resolveType(typeTable, currentTypeSchemeVariables, it.typeRef)
-            fnSymbolTable.add(
-                Symbol(
-                    moduleName = pkg.moduleName,
-                    packageName = pkg.packageName,
-                    name = it.name,
-                    kind = SymbolKind.Argument,
-                    type = type,
-                    slot = nextSlot++,
-                    public = true,
-                    mutable = false
-                )
-            )
+            fnSymbolTable.addArgument(it.name, type)
             FnParam(it.name, type, it.section)
         }
 
-
-        val body = withSymbolTable(fnSymbolTable) {
+        val body = withFnSymbolTable(fnSymbolTable) {
             parseLambda.body.map { it.accept(this) }
         }
 
@@ -99,26 +90,14 @@ class ExprConversionVisitor(
     }
 
     override fun visitFuncWithName(ast: ParseFuncWithName): Expression {
-        val fnSymbolTable = SymbolTable()
-        var nextSlot = 0
+        val fnSymbolTable = FnSymbolTable()
 
         val prevTypeSchemeVariables = currentTypeSchemeVariables
         currentTypeSchemeVariables = ast.typeParameters.map { it.name }
 
         val params = ast.formalArguments.map {
             val type = resolveType(typeTable, currentTypeSchemeVariables, it.typeRef)
-            fnSymbolTable.add(
-                Symbol(
-                moduleName = pkg.moduleName,
-                packageName = pkg.packageName,
-                name = it.name,
-                kind = SymbolKind.Argument,
-                type = type,
-                slot = nextSlot++,
-                public = true,
-                mutable = false
-            )
-            )
+            fnSymbolTable.addArgument(it.name, type)
             FnParam(it.name, type, it.section)
         }
 
@@ -126,7 +105,7 @@ class ExprConversionVisitor(
             fnScope = CompilationScope(ScopeType.Package), // TODO remove
             typeVariables = ast.typeParameters.map { TypeVariable(it.name) },
             parameters = params,
-            body = withSymbolTable(fnSymbolTable) {
+            body = withFnSymbolTable(fnSymbolTable) {
                 ast.body.accept(this) as Block
             },
             ast.body.section
@@ -155,18 +134,7 @@ class ExprConversionVisitor(
             expectedType = funcType,
             sourceSection = ast.section
         ).also {
-            currentSymbolTable.add(
-                Symbol(
-                    moduleName = pkg.moduleName,
-                    packageName = pkg.packageName,
-                    name = it.name,
-                    kind = SymbolKind.Local,
-                    slot = 0,
-                    mutable = it.mutable,
-                    public = it.public,
-                    type = null,
-                )
-            )
+            addLocalSymbol(it.name, type = null, it.mutable, it.public)
         }
     }
 
@@ -184,7 +152,8 @@ class ExprConversionVisitor(
         // TODO czy tutaj nie lepiej mieć zamiast `name` VariableAccess i mieć tam nazwę i pakiet?
         Assignment(
             parseAssignment.variableName,
-            symbol = getSymbol(parseAssignment.variableName, parseAssignment.section),
+//            symbol = getPackageSymbol(parseAssignment.variableName, parseAssignment.section),
+            symbol = Symbol("", "", "", null, false, false), // TODO fix this
             value = parseAssignment.value.accept(this),
             sourceSection = parseAssignment.section
         )
@@ -198,16 +167,8 @@ class ExprConversionVisitor(
         )
 
     override fun visitVariableRead(parseVariableRead: ParseVariableRead): Expression {
-        val symbol = getSymbol(parseVariableRead.variableName, parseVariableRead.section)
-        return VariableAccess(
-            moduleName = symbol.moduleName,
-            packageName = symbol.packageName,
-            name = symbol.name,
-            localName = parseVariableRead.variableName,
-            isModuleLocal = symbol.moduleName == pkg.moduleName,
-            sourceSection = parseVariableRead.section,
-            definitionScope = CompilationScope(ScopeType.Package), // TODO to remove
-        )
+        val target = getSymbol(parseVariableRead.variableName, parseVariableRead.section)
+        return VariableAccess(target, parseVariableRead.section)
     }
 
     override fun visitIndexOperator(parseIndexOperator: ParseIndexOperator): Expression =
@@ -227,18 +188,7 @@ class ExprConversionVisitor(
             expectedType = parseNameDeclaration.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it) },
             enclosingScope = CompilationScope(ScopeType.Package), // TODO to remove
         ).also {
-            currentSymbolTable.add(
-                Symbol(
-                    moduleName = pkg.moduleName,
-                    packageName = pkg.packageName,
-                    name = it.name,
-                    kind = SymbolKind.Local,
-                    slot = 0,
-                    mutable = it.mutable,
-                    public = it.public,
-                    type = null,
-                )
-            )
+            addLocalSymbol(it.name, type = null, it.mutable, it.public)
         }
 
     override fun visitFieldAccess(parseFieldAccess: ParseFieldAccess): Expression {
@@ -298,18 +248,7 @@ class ExprConversionVisitor(
             sourceSection = ast.section
         ).also {
             it.newType = type
-            currentSymbolTable.add(
-                Symbol(
-                    moduleName = pkg.moduleName,
-                    packageName = pkg.packageName,
-                    name = it.name,
-                    kind = SymbolKind.Local,
-                    slot = 0,
-                    mutable = false,
-                    public = it.public,
-                    type = type,
-                )
-            )
+            addLocalSymbol(it.name, type = type, isMutable = false, it.public)
         }
     }
 
@@ -317,30 +256,19 @@ class ExprConversionVisitor(
         Handle(
             body = ast.body.accept(this) as Block,
             cases = ast.cases.map {
-                val symbol = getSymbol(it.effectName, ast.section)
-                currentSymbolTable.add(
-                    Symbol(
-                        moduleName = "std",
-                        packageName = "lang",
-                        name = "resume",
-                        kind = SymbolKind.Local,
-                        type = null,
-                        slot = 0,
-                        public = true,
-                        mutable = false
-                    )
-                )
+                val info = getSymbol(it.effectName, ast.section) as PackageSymbol
+                addLocalSymbol("resume", type = null, isMutable = false, isPublic = true)
 
                 HandleCase(
-                    moduleName = symbol.moduleName,
-                    packageName = symbol.packageName,
+                    moduleName = info.symbol.moduleName,
+                    packageName = info.symbol.packageName,
                     effectName = it.effectName,
                     argumentNames = it.argumentNames,
                     body = it.body.accept(this),
                     scope = CompilationScope(ScopeType.Package), // TODO remove
                     sourceSection = it.section
                 ).also {
-                    currentSymbolTable.remove("resume")
+                    removeLocalSymbol("resume")
                 }
             },
             sourceSection = ast.section
@@ -403,16 +331,47 @@ class ExprConversionVisitor(
     override fun visitReturn(parseReturn: ParseReturn): Expression =
         Return(parseReturn.value?.accept(this), parseReturn.section)
 
-    private fun <T> withSymbolTable(table: SymbolTable, f: () -> T): T {
-        val prevSymbolTable = currentSymbolTable
-        currentSymbolTable = table
-        val result = f()
-        currentSymbolTable = prevSymbolTable
-        return result
+    private fun <T> withFnSymbolTable(fnSymbolTable: FnSymbolTable, f: () -> T): T {
+        val prevFnSymbolTable = currentFnSymbolTable
+        currentFnSymbolTable = fnSymbolTable
+        return f().also { currentFnSymbolTable = prevFnSymbolTable }
     }
 
-    private fun getSymbol(name: String, sourceSection: ChiSource.Section?): Symbol =
-        currentSymbolTable.get(name)
-            ?: throw ExprConversionException("Tried to get symbol $name", sourceSection)
+    private fun getSymbol(name: String, sourceSection: ChiSource.Section?): Target {
+        val fnSymbolTable = currentFnSymbolTable
+        return if (fnSymbolTable != null) {
+            fnSymbolTable.get(name)?.let { LocalSymbol(it) }
+                ?: throw ExprConversionException("Tried to get local symbol '$name'", sourceSection)
+        } else {
+            tables.localSymbolTable.get(name)?.let { PackageSymbol(it) }
+                ?: throw ExprConversionException("Tried to get symbol '$name'", sourceSection)
+        }
+    }
 
+    private fun addLocalSymbol(name: String, type: Type?, isMutable: Boolean, isPublic: Boolean) {
+        val fnSymbolTable = currentFnSymbolTable
+        if (fnSymbolTable != null) {
+            // we are inside a function so we declare simple local
+            fnSymbolTable.addLocal(name, type, isMutable)
+        } else {
+            tables.defineSymbol(
+                Symbol(
+                    moduleName = pkg.moduleName,
+                    packageName = pkg.packageName,
+                    name = name,
+                    type = type,
+                    isPublic, isMutable
+                )
+            )
+        }
+    }
+
+    private fun removeLocalSymbol(name: String) {
+        val fnSymbolTable = currentFnSymbolTable
+        if (fnSymbolTable != null) {
+            fnSymbolTable.remove(name)
+        } else {
+            tables.removeSymbol(name)
+        }
+    }
 }

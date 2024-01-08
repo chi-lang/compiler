@@ -1,11 +1,15 @@
 package gh.marad.chi.core.types
 
+import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.core.*
 import gh.marad.chi.core.analyzer.CompilerMessageException
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.compiler.Compiler2
-import gh.marad.chi.core.namespace.*
+import gh.marad.chi.core.namespace.CompilationScope
+import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.ScopeType
+import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.utils.printAst
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -141,7 +145,7 @@ class InferenceKtTest {
         // given
         val assignment = Assignment(
             name = "x",
-            symbol = Symbol("","","", SymbolKind.Local,Types.int, 0, true, false),
+            symbol = Symbol("","","",Types.int, true, false),
             value = Atom.int(5, null),
             sourceSection = null
         )
@@ -571,20 +575,8 @@ class InferenceKtTest {
 
     fun testInference(code: String, env: Map<String, Type> = mapOf(), ignoreErrors: Boolean = false): Result {
         val ns = GlobalCompilationNamespace()
-        val pkg = ns.getDefaultPackage()
-        env.forEach { name, type ->
-            pkg.symbols.add(
-                Symbol(
-                    moduleName = pkg.moduleName,
-                    packageName = pkg.packageName,
-                    name = name,
-                    kind = SymbolKind.Local,
-                    type = type,
-                    slot = 0,
-                    public = true,
-                    mutable = false
-                )
-            )
+        env.forEach { (name, type) ->
+            ns.addSymbolInDefaultPackage(name, type, public = true)
         }
 
         val (program, messages) = Compiler2.compile(code, ns)

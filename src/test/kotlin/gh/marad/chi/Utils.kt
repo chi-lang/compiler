@@ -5,7 +5,10 @@ import gh.marad.chi.core.Program
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.compiler.Compiler2
-import gh.marad.chi.core.namespace.*
+import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.Symbol
+import gh.marad.chi.core.namespace.TypeInfo
+import gh.marad.chi.core.namespace.VariantField
 import gh.marad.chi.core.types.SimpleType
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.Types
@@ -56,9 +59,7 @@ fun GlobalCompilationNamespace.addSymbolInDefaultPackage(name: String, type: Typ
         Symbol(
             pkg.moduleName, pkg.packageName,
             name,
-            SymbolKind.Local,
             type,
-            slot = slot,
             public = public,
             mutable = mutable
         )
@@ -72,9 +73,7 @@ fun GlobalCompilationNamespace.addSymbol(moduleName: String, packageName: String
         Symbol(
             moduleName, packageName,
             name,
-            SymbolKind.Local,
             type,
-            slot = slot,
             public = public,
             mutable = mutable
         )

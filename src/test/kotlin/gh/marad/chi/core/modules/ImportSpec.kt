@@ -5,6 +5,7 @@ import gh.marad.chi.ast
 import gh.marad.chi.compile
 import gh.marad.chi.core.FnCall
 import gh.marad.chi.core.OldType
+import gh.marad.chi.core.PackageSymbol
 import gh.marad.chi.core.VariableAccess
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.SymbolType
@@ -30,11 +31,13 @@ class ImportSpec {
 
         // then
         result.shouldBeTypeOf<FnCall>().should { call ->
-            call.function.shouldBeTypeOf<VariableAccess>().should { fn ->
-                fn.moduleName shouldBe "user"
-                fn.packageName shouldBe "default"
-                fn.name shouldBe "foo"
-            }
+            call.function.shouldBeTypeOf<VariableAccess>()
+                .target.shouldBeTypeOf<PackageSymbol>()
+                .should { fn ->
+                    fn.symbol.moduleName shouldBe "user"
+                    fn.symbol.packageName shouldBe "default"
+                    fn.symbol.name shouldBe "foo"
+                }
         }
     }
 
@@ -56,11 +59,13 @@ class ImportSpec {
         // then
         val call = result.expressions.first()
         call.shouldBeTypeOf<FnCall>().should { call ->
-            call.function.shouldBeTypeOf<VariableAccess>().should { fn ->
-                fn.moduleName shouldBe "std"
-                fn.packageName shouldBe "time"
-                fn.name shouldBe "millis"
-            }
+            call.function.shouldBeTypeOf<VariableAccess>()
+                .target.shouldBeTypeOf<PackageSymbol>()
+                .should { fn ->
+                    fn.symbol.moduleName shouldBe "std"
+                    fn.symbol.packageName shouldBe "time"
+                    fn.symbol.name shouldBe "millis"
+                }
         }
     }
 
@@ -82,11 +87,13 @@ class ImportSpec {
         // then
         val call = result.expressions.first()
         call.shouldBeTypeOf<FnCall>().should { call ->
-            call.function.shouldBeTypeOf<VariableAccess>().should { fn ->
-                fn.moduleName shouldBe "std"
-                fn.packageName shouldBe "time"
-                fn.name shouldBe "millis"
-            }
+            call.function.shouldBeTypeOf<VariableAccess>()
+                .target.shouldBeTypeOf<PackageSymbol>()
+                .should { fn ->
+                    fn.symbol.moduleName shouldBe "std"
+                    fn.symbol.packageName shouldBe "time"
+                    fn.symbol.name shouldBe "millis"
+                }
         }
     }
 
@@ -103,11 +110,13 @@ class ImportSpec {
 
         // then
         result.shouldBeTypeOf<FnCall>().should { call ->
-            call.function.shouldBeTypeOf<VariableAccess>().should { fn ->
-                fn.moduleName shouldBe "std"
-                fn.packageName shouldBe "time"
-                fn.name shouldBe "millis"
-            }
+            call.function.shouldBeTypeOf<VariableAccess>()
+                .target.shouldBeTypeOf<PackageSymbol>()
+                .should { fn ->
+                    fn.symbol.moduleName shouldBe "std"
+                    fn.symbol.packageName shouldBe "time"
+                    fn.symbol.name shouldBe "millis"
+                }
         }
     }
 
@@ -131,11 +140,13 @@ class ImportSpec {
         // then
         result.expressions// drop implicit package and import
             .forEach { expr ->
-                expr.shouldBeTypeOf<VariableAccess>().should { va ->
-                    va.moduleName shouldBe "std"
-                    va.packageName shouldBe "time"
-                    va.name shouldBe "millis"
-                }
+                expr.shouldBeTypeOf<VariableAccess>()
+                    .target.shouldBeTypeOf<PackageSymbol>()
+                    .should { target ->
+                        target.symbol.moduleName shouldBe "std"
+                        target.symbol.packageName shouldBe "time"
+                        target.symbol.name shouldBe "millis"
+                    }
             }
     }
 }

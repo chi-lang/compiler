@@ -54,7 +54,7 @@ class PrintAstVisitor : ExpressionVisitor {
         sb.appendLine()
         sb.append(indent)
         sb.append("(VariableAccess ")
-        sb.append(variableAccess.name)
+        sb.append(variableAccess.target)
         sb.append(" : ")
         sb.append(variableAccess.newType)
         sb.append(")")

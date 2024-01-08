@@ -1,12 +1,13 @@
 package gh.marad.chi.core.expressionast.internal
 
-import gh.marad.chi.core.OldType
+import gh.marad.chi.core.FnCall
 import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseFnCall
 import gh.marad.chi.core.parser.readers.ParseLambda
 import gh.marad.chi.core.shouldBeAtom
 import gh.marad.chi.core.types.Types
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.jupiter.api.Test
 
 class FunctionConversionsKtFnCallTest {
@@ -22,7 +23,7 @@ class FunctionConversionsKtFnCallTest {
         )
 
         // when
-        val call = convertFnCall(defaultContext(), fnCall)
+        val call = convertAst(fnCall).shouldBeTypeOf<FnCall>()
 
         // then
         call.parameters.first().shouldBeAtom("10", Types.int)

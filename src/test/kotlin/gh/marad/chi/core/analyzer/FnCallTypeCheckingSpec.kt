@@ -59,8 +59,8 @@ class FnCallTypeCheckingSpec {
 
         // expect
         messages("x()", ns).should {
-            it.shouldHaveSize(2)
-            it[1].shouldBeTypeOf<NotAFunction>()
+            it shouldHaveSize 1
+            it[0].shouldBeTypeOf<TypeMismatch>()
         }
     }
 

@@ -17,29 +17,5 @@ fun Expression.shouldBeAtom(value: String, type: Type, sourceSection: ChiSource.
         }
     }
 
-fun Expression.shouldBeVariableAccess(name: String): VariableAccess =
-    shouldBeTypeOf<VariableAccess>().also {
-        should {
-            it.name shouldBe name
-        }
-    }
-
-
-fun Expression.shouldBeFn(matcher: (Fn) -> Unit) =
-    shouldBeTypeOf<Fn>().should(matcher)
-
-fun FnParam.shouldBeFnParam(name: String, type: OldType) =
-    shouldBeTypeOf<FnParam>().also {
-        should {
-            it.name shouldBe name
-            it.type shouldBe type
-        }
-    }
-
-fun Expression.shouldBeEmptyBlock() =
-    shouldBeTypeOf<Block>().also {
-        it.body shouldBe emptyList()
-    }
-
 fun Expression.shouldBeBlock(matcher: (Block) -> Unit) =
     shouldBeTypeOf<Block>().should(matcher)

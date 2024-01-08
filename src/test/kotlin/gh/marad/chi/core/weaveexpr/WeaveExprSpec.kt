@@ -70,7 +70,7 @@ class WeaveExprSpec {
         val tempVar = body[0].shouldBeTypeOf<NameDeclaration>()
         body[1].shouldBeTypeOf<FnCall>() should {
             it.parameters.first().shouldBeTypeOf<VariableAccess>()
-                .name shouldBe tempVar.name
+                .target.name shouldBe tempVar.name
         }
     }
 
