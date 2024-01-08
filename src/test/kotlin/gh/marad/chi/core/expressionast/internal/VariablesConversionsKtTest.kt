@@ -33,9 +33,9 @@ class VariablesConversionsKtTest {
             .shouldBeTypeOf<VariableAccess>()
             .target.shouldBeTypeOf<PackageSymbol>()
             .should {
-                it.symbol.name shouldBe "variable"
-                it.symbol.moduleName shouldBe ns.getDefaultPackage().moduleName
-                it.symbol.packageName shouldBe ns.getDefaultPackage().packageName
+                it.name shouldBe "variable"
+                it.moduleName shouldBe ns.getDefaultPackage().moduleName
+                it.packageName shouldBe ns.getDefaultPackage().packageName
             }
     }
 
@@ -53,8 +53,8 @@ class VariablesConversionsKtTest {
 
         // then
         result.target.shouldBeTypeOf<PackageSymbol>().should {
-            it.symbol.moduleName shouldBe defaultModule.name
-            it.symbol.packageName shouldBe otherPackage.name
+            it.moduleName shouldBe defaultModule.name
+            it.packageName shouldBe otherPackage.name
         }
     }
 
@@ -89,9 +89,9 @@ class VariablesConversionsKtTest {
 
         // then
         result.target.shouldBeTypeOf<PackageSymbol>() should {
-            it.symbol.name shouldBe "variable"
-            it.symbol.moduleName shouldBe otherModule.name
-            it.symbol.packageName shouldBe otherPackage.name
+            it.name shouldBe "variable"
+            it.moduleName shouldBe otherModule.name
+            it.packageName shouldBe otherPackage.name
         }
     }
 

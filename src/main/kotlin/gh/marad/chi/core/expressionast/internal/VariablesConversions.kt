@@ -3,8 +3,6 @@ package gh.marad.chi.core.expressionast.internal
 import gh.marad.chi.core.*
 import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.expressionast.generateExpressionAst
-import gh.marad.chi.core.namespace.FnSymbol
-import gh.marad.chi.core.namespace.SymbolKind
 import gh.marad.chi.core.parser.readers.ParseFieldAccess
 import gh.marad.chi.core.parser.readers.ParseIndexOperator
 import gh.marad.chi.core.parser.readers.ParseMethodInvocation
@@ -22,7 +20,7 @@ fun convertFieldAccess(ctx: ConversionContext, ast: ParseFieldAccess): Expressio
 
     if (pkg != null) {
         return VariableAccess(
-            target = LocalSymbol(FnSymbol("", SymbolKind.Local, null, false)),
+            target = LocalSymbol("", false),
             sourceSection = ast.section
         )
     }
@@ -31,7 +29,7 @@ fun convertFieldAccess(ctx: ConversionContext, ast: ParseFieldAccess): Expressio
     val scope = ctx.namespace.getOrCreatePackage(/*receiver.type.moduleName*/ "module", /*receiver.type.packageName*/ "package").scope
     if (scope.containsSymbol(ast.memberName)) {
         return VariableAccess(
-            target = LocalSymbol(FnSymbol("", SymbolKind.Local, null, false)),
+            target = LocalSymbol("", false),
             sourceSection = ast.memberSection
         )
     }
@@ -53,7 +51,7 @@ fun convertMethodInvocation(ctx: ConversionContext, ast: ParseMethodInvocation):
         {
             if (pkg != null) {
                 VariableAccess(
-                    target = LocalSymbol(FnSymbol("", SymbolKind.Local, null, false)),
+                    target = LocalSymbol("", false),
                     sourceSection = ast.memberSection
                 )
             } else null
@@ -62,7 +60,7 @@ fun convertMethodInvocation(ctx: ConversionContext, ast: ParseMethodInvocation):
             val scope = ctx.namespace.getOrCreatePackage(/*receiver.type.moduleName*/ "module", /*receiver.type.packageName*/ "package").scope
             if (scope.containsSymbol(ast.methodName)) {
                 VariableAccess(
-                    target = LocalSymbol(FnSymbol("", SymbolKind.Local, null, false)),
+                    target = LocalSymbol("", false),
                     sourceSection = ast.memberSection
                 )
             } else null
@@ -71,7 +69,7 @@ fun convertMethodInvocation(ctx: ConversionContext, ast: ParseMethodInvocation):
             val methodLookup = ctx.lookup(ast.methodName)
             val methodPkg = ctx.namespace.getOrCreatePackage(methodLookup.moduleName, methodLookup.packageName)
             VariableAccess(
-                target = LocalSymbol(FnSymbol("", SymbolKind.Local, null, false)),
+                target = LocalSymbol("", false),
                 sourceSection = ast.memberSection
             )
         }

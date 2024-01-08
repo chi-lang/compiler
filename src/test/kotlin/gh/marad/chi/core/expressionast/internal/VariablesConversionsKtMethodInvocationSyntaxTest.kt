@@ -72,9 +72,9 @@ class VariablesConversionsKtMethodInvocationSyntaxTest {
         expr.shouldBeTypeOf<FnCall>() should { call ->
             call.function.shouldBeTypeOf<VariableAccess>() should {
                 it.target.shouldBeTypeOf<PackageSymbol>().should {
-                    it.symbol.name shouldBe "func"
-                    it.symbol.moduleName shouldBe "foo"
-                    it.symbol.packageName shouldBe "bar"
+                    it.name shouldBe "func"
+                    it.moduleName shouldBe "foo"
+                    it.packageName shouldBe "bar"
                 }
             }
             call.callTypeParameters shouldBe emptyList()
@@ -117,9 +117,9 @@ class VariablesConversionsKtMethodInvocationSyntaxTest {
         expr.shouldBeTypeOf<FnCall>() should { call ->
             call.function.shouldBeTypeOf<VariableAccess>()
                 .target.shouldBeTypeOf<PackageSymbol>().should {
-                    it.symbol.moduleName shouldBe testType.moduleName
-                    it.symbol.packageName shouldBe testType.packageName
-                    it.symbol.name shouldBe "method"
+                    it.moduleName shouldBe testType.moduleName
+                    it.packageName shouldBe testType.packageName
+                    it.name shouldBe "method"
                 }
         }
     }

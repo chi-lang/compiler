@@ -3,8 +3,6 @@ package gh.marad.chi.core.expressionast.internal
 import gh.marad.chi.core.*
 import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.expressionast.generateExpressionAst
-import gh.marad.chi.core.namespace.FnSymbol
-import gh.marad.chi.core.namespace.SymbolKind
 import gh.marad.chi.core.parser.readers.ParseWeave
 import gh.marad.chi.core.parser.readers.ParseWeavePlaceholder
 
@@ -23,7 +21,7 @@ fun convertWeave(ctx: ConversionContext, weave: ParseWeave): Expression {
 //    ctx.currentScope.addSymbol(tempVarName, tempVariableDeclaration.type, SymbolType.Local, false)
     val readVariable =
         VariableAccess(
-            target = LocalSymbol(FnSymbol("", SymbolKind.Local, null, false)),
+            target = LocalSymbol("", false),
             weave.value.section
         )
     val filledTemplate = ctx.withWeaveInput(readVariable) {

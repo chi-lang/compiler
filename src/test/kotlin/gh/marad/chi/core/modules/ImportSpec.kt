@@ -34,9 +34,9 @@ class ImportSpec {
             call.function.shouldBeTypeOf<VariableAccess>()
                 .target.shouldBeTypeOf<PackageSymbol>()
                 .should { fn ->
-                    fn.symbol.moduleName shouldBe "user"
-                    fn.symbol.packageName shouldBe "default"
-                    fn.symbol.name shouldBe "foo"
+                    fn.moduleName shouldBe "user"
+                    fn.packageName shouldBe "default"
+                    fn.name shouldBe "foo"
                 }
         }
     }
@@ -62,9 +62,9 @@ class ImportSpec {
             call.function.shouldBeTypeOf<VariableAccess>()
                 .target.shouldBeTypeOf<PackageSymbol>()
                 .should { fn ->
-                    fn.symbol.moduleName shouldBe "std"
-                    fn.symbol.packageName shouldBe "time"
-                    fn.symbol.name shouldBe "millis"
+                    fn.moduleName shouldBe "std"
+                    fn.packageName shouldBe "time"
+                    fn.name shouldBe "millis"
                 }
         }
     }
@@ -90,9 +90,9 @@ class ImportSpec {
             call.function.shouldBeTypeOf<VariableAccess>()
                 .target.shouldBeTypeOf<PackageSymbol>()
                 .should { fn ->
-                    fn.symbol.moduleName shouldBe "std"
-                    fn.symbol.packageName shouldBe "time"
-                    fn.symbol.name shouldBe "millis"
+                    fn.moduleName shouldBe "std"
+                    fn.packageName shouldBe "time"
+                    fn.name shouldBe "millis"
                 }
         }
     }
@@ -113,9 +113,9 @@ class ImportSpec {
             call.function.shouldBeTypeOf<VariableAccess>()
                 .target.shouldBeTypeOf<PackageSymbol>()
                 .should { fn ->
-                    fn.symbol.moduleName shouldBe "std"
-                    fn.symbol.packageName shouldBe "time"
-                    fn.symbol.name shouldBe "millis"
+                    fn.moduleName shouldBe "std"
+                    fn.packageName shouldBe "time"
+                    fn.name shouldBe "millis"
                 }
         }
     }
@@ -143,9 +143,9 @@ class ImportSpec {
                 expr.shouldBeTypeOf<VariableAccess>()
                     .target.shouldBeTypeOf<PackageSymbol>()
                     .should { target ->
-                        target.symbol.moduleName shouldBe "std"
-                        target.symbol.packageName shouldBe "time"
-                        target.symbol.name shouldBe "millis"
+                        target.moduleName shouldBe "std"
+                        target.packageName shouldBe "time"
+                        target.name shouldBe "millis"
                     }
             }
     }

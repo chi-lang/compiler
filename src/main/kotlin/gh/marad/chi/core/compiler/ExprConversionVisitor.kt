@@ -3,9 +3,7 @@ package gh.marad.chi.core.compiler
 import gh.marad.chi.core.*
 import gh.marad.chi.core.Target
 import gh.marad.chi.core.compiler.Compiler2.resolveType
-import gh.marad.chi.core.namespace.CompilationScope
-import gh.marad.chi.core.namespace.FnSymbolTable
-import gh.marad.chi.core.namespace.ScopeType
+import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.*
@@ -258,8 +256,8 @@ class ExprConversionVisitor(
                 addLocalSymbol("resume", type = null, isMutable = false, isPublic = true)
 
                 HandleCase(
-                    moduleName = info.symbol.moduleName,
-                    packageName = info.symbol.packageName,
+                    moduleName = info.moduleName,
+                    packageName = info.packageName,
                     effectName = it.effectName,
                     argumentNames = it.argumentNames,
                     body = it.body.accept(this),
@@ -338,13 +336,16 @@ class ExprConversionVisitor(
     private fun getSymbol(name: String, sourceSection: ChiSource.Section?): Target {
         val fnSymbolTable = currentFnSymbolTable
         return if (fnSymbolTable != null) {
-            fnSymbolTable.get(name)?.let { LocalSymbol(it) }
+            fnSymbolTable.get(name)?.let { it.toLocalSymbol() }
                 ?: throw ExprConversionException("Tried to get local symbol '$name'", sourceSection)
         } else {
-            tables.localSymbolTable.get(name)?.let { PackageSymbol(it) }
+            tables.localSymbolTable.get(name)?.let { it.toPackageSymbol() }
                 ?: throw ExprConversionException("Tried to get symbol '$name'", sourceSection)
         }
     }
+
+    private fun FnSymbol.toLocalSymbol() = LocalSymbol(name, mutable)
+    private fun Symbol.toPackageSymbol() = PackageSymbol(moduleName, packageName, name, mutable)
 
     private fun addLocalSymbol(name: String, type: Type?, isMutable: Boolean, isPublic: Boolean) {
         val fnSymbolTable = currentFnSymbolTable
