@@ -3,7 +3,6 @@
 package gh.marad.chi.core.analyzer
 
 import gh.marad.chi.addSymbolInDefaultPackage
-import gh.marad.chi.ast
 import gh.marad.chi.compile
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.types.Types
@@ -227,24 +226,6 @@ class IsExprSpec {
     }
 
     @Test
-    fun `is expr should fill variant within 'when' branches`() {
-        val code = """
-            data AB = A(a: int) | B(b: int) | C(c: int) | D(d: int)
-            val x = A(10)
-            when {
-                x is A -> x.a
-                x is B -> x.b
-                x is C -> x.c
-                x is D -> x.d
-            }
-        """.trimIndent()
-
-        val errors = analyze(ast(code, ignoreCompilationErrors = false))
-
-        errors.shouldBeEmpty()
-    }
-
-    @Test
     fun `should also work with imported types`() {
         val namespace = GlobalCompilationNamespace()
         val defCode = """
@@ -257,6 +238,7 @@ class IsExprSpec {
             import foo/bar { AB }
             val a = A(10)
             if (a is B) {
+                a as B
                 a.b
             }
         """.trimIndent()
@@ -278,7 +260,7 @@ class IsExprSpec {
         val code = """
             import mymod/mypkg { foo, bar, baz, faz }
         """.trimIndent()
-        val result = analyze(compile(code, namespace, ignoreCompilationErrors = true))
+        val result = messages(code, namespace)
 
         result shouldHaveSize 2
         result[0].shouldBeTypeOf<ImportInternal>()

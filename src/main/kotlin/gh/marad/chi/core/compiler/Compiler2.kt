@@ -34,20 +34,37 @@ object Compiler2 {
         // TODO check that imported names exist and are public
 
 
+        val symbolTable = SymbolTable()
+        val typeTable = TypeTable()
+
         // build global symbol table
         // ==========================
-        val symbolTable = SymbolTable()
         // get already defined symbols
         symbolTable.add(ns.getOrCreatePackage(packageDefinition).symbols)
         // add imported symbols
         parsedProgram.imports.forEach { import ->
             val importPkg = ns.getOrCreatePackage(import.moduleName.name, import.packageName.name)
             import.entries.forEach { entry ->
+                // find the symbol in target package
                 importPkg.symbols.get(entry.name)?.let { symbol ->
                     symbolTable.add(symbol.copy(name = entry.alias?.alias ?: entry.name))
                     // verify that imported type is public
                     if (!symbol.public && import.moduleName.name != packageDefinition.moduleName) {
                         resultMessages.add(CannotAccessInternalName(entry.name, entry.section.toCodePoint()))
+                    }
+                } ?: importPkg.types.get(entry.name)?.let {
+                    // if symbol was not found - try the sum type
+                    // if sum type was found then import it's constructors into local symbol table
+                    if (it.type is SumType) {
+                        it.type.subtypes.map { subtypeName ->
+                            importPkg.symbols.get(subtypeName)?.let(symbolTable::add)
+                        }
+
+                        // also add all the types to local type table
+                        typeTable.add(it)
+                        it.type.subtypes.map { subtypeName ->
+                            importPkg.types.get(subtypeName)?.let(typeTable::add)
+                        }
                     }
                 } ?: resultMessages.add(UnrecognizedName(entry.name, entry.section.toCodePoint()))
             }
@@ -55,7 +72,6 @@ object Compiler2 {
 
         // build type table
         // ================
-        val typeTable = TypeTable()
         // add imported types
         parsedProgram.imports.forEach { import ->
             val importPkg = ns.getOrCreatePackage(import.moduleName.name, import.packageName.name)
@@ -118,18 +134,19 @@ object Compiler2 {
                     type
                 }
 
-                symbolTable.add(
-                    Symbol(
-                        moduleName = packageDefinition.moduleName,
-                        packageName = packageDefinition.packageName,
-                        name = ctor.name,
-                        SymbolKind.Local,
-                        slot = 0,
-                        type = constructorOrSymbolType,
-                        public = ctor.public,
-                        mutable = false
-                    )
+                val ctorSymbol = Symbol(
+                    moduleName = packageDefinition.moduleName,
+                    packageName = packageDefinition.packageName,
+                    name = ctor.name,
+                    SymbolKind.Local,
+                    slot = 0,
+                    type = constructorOrSymbolType,
+                    public = ctor.public,
+                    mutable = false
                 )
+
+                symbolTable.add(ctorSymbol)
+                pkg.symbols.add(ctorSymbol)
 
                 val variantTypeInfo = TypeInfo(
                     moduleName = packageDefinition.moduleName,
