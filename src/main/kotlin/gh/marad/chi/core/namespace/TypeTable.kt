@@ -33,6 +33,10 @@ class TypeTable {
         typeMap[info.name] = info
     }
 
+    fun add(alias: String, info: TypeInfo) {
+        typeMap[alias] = info
+    }
+
     fun add(table: TypeTable) {
         typeMap.putAll(table.typeMap)
     }
@@ -43,8 +47,8 @@ class TypeTable {
         it.type == type
     }
 
-    fun forEach(f: (TypeInfo) -> Unit) {
-        typeMap.values.forEach(f)
+    fun forEach(f: (String, TypeInfo) -> Unit) {
+        typeMap.forEach(f)
     }
 
     private fun addSimpleType(t: SimpleType) {

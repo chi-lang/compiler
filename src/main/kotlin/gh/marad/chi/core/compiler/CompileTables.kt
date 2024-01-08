@@ -37,13 +37,13 @@ class CompileTables(val currentPackage: Package, val ns: GlobalCompilationNamesp
             // find the symbol in target package
             importPkg.symbols.get(entry.name)?.let { symbol ->
                 // import it to local symbol table
-                localSymbolTable.add(symbol.copy(name = importedName))
-            } ?: importPkg.types.get(entry.name)?.let {
+                localSymbolTable.add(importedName, symbol)
+            } ?: importPkg.types.get(entry.name)?.let { typeInfo ->
                 // if symbol was not found - try the sum type
-                localTypeTable.add(it.copy(name = importedName))
-                if (it.type is SumType) {
-                    it.type.subtypes.map { subtypeName ->
-                        // if sum type was found then import it's constructors into local symbol table
+                localTypeTable.add(importedName, typeInfo)
+                if (typeInfo.type is SumType) {
+                    typeInfo.type.subtypes.map { subtypeName ->
+                        // if sum type was found then import type's constructors into local symbol table
                         importPkg.symbols.get(subtypeName)?.let(localSymbolTable::add)
                         // as well as add all the types to local type table
                         importPkg.types.get(subtypeName)?.let(localTypeTable::add)

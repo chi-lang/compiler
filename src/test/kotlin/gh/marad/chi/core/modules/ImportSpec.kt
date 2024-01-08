@@ -1,6 +1,7 @@
 package gh.marad.chi.core.modules
 
 import gh.marad.chi.ErrorMessagesException
+import gh.marad.chi.addSymbol
 import gh.marad.chi.ast
 import gh.marad.chi.compile
 import gh.marad.chi.core.FnCall
@@ -9,25 +10,26 @@ import gh.marad.chi.core.VariableAccess
 import gh.marad.chi.core.analyzer.SyntaxError
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.SymbolType
+import gh.marad.chi.core.types.Types
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
+import org.junit.jupiter.api.Test
 
-@Suppress("unused")
-class ImportSpec : FunSpec({
+class ImportSpec {
 
     // TODO this should be moved to FnCall generation tests
-    test("using simplified name for names defined in current module") {
+    @Test
+    fun `using simplified name for names defined in current module`() {
         // when
         val result = ast(
             """
-            package user/default
-            val foo = { 1 }
-            foo()
-        """.trimIndent()
+                package user/default
+                val foo = { 1 }
+                foo()
+            """.trimIndent()
         )
 
         // then
@@ -41,18 +43,18 @@ class ImportSpec : FunSpec({
     }
 
     // TODO this should be moved to FnCall generation tests
-    test("importing function from package") {
+    @Test
+    fun `importing function from package`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.getOrCreatePackage("std", "time")
-            .scope.addSymbol("millis", OldType.fn(OldType.int), SymbolType.Local)
+        ns.addSymbol("std", "time", "millis", Types.fn(Types.int), public = true)
 
         // when
         val result = compile(
             """
-            import std/time { millis }
-            millis()
-        """.trimIndent(), namespace = ns, ignoreCompilationErrors = true
+                import std/time { millis }
+                millis()
+            """.trimIndent(), namespace = ns
         )
 
         // then
@@ -67,18 +69,18 @@ class ImportSpec : FunSpec({
     }
 
     // TODO this should be moved to FnCall generation tests
-    test("import function with alias") {
+    @Test
+    fun `import function with alias`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.getOrCreatePackage("std", "time")
-            .scope.addSymbol("millis", OldType.fn(OldType.int), SymbolType.Local)
+        ns.addSymbol("std", "time", "millis", Types.fn(Types.int), public = true)
 
         // when
         val result = compile(
             """
-            import std/time { millis as coreMillis }
-            coreMillis()
-        """.trimIndent(), namespace = ns, ignoreCompilationErrors = true
+                import std/time { millis as coreMillis }
+                coreMillis()
+            """.trimIndent(), namespace = ns
         )
 
         // then
@@ -93,7 +95,8 @@ class ImportSpec : FunSpec({
     }
 
     // TODO this should be moved to FnCall generation tests
-    test("whole package alias") {
+    @Test
+    fun `whole package alias`() {
         // when
         val result = ast(
             """
@@ -113,7 +116,8 @@ class ImportSpec : FunSpec({
     }
 
 
-    test("import package and functions and alias everything") {
+    @Test
+    fun `import package and functions and alias everything`() {
         // given
         val ns = GlobalCompilationNamespace()
         ns.getOrCreatePackage("std", "time")
@@ -139,7 +143,8 @@ class ImportSpec : FunSpec({
             }
     }
 
-    test("should not allow empty package alias name") {
+    @Test
+    fun `should not allow empty package alias name`() {
         // when
         val ex = shouldThrow<ErrorMessagesException> {
             ast(
@@ -157,4 +162,4 @@ class ImportSpec : FunSpec({
         messages[0].shouldBeTypeOf<SyntaxError>()
     }
 
-})
+}

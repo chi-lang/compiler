@@ -10,8 +10,8 @@ import gh.marad.chi.core.parser.visitor.DefaultParseAstVisitor
 class CheckNamesVisitor(private val node: ParseAst, symbolTable: SymbolTable) : DefaultParseAstVisitor() {
     private var messages = mutableListOf<Message>()
     private var definedNames = mutableSetOf<String>().apply {
-        symbolTable.forEach {
-            add(it.name)
+        symbolTable.forEach { name, symbol ->
+            add(name)
         }
     }
 
