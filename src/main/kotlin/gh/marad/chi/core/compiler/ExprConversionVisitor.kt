@@ -355,10 +355,10 @@ class ExprConversionVisitor(
             sourceSection = parseBlock.section
         )
 
-    override fun visitCast(parseCast: ParseCast): Expression =
-        Cast(parseCast.value.accept(this), Types.string, parseCast.section).also {
-            it.newType = resolveType(typeTable, currentTypeSchemeVariables, parseCast.typeRef)
-        }
+    override fun visitCast(parseCast: ParseCast): Expression {
+        val targetType = resolveType(typeTable, currentTypeSchemeVariables, parseCast.typeRef)
+        return Cast(parseCast.value.accept(this), targetType, parseCast.section)
+    }
 
     override fun visitGroup(parseGroup: ParseGroup): Expression =
         parseGroup.value.accept(this)

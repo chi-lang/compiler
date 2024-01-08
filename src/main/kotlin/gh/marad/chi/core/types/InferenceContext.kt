@@ -1,8 +1,7 @@
 package gh.marad.chi.core.types
 
-import gh.marad.chi.core.compiler.TypeTable
 
-class InferenceContext(val typeGraph: TypeGraph, val typeTable: TypeTable) {
+class InferenceContext(val typeTable: TypeLookupTable) {
     private var nextTypeVariableNum = 0
     fun nextTypeVariable() = TypeVariable("t${nextTypeVariableNum++}")
 }

@@ -2,17 +2,12 @@
 
 package gh.marad.chi.core.analyzer
 
+import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.ast
 import gh.marad.chi.compile
-import gh.marad.chi.core.OldType.Companion.bool
-import gh.marad.chi.core.OldType.Companion.int
-import gh.marad.chi.core.OldType.Companion.unit
-import gh.marad.chi.core.compiler.Symbol
-import gh.marad.chi.core.compiler.SymbolKind
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.types.Types
 import gh.marad.chi.messages
-import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
@@ -40,18 +35,19 @@ class NameDeclarationTypeCheckingSpec {
     @Test
     fun `should return nothing for simple atom and variable read`() {
         val ns = GlobalCompilationNamespace()
-        ns.getDefaultPackage().symbols.apply {
-            add(Symbol("user", "default", "x", SymbolKind.Local, Types.fn(Types.unit), 0, true, true))
-        }
-        analyze(ast("5", ns, ignoreCompilationErrors = true)).shouldBeEmpty()
-        analyze(ast("x", ns, ignoreCompilationErrors = true)).shouldBeEmpty()
+        ns.addSymbolInDefaultPackage("x", Types.fn(Types.unit))
+        messages("5", ns).shouldBeEmpty()
+        messages("x", ns).shouldBeEmpty()
     }
 
     @Test
     fun `should check if types match in name declaration with type definition`() {
         messages("val x: () -> int = 5").should {
             it.shouldHaveSize(1)
-            it[0].shouldBeTypeOf<NotAFunction>()
+            it[0].shouldBeTypeOf<TypeMismatch>().should {
+                it.expected shouldBe Types.fn(Types.int)
+                it.actual shouldBe Types.int
+            }
         }
     }
 
@@ -138,77 +134,100 @@ class FnTypeCheckingSpec {
     }
 }
 
-class IfElseTypeCheckingSpec : FunSpec() {
-    init {
-        test("if-else type is unit when branch types differ (or 'else' branch is missing)") {
-            analyze(ast("val x: unit = if(true) { 2 }", ignoreCompilationErrors = true)).shouldBeEmpty()
-            analyze(ast("val x: int = if(true) { 2 } else { 3 }", ignoreCompilationErrors = true)).shouldBeEmpty()
-            analyze(ast("val x: int = if(true) { 2 } else { {} }", ignoreCompilationErrors = true)).should {
-                it.shouldHaveSize(1)
-                it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                    error.expected shouldBe int
-                    error.actual shouldBe unit
-                }
+class IfElseTypeCheckingSpec {
+    @Test
+    fun `if-else type is unit when branch types differ (or 'else' branch is missing)`() {
+        messages("val x: unit = if(true) { 2 }").shouldBeEmpty()
+        messages("val x: int = if(true) { 2 } else { 3 }").shouldBeEmpty()
+        messages("val x: int = if(true) { 2 } else { {} }").should {
+            it.shouldHaveSize(1)
+            it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
+                error.expected shouldBe Types.int
+                error.actual shouldBe Types.fn(Types.unit)
             }
         }
+    }
 
-        test("conditions should be boolean type") {
-            analyze(ast("if (1) { 2 }", ignoreCompilationErrors = true)).should {
-                it.shouldHaveSize(1)
-                it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                    error.expected shouldBe bool
-                    error.actual shouldBe int
-                }
+    @Test
+    fun `conditions should be boolean type`() {
+        messages("if (1) { 2 }").should {
+            it.shouldHaveSize(1)
+            it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
+                error.expected shouldBe Types.bool
+                error.actual shouldBe Types.int
             }
         }
     }
 }
 
-class PrefixOpSpec : FunSpec({
-    test("should expect boolean type for '!' operator") {
-        analyze(ast("!true", ignoreCompilationErrors = true)) shouldHaveSize 0
-        analyze(ast("!1", ignoreCompilationErrors = true)).should {
+class PrefixOpSpec {
+    @Test
+    fun `should expect boolean type for '!' operator`() {
+        messages("!true") shouldHaveSize 0
+        messages("!1").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe bool
-                error.actual shouldBe int
+                error.expected shouldBe Types.bool
+                error.actual shouldBe Types.int
             }
         }
     }
-})
+}
 
-class CastSpec : FunSpec({
-})
-
-class WhileLoopSpec : FunSpec({
-    test("condition should have boolean type") {
-        analyze(ast("while(true) {}", ignoreCompilationErrors = true)) shouldHaveSize 0
-        analyze(ast("while(1) {}", ignoreCompilationErrors = true)).should {
+class WhileLoopSpec {
+    @Test
+    fun `condition should have boolean type`() {
+        messages("while(true) {}") shouldHaveSize 0
+        messages("while(1) {}").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe bool
-                error.actual shouldBe int
+                error.expected shouldBe Types.bool
+                error.actual shouldBe Types.int
             }
         }
     }
-})
+}
 
-class IsExprSpec : FunSpec({
-    test("is expr should cooperate with if providing a scope") {
+class CastSpec {
+    @Test
+    fun `should cast values to different types`() {
+        messages("val a: string = 5 as string").shouldBeEmpty()
+    }
+
+    @Test
+    fun `cast should update name type in scope`() {
+        // given
+        val code = """
+            data AB = A(a: int) | B(b: float)
+            val a = A(10)
+            a as B
+            a.b
+        """.trimIndent()
+
+        // expect
+        messages(code).shouldBeEmpty()
+    }
+}
+
+class IsExprSpec {
+    @Test
+    fun `is expr should cooperate with if providing a scope`() {
         val code = """
             data AB = A(a: int) | B(b: float)
             val a = A(10)
             if (a is B) {
+                a as B
                 a.b
             }
         """.trimIndent()
 
-        val errors = analyze(ast(code, ignoreCompilationErrors = false))
+        val errors = messages(code)
 
         errors.shouldBeEmpty()
     }
 
-    test("is expr should fill variant within `when` branches") {
+    @Test
+    fun `is expr should fill variant within 'when' branches`() {
         val code = """
             data AB = A(a: int) | B(b: int) | C(c: int) | D(d: int)
             val x = A(10)
@@ -225,7 +244,8 @@ class IsExprSpec : FunSpec({
         errors.shouldBeEmpty()
     }
 
-    test("should also work with imported types") {
+    @Test
+    fun `should also work with imported types`() {
         val namespace = GlobalCompilationNamespace()
         val defCode = """
             package foo/bar
@@ -243,7 +263,8 @@ class IsExprSpec : FunSpec({
         compile(code, namespace)
     }
 
-    test("should not allow importing variables and functions that are not public") {
+    @Test
+    fun `should not allow importing variables and functions that are not public`() {
         val namespace = GlobalCompilationNamespace()
         val defCode = """
             package mymod/mypkg
@@ -265,4 +286,4 @@ class IsExprSpec : FunSpec({
         result[1].shouldBeTypeOf<ImportInternal>()
             .symbolName shouldBe "bar"
     }
-})
+}

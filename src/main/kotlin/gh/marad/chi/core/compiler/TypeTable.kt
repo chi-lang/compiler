@@ -17,6 +17,8 @@ class TypeTable {
         addSimpleType(Types.string)
         add(
             TypeInfo(
+                moduleName = "std",
+                packageName = "lang",
                 name = "array",
                 type = Types.array(TypeVariable("T")),
                 isPublic = true,
@@ -44,6 +46,8 @@ class TypeTable {
     private fun addSimpleType(t: SimpleType) {
         add(
             TypeInfo(
+                moduleName = t.moduleName,
+                packageName = t.packageName,
                 name = t.name,
                 type = t,
                 isPublic = true,
@@ -56,6 +60,8 @@ class TypeTable {
 }
 
 data class TypeInfo(
+    val moduleName: String,
+    val packageName: String,
     val name: String,
     val type: Type,
     val isPublic: Boolean,

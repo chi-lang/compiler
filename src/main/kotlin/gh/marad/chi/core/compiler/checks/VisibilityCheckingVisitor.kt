@@ -6,15 +6,14 @@ import gh.marad.chi.core.FieldAssignment
 import gh.marad.chi.core.analyzer.CannotAccessInternalName
 import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.analyzer.toCodePoint
-import gh.marad.chi.core.compiler.TypeTable
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
 import gh.marad.chi.core.parser.ChiSource
-import gh.marad.chi.core.types.SimpleType
 import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.TypeLookupTable
 
 class VisibilityCheckingVisitor(
     private val currentModule: String,
-    private val typeTable: TypeTable
+    private val typeLookupTable: TypeLookupTable,
 ) : DefaultExpressionVisitor {
     private var messages = mutableListOf<Message>()
 
@@ -41,19 +40,15 @@ class VisibilityCheckingVisitor(
     }
 
     private fun verifyFieldAccessible(receiverType: Type, fieldName: String, sourceSection: ChiSource.Section?) {
-        val simpleType: SimpleType = if(receiverType is SimpleType) {
-            receiverType
-        } else {
-            TODO("Unexpected type: $receiverType")
-        }
 
-        val info = typeTable.find(simpleType)
-            ?: TODO("Type $simpleType not found in type table!")
+        val info = typeLookupTable.find(receiverType)
+            ?: TODO("Type $receiverType not found in type table!")
 
         val field = info.fields.firstOrNull { it.name == fieldName }
-            ?: TODO("Field $fieldName not found in type $simpleType!")
+            ?: TODO("Field $fieldName not found in type $receiverType!")
 
-        if (!field.public && simpleType.moduleName != currentModule) {
+
+        if (!field.public && info.moduleName != currentModule) {
             messages.add(CannotAccessInternalName(fieldName, sourceSection.toCodePoint()))
         }
     }

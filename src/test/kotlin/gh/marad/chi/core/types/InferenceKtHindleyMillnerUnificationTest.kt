@@ -2,7 +2,6 @@ package gh.marad.chi.core.types
 
 import gh.marad.chi.core.analyzer.CompilerMessageException
 import gh.marad.chi.core.analyzer.TypeMismatch
-import gh.marad.chi.core.compiler.TypeTable
 import gh.marad.chi.core.parser.ChiSource
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldContain
@@ -20,7 +19,7 @@ class InferenceKtHindleyMillnerUnificationTest {
         val simpleTrueConstraint = Constraint(Types.int, Types.int, null)
 
         // when
-        val solution = unify(TypeTable(), setOf(simpleTrueConstraint))
+        val solution = unify(setOf(simpleTrueConstraint))
 
         // then
         solution shouldHaveSize 0
@@ -35,7 +34,7 @@ class InferenceKtHindleyMillnerUnificationTest {
         val constraint2 = Constraint(u, Types.bool, null)
 
         // when
-        val solution = unify(TypeTable(), setOf(constraint1, constraint2))
+        val solution = unify(setOf(constraint1, constraint2))
 
         // then
         solution shouldContain (t to Types.int)
@@ -50,12 +49,12 @@ class InferenceKtHindleyMillnerUnificationTest {
 
         // expect
         shouldThrow<TypeInferenceFailed> {
-            unify(TypeTable(), setOf(Constraint(t, FunctionType(listOf(Types.int, t)), section)))
+            unify(setOf(Constraint(t, FunctionType(listOf(Types.int, t)), section)))
         }.section shouldBe section
 
         // and
         shouldThrow<TypeInferenceFailed> {
-            unify(TypeTable(), setOf(Constraint(FunctionType(listOf(Types.int, t)), t, section)))
+            unify(setOf(Constraint(FunctionType(listOf(Types.int, t)), t, section)))
         }.section shouldBe section
     }
 
@@ -68,7 +67,7 @@ class InferenceKtHindleyMillnerUnificationTest {
 
         // expect
         shouldThrow<TypeInferenceFailed> {
-            unify(TypeTable(), setOf(Constraint(a, b, section)))
+            unify(setOf(Constraint(a, b, section)))
         }.section shouldBe section
     }
 
@@ -81,7 +80,7 @@ class InferenceKtHindleyMillnerUnificationTest {
 
         // expect
         shouldThrow<TypeInferenceFailed> {
-            unify(TypeTable(), setOf(Constraint(a, b, section)))
+            unify(setOf(Constraint(a, b, section)))
         }.section shouldBe section
     }
 
@@ -93,7 +92,7 @@ class InferenceKtHindleyMillnerUnificationTest {
         val b = Types.fn(Types.int, Types.bool)
 
         // when
-        val solution = unify(TypeTable(), setOf(Constraint(a, b, null)))
+        val solution = unify(setOf(Constraint(a, b, null)))
 
         // then
         solution shouldContain (t to Types.bool)
@@ -111,7 +110,7 @@ class InferenceKtHindleyMillnerUnificationTest {
 
         // when
         val ex = shouldThrow<TypeInferenceFailed> {
-            unify(TypeTable(), setOf(Constraint(a, b, randomSourceSection(), fnParamSections)))
+            unify(setOf(Constraint(a, b, randomSourceSection(), fnParamSections)))
         }
 
         // then
@@ -126,7 +125,7 @@ class InferenceKtHindleyMillnerUnificationTest {
         val b = Types.array(t)
 
         // when
-        val solution = unify(TypeTable(), setOf(Constraint(a, b, null)))
+        val solution = unify(setOf(Constraint(a, b, null)))
 
         // then
         solution shouldContain (t to Types.int)
@@ -145,7 +144,7 @@ class InferenceKtHindleyMillnerUnificationTest {
 
         // when
         val ex = shouldThrow<CompilerMessageException> {
-            unify(TypeTable(), setOf(Constraint(a, b, section, paramSections)))
+            unify(setOf(Constraint(a, b, section, paramSections)))
         }
 
         // and

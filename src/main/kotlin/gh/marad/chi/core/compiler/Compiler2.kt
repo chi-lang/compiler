@@ -66,6 +66,7 @@ object Compiler2 {
             }
         }
         // add locally defined types
+        val pkg = ns.getOrCreatePackage(packageDefinition)
         parsedProgram.typeDefinitions.forEach { typeDef ->
             val typeSchemeVariables = typeDef.typeParameters.map { TypeVariable(it.name) }
 
@@ -79,6 +80,8 @@ object Compiler2 {
             )
 
             val baseTypeInfo = TypeInfo(
+                moduleName = packageDefinition.moduleName,
+                packageName = packageDefinition.packageName,
                 name = typeDef.typeName,
                 type = base,
                 isPublic = true,
@@ -86,6 +89,8 @@ object Compiler2 {
                 fields = emptyList()
             )
             typeTable.add(baseTypeInfo)
+            pkg.types.add(baseTypeInfo)
+
 
             typeDef.variantConstructors.map { ctor ->
                 val paramTypeNames = ctor.formalFields.flatMap { it.typeRef.findTypeNames() }
@@ -126,13 +131,18 @@ object Compiler2 {
                     )
                 )
 
-                typeTable.add(TypeInfo(
+                val variantTypeInfo = TypeInfo(
+                    moduleName = packageDefinition.moduleName,
+                    packageName = packageDefinition.packageName,
                     name = ctor.name,
                     type = type,
                     isPublic = ctor.public,
                     isVariantConstructor = true,
                     fields = fields,
-                ))
+                )
+                typeTable.add(variantTypeInfo)
+                pkg.types.add(variantTypeInfo)
+
 
                 return@map type
             }
@@ -160,9 +170,8 @@ object Compiler2 {
 
         // infer types
         // ===========
-        val typeGraph = TypeGraph() // add defined and imported types
-        // TODO do we even need the type graph?
-        val inferenceContext = InferenceContext(typeGraph, typeTable)
+        val typeLookupTable = TypeLookupTable(ns)
+        val inferenceContext = InferenceContext(typeLookupTable)
         val env = mutableMapOf<String, Type>() // use global symbol table
         symbolTable.forEach {
             if (it.type != null) {
@@ -187,7 +196,7 @@ object Compiler2 {
 
         // perform post construction checks
         // ================================
-        VisibilityCheckingVisitor(packageDefinition.moduleName, typeTable)
+        VisibilityCheckingVisitor(packageDefinition.moduleName, typeLookupTable)
             .check(expressions, resultMessages)
         FnCallCheckingVisitor()
             .check(expressions, resultMessages)

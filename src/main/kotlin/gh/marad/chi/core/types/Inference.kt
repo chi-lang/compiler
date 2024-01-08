@@ -1,20 +1,23 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.core.*
-import gh.marad.chi.core.analyzer.*
-import gh.marad.chi.core.compiler.TypeTable
+import gh.marad.chi.core.analyzer.CompilerMessageException
+import gh.marad.chi.core.analyzer.MemberDoesNotExist
+import gh.marad.chi.core.analyzer.TypeMismatch
+import gh.marad.chi.core.analyzer.toCodePoint
+import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parser.ChiSource
 
 
 fun inferAndFillTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression) {
     val inferred = inferTypes(ctx, env, expr)
-    val solution = unify(ctx.typeTable, inferred.constraints)
+    val solution = unify(inferred.constraints)
     TypeFiller(solution).visit(expr)
 }
 
 
 internal fun inferTypes(env: Map<String, Type>, expr: Expression): InferenceResult =
-    inferTypes(InferenceContext(TypeGraph(), TypeTable()), env, expr)
+    inferTypes(InferenceContext(TypeLookupTable(GlobalCompilationNamespace())), env, expr)
 
 internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Expression): InferenceResult {
     return when (expr) {
@@ -32,7 +35,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
 
         is NameDeclaration -> {
             val valueType = inferTypes(ctx, env, expr.value)
-            val (updatedEnv, generalizedType) = generalize(ctx.typeTable, valueType.constraints, env, expr.name, valueType.type)
+            val (updatedEnv, generalizedType) = generalize(valueType.constraints, env, expr.name, valueType.type)
             val constraints = if (expr.expectedType != null) {
                 expr.newType = expr.expectedType
                 valueType.constraints + (Constraint(generalizedType, expr.expectedType, expr.sourceSection))
@@ -51,7 +54,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
                 InferenceResult(type, emptySet(), env + (expr.name to type))
             } else {
                 val t = ctx.nextTypeVariable()
-                val (updatedEnv, generalizedType) = generalize(ctx.typeTable, emptySet(), env, expr.name, t)
+                val (updatedEnv, generalizedType) = generalize(emptySet(), env, expr.name, t)
                 generalizedType.sourceSection = expr.sourceSection
                 expr.newType = generalizedType
                 InferenceResult(generalizedType, emptySet(), updatedEnv)
@@ -221,9 +224,14 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
         }
         is Cast -> {
             val inferred = inferTypes(ctx, env, expr.expression)
-            expr.newType = inferred.type
+            expr.newType = expr.targetType
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(expr.newType!!, inferred.constraints, env)
+            val newEnv = if (expr.expression is VariableAccess) {
+                env + (expr.expression.name to expr.targetType)
+            } else {
+                env
+            }
+            InferenceResult(expr.newType!!, inferred.constraints, newEnv)
         }
         is Group -> {
             val value = inferTypes(ctx, env, expr.value)
@@ -376,17 +384,10 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
         }
         is FieldAccess -> {
             val receiverInferred = inferTypes(ctx, env, expr.receiver)
-            val solution = unify(ctx.typeTable, receiverInferred.constraints)
+            val solution = unify(receiverInferred.constraints)
             val receiverType = applySubstitution(receiverInferred.type, solution)
-            val name: String = when (receiverType) {
-                is SimpleType -> receiverType.name
-                else ->
-                    throw TypeInferenceFailed(
-                        "Cannot determine the type name of receiver from $receiverType ",
-                        expr.receiver.sourceSection)
-            }
 
-            val typeInfo = ctx.typeTable.get(name)
+            val typeInfo = ctx.typeTable.find(receiverType)
                 ?: throw TypeInferenceFailed("Unknown type $receiverType", expr.receiver.sourceSection)
 
             val field = typeInfo.fields.firstOrNull { it.name == expr.fieldName }
@@ -408,7 +409,7 @@ internal fun inferTypes(ctx: InferenceContext, env: Map<String, Type>, expr: Exp
     }
 }
 
-fun unify(typeTable: TypeTable, constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
+fun unify(constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
     var q = ArrayDeque(constraints)
     val substitutions = mutableListOf<Pair<TypeVariable, Type>>()
 
@@ -545,13 +546,12 @@ private fun instantiate(ctx: InferenceContext, inputType: Type): Type =
     }
 
 private fun generalize(
-    typeTable: TypeTable,
     constraints: Set<Constraint>,
     env: Map<String, Type>,
     name: String,
     type: Type
 ): Pair<Map<String, Type>, Type> {
-    val unified = unify(typeTable, constraints)
+    val unified = unify(constraints)
     val typeVariablesNotToGeneralize = mutableSetOf<TypeVariable>()
     val newEnv = env.mapValues {
         val result = applySubstitution(it.value, unified)

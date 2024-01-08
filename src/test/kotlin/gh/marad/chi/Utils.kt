@@ -94,6 +94,8 @@ fun GlobalCompilationNamespace.addType(
     addSymbol(moduleName, packageName, typeName, constructorType, public = public)
     pkg.types.add(
         TypeInfo(
+            moduleName,
+            packageName,
             typeName,
             type,
             isPublic = true,

@@ -1,14 +1,12 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.core.*
-import gh.marad.chi.core.VariantTypeField
 import gh.marad.chi.core.analyzer.CompilerMessageException
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.compiler.Compiler2
 import gh.marad.chi.core.compiler.Symbol
 import gh.marad.chi.core.compiler.SymbolKind
-import gh.marad.chi.core.compiler.TypeTable
 import gh.marad.chi.core.namespace.CompilationScope
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.ScopeType
@@ -603,9 +601,9 @@ class InferenceKtTest {
         }
 
         val expr = Block(program.expressions, program.sourceSection)
-        val infCtx = InferenceContext(TypeGraph(), TypeTable())
+        val infCtx = InferenceContext(TypeLookupTable(ns))
         val inferred = inferTypes(infCtx, env, expr)
-        val solution = unify(infCtx.typeTable, inferred.constraints)
+        val solution = unify(inferred.constraints)
         TypeFiller(solution).visit(expr)
         val finalType = applySubstitution(inferred.type, solution)
 
