@@ -30,6 +30,10 @@ object Compiler2 {
         val resultMessages = messages.toMutableList()
         resultMessages.addAll(messages)
 
+
+        // verify package declaration and imports
+        // ======================================
+
         if (packageDefinition.moduleName.isEmpty()) {
             resultMessages.add(InvalidModuleName(packageDefinition.moduleName, CodePoint(1, 0)))
         }
@@ -37,9 +41,7 @@ object Compiler2 {
             resultMessages.add(InvalidPackageName(packageDefinition.packageName, CodePoint(1, 0)))
         }
 
-        // TODO verify package declaration and imports
-        // ==========================
-        // TODO check that imported names exist and are public
+        // check that imported names exist and are public
         parsedProgram.imports.forEach { import ->
             val importPkg = ns.getOrCreatePackage(import.moduleName.name, import.packageName.name)
             import.entries.forEach { entry ->
@@ -55,6 +57,8 @@ object Compiler2 {
             }
         }
 
+        // Build symbol and type tables
+        // ============================
 
         val tables = CompileTables(packageDefinition, ns)
         tables.addImports(parsedProgram.imports)
