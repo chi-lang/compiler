@@ -1,7 +1,6 @@
 package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.EffectDefinition
-import gh.marad.chi.core.OldType
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parser.readers.ParseEffectDefinition
 import gh.marad.chi.core.parser.readers.TypeNameRef
@@ -19,48 +18,50 @@ class EffectConversionsKtDefinitionTest {
     @Test
     fun `should be defined in current package`() {
         // given
-        val context = defaultContext()
+        val ns = GlobalCompilationNamespace()
 
         // when
-        val result = convertEffectDefinition(context, sampleEffectDefinition)
-            .shouldBeTypeOf<EffectDefinition>()
+        val result = convertAst(sampleEffectDefinition, ns)
+
 
         // then
-        result.moduleName shouldBe context.currentModule
-        result.packageName shouldBe context.currentPackage
+        result.shouldBeTypeOf<EffectDefinition>()
+        result.moduleName shouldBe ns.getDefaultPackage().moduleName
+        result.packageName shouldBe ns.getDefaultPackage().packageName
         result.name shouldBe sampleEffectDefinition.name
     }
 
     @Test
     fun `type parameters should be resolved in arguments`() {
         // given
+        val ns = GlobalCompilationNamespace()
         val definition = sampleEffectDefinition.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
             formalArguments = listOf(arg("t", typeName = "T"))
         )
 
         // when
-        val result = convertEffectDefinition(defaultContext(), definition)
+        val result = convertAst(definition, ns)
             .shouldBeTypeOf<EffectDefinition>()
 
         // then
         result.parameters shouldHaveSize 1
         result.parameters.first() should {
             it.name shouldBe "t"
-            it.type shouldBe OldType.typeParameter("T")
+            it.type shouldBe TypeVariable("T")
         }
     }
 
     @Test
     fun `type prameters should be resolved in return type`() {
         // given
+        val ns = GlobalCompilationNamespace()
         val definition = sampleEffectDefinition.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
             returnTypeRef = TypeNameRef("T", sectionB)
         )
 
         // when
-        val ns = GlobalCompilationNamespace()
         val result = convertAst(definition, ns)
             .shouldBeTypeOf<EffectDefinition>()
 
