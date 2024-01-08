@@ -1,16 +1,13 @@
 package gh.marad.chi.core.expressionast.internal
 
-import gh.marad.chi.core.*
+import gh.marad.chi.core.Break
+import gh.marad.chi.core.Continue
+import gh.marad.chi.core.IfElse
+import gh.marad.chi.core.WhileLoop
 import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.expressionast.generateExpressionAst
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.*
-
-fun convertGroup(ctx: ConversionContext, ast: ParseGroup): Group =
-    Group(
-        value = generateExpressionAst(ctx, ast.value),
-        sourceSection = ast.section
-    )
 
 fun convertIfElse(ctx: ConversionContext, ast: ParseIfElse): IfElse {
     return readIfElse(ctx, ast.condition, ast.thenBody, ast.elseBody, ast.section)

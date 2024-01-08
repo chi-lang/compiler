@@ -8,7 +8,6 @@ import gh.marad.chi.core.compiler.checks.FnCallCheckingVisitor
 import gh.marad.chi.core.compiler.checks.ImmutabilityCheckVisitor
 import gh.marad.chi.core.compiler.checks.ReturnTypeCheckVisitor
 import gh.marad.chi.core.compiler.checks.VisibilityCheckingVisitor
-import gh.marad.chi.core.expressionast.internal.convertPackageDefinition
 import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.parseSource
@@ -24,8 +23,9 @@ object Compiler2 {
     fun compile(source: ChiSource, ns: GlobalCompilationNamespace): Pair<Program, List<Message>> {
         // parsing
         val (parsedProgram, messages) = parseSource(source)
-        val packageDefinition = parsedProgram.packageDefinition?.let { convertPackageDefinition(it) }
-            ?: Package("user", "default")
+        val packageDefinition = parsedProgram.packageDefinition?.let {
+            Package(it.moduleName.name, it.packageName.name)
+        } ?: Package("user", "default")
 
         val resultMessages = messages.toMutableList()
         resultMessages.addAll(messages)

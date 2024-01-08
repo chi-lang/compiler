@@ -4,49 +4,11 @@ import gh.marad.chi.core.*
 import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.expressionast.generateExpressionAst
 import gh.marad.chi.core.namespace.FnSymbol
-import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.namespace.SymbolKind
-import gh.marad.chi.core.parser.readers.*
+import gh.marad.chi.core.parser.readers.ParseFieldAccess
+import gh.marad.chi.core.parser.readers.ParseIndexOperator
+import gh.marad.chi.core.parser.readers.ParseMethodInvocation
 import gh.marad.chi.core.types.Types
-
-fun convertVariableRead(ctx: ConversionContext, ast: ParseVariableRead): VariableAccess {
-    val lookup = ctx.lookup(ast.variableName)
-    return VariableAccess(
-        target = LocalSymbol(FnSymbol("", SymbolKind.Local, null, false)),
-        sourceSection = ast.section
-    )
-}
-
-fun convertNameDeclaration(ctx: ConversionContext, ast: ParseNameDeclaration): NameDeclaration {
-    return NameDeclaration(
-        enclosingScope = ctx.currentScope,
-        public = ast.public,
-        name = ast.symbol.name,
-        value = generateExpressionAst(ctx, ast.value),
-        mutable = ast.mutable,
-//        expectedType = ast.typeRef?.let { ctx.resolveType(it) },
-        expectedType = Types.any,
-        sourceSection = ast.section
-    ).also {
-//        ctx.currentScope.addSymbol(it.name, it.type, SymbolType.Local, public = it.public, mutable = it.mutable)
-    }
-}
-
-fun convertAssignment(ctx: ConversionContext, ast: ParseAssignment): Assignment =
-    // TODO czy tutaj nie lepiej mieć zamiast `name` VariableAccess i mieć tam nazwę i pakiet?
-    Assignment(
-        target = PackageSymbol(Symbol("","", ast.variableName, Types.unit, false, false)),
-        value = generateExpressionAst(ctx, ast.value),
-        sourceSection = ast.section
-    )
-
-fun convertIndexedAssignment(ctx: ConversionContext, ast: ParseIndexedAssignment): IndexedAssignment =
-    IndexedAssignment(
-        variable = generateExpressionAst(ctx, ast.variable),
-        index = generateExpressionAst(ctx, ast.index),
-        value = generateExpressionAst(ctx, ast.value),
-        sourceSection = ast.section
-    )
 
 fun convertIndexOperator(ctx: ConversionContext, ast: ParseIndexOperator): IndexOperator =
     IndexOperator(
@@ -131,14 +93,4 @@ fun convertMethodInvocation(ctx: ConversionContext, ast: ParseMethodInvocation):
     )
 }
 
-
-fun convertFieldAssignment(ctx: ConversionContext, ast: ParseFieldAssignment): FieldAssignment {
-    return FieldAssignment(
-        receiver = generateExpressionAst(ctx, ast.receiver),
-        fieldName = ast.memberName,
-        value = generateExpressionAst(ctx, ast.value),
-        sourceSection = ast.section,
-        memberSection = ast.memberSection
-    )
-}
 

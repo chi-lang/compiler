@@ -1,10 +1,13 @@
 package gh.marad.chi.core.expressionast.internal
 
-import gh.marad.chi.core.*
+import gh.marad.chi.core.Block
+import gh.marad.chi.core.Fn
+import gh.marad.chi.core.FnParam
+import gh.marad.chi.core.NameDeclaration
 import gh.marad.chi.core.expressionast.ConversionContext
 import gh.marad.chi.core.expressionast.generateExpressionAst
-import gh.marad.chi.core.namespace.SymbolType
-import gh.marad.chi.core.parser.readers.*
+import gh.marad.chi.core.parser.readers.ParseFuncWithName
+import gh.marad.chi.core.parser.readers.ParseLambda
 import gh.marad.chi.core.types.TypeVariable
 import gh.marad.chi.core.types.Types
 
@@ -64,52 +67,5 @@ fun convertFuncWithName(ctx: ConversionContext, ast: ParseFuncWithName): NameDec
         expectedType = null,
         sourceSection = ast.section
     )
-}
-
-fun convertFnCall(ctx: ConversionContext, ast: ParseFnCall): FnCall {
-    return FnCall(
-        function = generateExpressionAst(ctx, ast.function),
-//        callTypeParameters = ast.concreteTypeParameters.map { ctx.resolveType(it) },
-        callTypeParameters = emptyList(),
-        parameters = ast.arguments.map { generateExpressionAst(ctx, it) },
-        sourceSection = ast.section
-    )
-}
-
-data class FunctionDescriptorWithTypeRef(val name: String, val type: TypeRef)
-
-fun getFunctionTypeRef(it: ParseAst): FunctionDescriptorWithTypeRef {
-    return when (it) {
-        is ParseEffectDefinition -> {
-            val typeRef = createFunctionTypeRef(it.formalArguments, it.typeParameters, it.returnTypeRef)
-            FunctionDescriptorWithTypeRef(it.name, typeRef)
-        }
-
-        is ParseFuncWithName -> {
-            val typeRef = createFunctionTypeRef(it.formalArguments, it.typeParameters, it.returnTypeRef)
-            FunctionDescriptorWithTypeRef(it.name, typeRef)
-        }
-
-        else -> TODO("This is not a function declaration: $it")
-    }
-}
-
-fun createFunctionTypeRef(
-    formalArguments: List<FormalArgument>,
-    typeParameters: List<TypeParameterRef>,
-    returnTypeRef: TypeRef?
-): TypeRef {
-    val argumentTypeRefs = formalArguments.map { it.typeRef }
-    val functionTypeRef = FunctionTypeRef(
-        typeParameters,
-        argumentTypeRefs,
-        returnTypeRef ?: TypeNameRef("unit", null),
-        null
-    )
-    return if (typeParameters.isEmpty()) {
-        functionTypeRef
-    } else {
-        TypeConstructorRef(functionTypeRef, typeParameters, null)
-    }
 }
 

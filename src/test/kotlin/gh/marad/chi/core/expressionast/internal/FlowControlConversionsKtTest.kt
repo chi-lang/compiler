@@ -12,11 +12,13 @@ import org.junit.jupiter.api.Test
 
 class FlowControlConversionsKtTest {
     @Test
-    fun `generate group expression`() {
-        convertGroup(defaultContext(), ParseGroup(LongValue(10), testSection)) should {
-            it.value.shouldBeAtom("10", Types.int)
-            it.sourceSection shouldBe testSection
-        }
+    fun `should eliminate group expression`() {
+        convertAst(ParseGroup(LongValue(10, sectionB), sectionA))
+            .shouldBeTypeOf<Atom>()
+            .should {
+                it.shouldBeAtom("10", Types.int)
+                it.sourceSection shouldBe sectionB
+            }
     }
 
     @Test
