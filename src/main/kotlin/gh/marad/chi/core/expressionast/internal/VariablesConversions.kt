@@ -16,6 +16,7 @@ fun convertVariableRead(ctx: ConversionContext, ast: ParseVariableRead): Variabl
         packageName = lookup.packageName,
         definitionScope = lookup.scope, // TODO: czy ten compilation scope jest potrzebny?
         name = lookup.name,
+        localName = ast.variableName,
         sourceSection = ast.section
     )
 }
@@ -69,6 +70,7 @@ fun convertFieldAccess(ctx: ConversionContext, ast: ParseFieldAccess): Expressio
             packageName = pkg.pkg,
             definitionScope = ctx.namespace.getOrCreatePackage(pkg.module, pkg.pkg).scope,
             name = ast.memberName,
+            localName = ast.memberName,
             sourceSection = ast.section
         )
     }
@@ -82,6 +84,7 @@ fun convertFieldAccess(ctx: ConversionContext, ast: ParseFieldAccess): Expressio
             packageName = "package", // receiver.type.packageName,
             definitionScope = scope,
             name = ast.memberName,
+            localName = ast.memberName,
             sourceSection = ast.memberSection
         )
     }
@@ -108,6 +111,7 @@ fun convertMethodInvocation(ctx: ConversionContext, ast: ParseMethodInvocation):
                     packageName = pkg.pkg,
                     definitionScope = ctx.namespace.getOrCreatePackage(pkg.module, pkg.pkg).scope,
                     name = ast.methodName,
+                    localName = ast.methodName,
                     sourceSection = ast.memberSection
                 )
             } else null
@@ -121,6 +125,7 @@ fun convertMethodInvocation(ctx: ConversionContext, ast: ParseMethodInvocation):
                     packageName = "package", // receiver.type.packageName,
                     definitionScope = scope,
                     name = ast.methodName,
+                    localName = ast.methodName,
                     sourceSection = ast.memberSection
                 )
             } else null
@@ -134,6 +139,7 @@ fun convertMethodInvocation(ctx: ConversionContext, ast: ParseMethodInvocation):
                 packageName = methodLookup.packageName,
                 definitionScope = methodPkg.scope,
                 name = ast.methodName,
+                localName = ast.methodName,
                 sourceSection = ast.memberSection
             )
         }

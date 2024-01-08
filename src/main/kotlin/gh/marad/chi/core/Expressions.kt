@@ -103,6 +103,7 @@ data class VariableAccess(
     val packageName: String,
     val definitionScope: CompilationScope,
     val name: String,
+    val localName: String,
     val isModuleLocal: Boolean,
     override val sourceSection: ChiSource.Section?
 ) : Expression {

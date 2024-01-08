@@ -203,6 +203,7 @@ class ExprConversionVisitor(
             moduleName = symbol.moduleName,
             packageName = symbol.packageName,
             name = symbol.name,
+            localName = parseVariableRead.variableName,
             isModuleLocal = symbol.moduleName == pkg.moduleName,
             sourceSection = parseVariableRead.section,
             definitionScope = CompilationScope(ScopeType.Package), // TODO to remove
