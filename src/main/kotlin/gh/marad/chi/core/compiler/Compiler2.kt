@@ -33,57 +33,26 @@ object Compiler2 {
         // TODO verify package declaration and imports
         // ==========================
         // TODO check that imported names exist and are public
-
-
-        val symbolTable = SymbolTable()
-        val typeTable = TypeTable()
-
-        // build global symbol table
-        // ==========================
-        // get already defined symbols
-        symbolTable.add(ns.getOrCreatePackage(packageDefinition).symbols)
-        // add imported symbols
         parsedProgram.imports.forEach { import ->
             val importPkg = ns.getOrCreatePackage(import.moduleName.name, import.packageName.name)
             import.entries.forEach { entry ->
-                // find the symbol in target package
-                importPkg.symbols.get(entry.name)?.let { symbol ->
-                    symbolTable.add(symbol.copy(name = entry.alias?.alias ?: entry.name))
-                    // verify that imported type is public
-                    if (!symbol.public && import.moduleName.name != packageDefinition.moduleName) {
-                        resultMessages.add(CannotAccessInternalName(entry.name, entry.section.toCodePoint()))
-                    }
-                } ?: importPkg.types.get(entry.name)?.let {
-                    // if symbol was not found - try the sum type
-                    // if sum type was found then import it's constructors into local symbol table
-                    if (it.type is SumType) {
-                        it.type.subtypes.map { subtypeName ->
-                            importPkg.symbols.get(subtypeName)?.let(symbolTable::add)
-                        }
+                val symbol = importPkg.symbols.get(entry.name)
+                val type = importPkg.types.get(entry.name)
+                if (symbol != null && !symbol.public && import.moduleName.name != packageDefinition.moduleName) {
+                    resultMessages.add(CannotAccessInternalName(entry.name, entry.section.toCodePoint()))
+                }
 
-                        // also add all the types to local type table
-                        typeTable.add(it)
-                        it.type.subtypes.map { subtypeName ->
-                            importPkg.types.get(subtypeName)?.let(typeTable::add)
-                        }
-                    }
-                } ?: resultMessages.add(UnrecognizedName(entry.name, entry.section.toCodePoint()))
-            }
-        }
-
-        // build type table
-        // ================
-        // add imported types
-        parsedProgram.imports.forEach { import ->
-            val importPkg = ns.getOrCreatePackage(import.moduleName.name, import.packageName.name)
-            import.entries.forEach { entry ->
-                importPkg.types.get(entry.name)?.let {
-                    typeTable.add(it)
+                if (symbol == null && type == null) {
+                    resultMessages.add(UnrecognizedName(entry.name, entry.section.toCodePoint()))
                 }
             }
         }
-        // add locally defined types
-        val pkg = ns.getOrCreatePackage(packageDefinition)
+
+
+        val tables = CompileTables(packageDefinition, ns)
+        tables.addImports(parsedProgram.imports)
+
+
         parsedProgram.typeDefinitions.forEach { typeDef ->
             val typeSchemeVariables = typeDef.typeParameters.map { TypeVariable(it.name) }
 
@@ -105,15 +74,14 @@ object Compiler2 {
                 isVariantConstructor = false,
                 fields = emptyList()
             )
-            typeTable.add(baseTypeInfo)
-            pkg.types.add(baseTypeInfo)
 
+            tables.defineType(baseTypeInfo)
 
             typeDef.variantConstructors.map { ctor ->
                 val paramTypeNames = ctor.formalFields.flatMap { it.typeRef.findTypeNames() }
                 val ctorTypeSchemeVariables = typeSchemeVariables.filter { it.name in paramTypeNames }
                 val fields = ctor.formalFields.map { formalField ->
-                    VariantField(formalField.name, resolveType(typeTable, typeSchemeVariables.map { it.name }, formalField.typeRef), formalField.public)
+                    VariantField(formalField.name, resolveType(tables.localTypeTable, typeSchemeVariables.map { it.name }, formalField.typeRef), formalField.public)
                 }
 
                 val type = if (ctor.formalFields.isEmpty()) {
@@ -146,8 +114,7 @@ object Compiler2 {
                     mutable = false
                 )
 
-                symbolTable.add(ctorSymbol)
-                pkg.symbols.add(ctorSymbol)
+                tables.defineSymbol(ctorSymbol)
 
                 val variantTypeInfo = TypeInfo(
                     moduleName = packageDefinition.moduleName,
@@ -158,16 +125,15 @@ object Compiler2 {
                     isVariantConstructor = true,
                     fields = fields,
                 )
-                typeTable.add(variantTypeInfo)
-                pkg.types.add(variantTypeInfo)
 
+                tables.defineType(variantTypeInfo)
 
                 return@map type
             }
         }
 
         // analyze parse ast
-        CheckNamesVisitor(parsedProgram, symbolTable).check(resultMessages)
+        CheckNamesVisitor(parsedProgram, tables.localSymbolTable).check(resultMessages)
 
         if (resultMessages.isNotEmpty()) {
             return Pair(
@@ -178,7 +144,7 @@ object Compiler2 {
 
         // convert to ast
         // ==============
-        val converter = ExprConversionVisitor(packageDefinition, symbolTable, typeTable)
+        val converter = ExprConversionVisitor(packageDefinition, tables)
         val functions = parsedProgram.functions.map { converter.visit(it) }
         val code = parsedProgram.topLevelCode.map { converter.visit(it) }
         var expressions = functions + code
@@ -191,7 +157,7 @@ object Compiler2 {
         val typeLookupTable = TypeLookupTable(ns)
         val inferenceContext = InferenceContext(typeLookupTable)
         val env = mutableMapOf<String, Type>() // use global symbol table
-        symbolTable.forEach {
+        tables.localSymbolTable.forEach {
             if (it.type != null) {
                 env[it.name] = it.type
             }

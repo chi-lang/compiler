@@ -1,4 +1,4 @@
-package gh.marad.chi.core.compiler
+package gh.marad.chi.core.namespace
 
 import gh.marad.chi.core.types.SimpleType
 import gh.marad.chi.core.types.Type
@@ -31,6 +31,10 @@ class TypeTable {
 
     fun add(info: TypeInfo) {
         typeMap[info.name] = info
+    }
+
+    fun add(table: TypeTable) {
+        typeMap.putAll(table.typeMap)
     }
 
     fun get(name: String): TypeInfo? = typeMap[name]

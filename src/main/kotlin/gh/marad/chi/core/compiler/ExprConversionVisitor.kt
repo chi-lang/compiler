@@ -13,11 +13,11 @@ import gh.marad.chi.core.types.Types
 
 class ExprConversionVisitor(
     private val pkg: Package,
-    private val globalSymbolTable: SymbolTable,
-    private val typeTable: TypeTable,
+    private val tables: CompileTables,
 ) : ParseAstVisitor<Expression> {
 
-    private var currentSymbolTable = globalSymbolTable
+    private val typeTable = tables.localTypeTable
+    private var currentSymbolTable = tables.localSymbolTable
     private var currentTypeSchemeVariables = emptyList<String>()
 
     override fun visit(node: ParseAst): Expression = node.accept(this)
@@ -107,7 +107,8 @@ class ExprConversionVisitor(
 
         val params = ast.formalArguments.map {
             val type = resolveType(typeTable, currentTypeSchemeVariables, it.typeRef)
-            fnSymbolTable.add(Symbol(
+            fnSymbolTable.add(
+                Symbol(
                 moduleName = pkg.moduleName,
                 packageName = pkg.packageName,
                 name = it.name,
@@ -116,7 +117,8 @@ class ExprConversionVisitor(
                 slot = nextSlot++,
                 public = true,
                 mutable = false
-            ))
+            )
+            )
             FnParam(it.name, type, it.section)
         }
 

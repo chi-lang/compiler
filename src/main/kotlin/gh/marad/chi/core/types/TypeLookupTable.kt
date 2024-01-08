@@ -1,7 +1,7 @@
 package gh.marad.chi.core.types
 
-import gh.marad.chi.core.compiler.TypeInfo
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.TypeInfo
 
 class TypeLookupTable(
     private val ns: GlobalCompilationNamespace,
