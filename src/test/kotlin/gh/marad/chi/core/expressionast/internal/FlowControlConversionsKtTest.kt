@@ -23,14 +23,14 @@ class FlowControlConversionsKtTest {
 
     @Test
     fun `generate simple if expression without else branch`() {
-        val result = convertIfElse(
-            defaultContext(), ParseIfElse(
+        val result = convertAst(
+            ParseIfElse(
                 condition = BoolValue(true),
                 thenBody = LongValue(1),
                 elseBody = null,
                 section = testSection
             )
-        )
+        ).shouldBeTypeOf<IfElse>()
 
         result.condition.shouldBeAtom("true", Types.bool)
         result.thenBranch.shouldBeAtom("1", Types.int)
@@ -40,14 +40,14 @@ class FlowControlConversionsKtTest {
 
     @Test
     fun `generate else branch`() {
-        val result = convertIfElse(
-            defaultContext(), ParseIfElse(
+        val result = convertAst(
+            ParseIfElse(
                 condition = BoolValue(true),
                 thenBody = LongValue(1),
                 elseBody = LongValue(2),
                 section = testSection
             )
-        )
+        ).shouldBeTypeOf<IfElse>()
 
         result.elseBranch.shouldNotBeNull()
             .shouldBeAtom("2", Types.int)
@@ -56,8 +56,7 @@ class FlowControlConversionsKtTest {
     @Test
     fun `generate if-else series from when syntax`() {
         // when
-        val result = convertWhen(
-            defaultContext(),
+        val result = convertAst(
             ParseWhen(
                 cases = listOf(
                     ParseWhenCase(condition = BoolValue(true), body = LongValue(1), sectionA),
@@ -66,7 +65,7 @@ class FlowControlConversionsKtTest {
                 elseCase = ParseElseCase(LongValue(0), sectionC),
                 testSection
             )
-        )
+        ).shouldBeTypeOf<IfElse>()
 
         // then
         result.condition.shouldBeAtom("true", Types.bool)
@@ -83,8 +82,7 @@ class FlowControlConversionsKtTest {
     @Test
     fun `else case is optional in when`() {
         // given
-        val result = convertWhen(
-            defaultContext(),
+        val result = convertAst(
             ParseWhen(
                 cases = listOf(
                     ParseWhenCase(condition = BoolValue(true), body = LongValue(1), sectionA),
@@ -93,7 +91,7 @@ class FlowControlConversionsKtTest {
                 elseCase = null,
                 testSection
             )
-        )
+        ).shouldBeTypeOf<IfElse>()
 
         // then
         result.elseBranch.shouldBeTypeOf<IfElse>()
@@ -101,10 +99,39 @@ class FlowControlConversionsKtTest {
     }
 
     @Test
+    fun `should convert empty when`() {
+        // when
+        val result = convertAst(
+            ParseWhen(cases = emptyList(), elseCase = null, testSection)
+        )
+
+        // then
+        result shouldBe Atom.unit(testSection)
+    }
+
+    @Test
+    fun `should convert when with single else case`() {
+        // when
+        val result = convertAst(
+            ParseWhen(
+                cases = emptyList(),
+                elseCase = ParseElseCase(
+                    body = BoolValue(true, sectionB),
+                    sectionA
+                ),
+                testSection
+            )
+        )
+
+        // then
+        result shouldBe Atom.bool(true, sectionB)
+    }
+
+    @Test
     fun `generate while`() {
         // when
-        val result =
-            convertWhile(defaultContext(), ParseWhile(condition = BoolValue(true), body = LongValue(1), testSection))
+        val result = convertAst(ParseWhile(condition = BoolValue(true), body = LongValue(1), testSection))
+            .shouldBeTypeOf<WhileLoop>()
 
         // then
         result.condition.shouldBeAtom("true", Types.bool)
@@ -114,14 +141,14 @@ class FlowControlConversionsKtTest {
 
     @Test
     fun `generate break`() {
-        convertBreak(ParseBreak(testSection))
+        convertAst(ParseBreak(testSection))
             .shouldBeTypeOf<Break>()
             .sourceSection shouldBe testSection
     }
 
     @Test
     fun `generate continue`() {
-        convertContinue(ParseContinue(testSection))
+        convertAst(ParseContinue(testSection))
             .shouldBeTypeOf<Continue>()
             .sourceSection shouldBe testSection
     }

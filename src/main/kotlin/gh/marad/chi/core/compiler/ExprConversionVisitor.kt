@@ -319,7 +319,21 @@ class ExprConversionVisitor(
     override fun visitContinue(parseContinue: ParseContinue): Expression = Continue(parseContinue.section)
 
     override fun visitWhen(ast: ParseWhen): Expression {
-        TODO("Not yet implemented")
+        if (ast.cases.isEmpty() && ast.elseCase == null) {
+            return Atom.unit(ast.section)
+        }
+        if (ast.cases.isEmpty() && ast.elseCase != null) {
+            return ast.elseCase.body.accept(this)
+        }
+        val lastCase = ast.cases.last()
+        val last = if (ast.elseCase != null) {
+            IfElse(lastCase.condition.accept(this), lastCase.body.accept(this), ast.elseCase.body.accept(this), lastCase.section)
+        } else {
+            IfElse(lastCase.condition.accept(this), lastCase.body.accept(this), null, lastCase.section)
+        }
+        return ast.cases.dropLast(1).foldRight(last) { case, prev ->
+            IfElse(case.condition.accept(this), case.body.accept(this), prev, case.section)
+        }
     }
 
     override fun visitWeave(parseWeave: ParseWeave): Expression {
