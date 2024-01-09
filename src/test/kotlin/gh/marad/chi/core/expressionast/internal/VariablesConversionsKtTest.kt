@@ -1,18 +1,16 @@
 package gh.marad.chi.core.expressionast.internal
 
+import gh.marad.chi.addProductTypeInDefaultNamespace
 import gh.marad.chi.addSymbol
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.ast
-import gh.marad.chi.core.FieldAccess
-import gh.marad.chi.core.PackageSymbol
-import gh.marad.chi.core.VariableAccess
+import gh.marad.chi.core.*
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.VariantField
 import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseFieldAccess
 import gh.marad.chi.core.parser.readers.ParseIndexOperator
 import gh.marad.chi.core.parser.readers.ParseVariableRead
-import gh.marad.chi.core.shouldBeAtom
-import gh.marad.chi.core.types.SimpleType
 import gh.marad.chi.core.types.Types
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.should
@@ -43,7 +41,7 @@ class VariablesConversionsKtTest {
     fun `convert variable read from another package in the same module`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbol("foo", "bar", "variable", Types.int)
+        ns.addSymbol("foo", "bar", "variable", Types.int, public = true)
 
         // when
         val result = ast("""
@@ -53,21 +51,24 @@ class VariablesConversionsKtTest {
 
         // then
         result.target.shouldBeTypeOf<PackageSymbol>().should {
-            it.moduleName shouldBe defaultModule.name
-            it.packageName shouldBe otherPackage.name
+            it.moduleName shouldBe "foo"
+            it.packageName shouldBe "bar"
+            it.name shouldBe "variable"
         }
     }
 
     @Test
     fun `generate index operator`() {
-        val ctx = defaultContext()
-        val result = convertIndexOperator(
-            ctx, ParseIndexOperator(
+        val ns = GlobalCompilationNamespace()
+        ns.addSymbolInDefaultPackage("variable")
+        val result = convertAst(
+            ParseIndexOperator(
                 variable = ParseVariableRead("variable"),
                 index = LongValue(10),
                 section = testSection
-            )
-        )
+            ),
+            ns
+        ).shouldBeTypeOf<IndexOperator>()
 
         result.variable.shouldBeVariable("variable")
         result.index.shouldBeAtom("10", Types.int)
@@ -90,20 +91,17 @@ class VariablesConversionsKtTest {
         // then
         result.target.shouldBeTypeOf<PackageSymbol>() should {
             it.name shouldBe "variable"
-            it.moduleName shouldBe otherModule.name
-            it.packageName shouldBe otherPackage.name
+            it.moduleName shouldBe "foo"
+            it.packageName shouldBe "bar"
         }
     }
 
     @Test
     fun `should generate field access`() {
         // given
-        val ctx = defaultContext()
-        val type = ctx.addTypeDefinition("SomeType")
-        ctx.addPublicSymbol("object", type)
-
         val ns = GlobalCompilationNamespace()
-        ns.addSymbolInDefaultPackage("object", SimpleType("user", "default", "Obj"))
+        val type = ns.addProductTypeInDefaultNamespace("A", listOf(VariantField("field", Types.int, true)))
+        ns.addSymbolInDefaultPackage("object", type)
 
         // when
         val result = convertAst(
@@ -125,17 +123,17 @@ class VariablesConversionsKtTest {
     @Test
     fun `should generate field access with type defined in other module`() {
         // given
-        val ctx = defaultContext()
-        val type = ctx.addTypeDefinition(otherModule, otherPackage, "SomeType")
-        ctx.addPublicSymbol("object", type)
+        val ns = GlobalCompilationNamespace()
+        val type = ns.addProductTypeInDefaultNamespace("A", listOf(VariantField("field", Types.int, true)))
+        ns.addSymbolInDefaultPackage("object", type)
 
         // when
-        val result = convertFieldAccess(
-            ctx,
+        val result = convertAst(
             sampleFieldAccess.copy(
                 receiver = ParseVariableRead("object"),
                 memberName = "field"
-            )
+            ),
+            ns
         )
 
         // then
