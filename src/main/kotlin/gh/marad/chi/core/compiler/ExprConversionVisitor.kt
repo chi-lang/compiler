@@ -18,9 +18,27 @@ class ExprConversionVisitor(
     private val tables: CompileTables,
 ) : ParseAstVisitor<Expression> {
 
+    class TempVarGenerator {
+        private var nextTempVarId = 0
+        fun nextName() = "tempVar$${nextTempVarId++}"
+    }
+
+    class WeaveContext {
+        private var weaveInput: Expression? = null
+        fun <T> withWeaveInput(expression: Expression, f: () -> T): T {
+            val prevWeaveInput = weaveInput
+            weaveInput = expression
+            return f().also { weaveInput = prevWeaveInput }
+        }
+        fun currentInput() = weaveInput!!
+    }
+
     private val typeTable = tables.localTypeTable
     private var currentFnSymbolTable: FnSymbolTable? = null
     private var currentTypeSchemeVariables = emptyList<String>()
+    private var tempVarGenerator = TempVarGenerator()
+    private var weaveContext = WeaveContext()
+
 
     override fun visit(node: ParseAst): Expression = node.accept(this)
 
@@ -337,12 +355,37 @@ class ExprConversionVisitor(
     }
 
     override fun visitWeave(parseWeave: ParseWeave): Expression {
-        TODO("Not yet implemented")
+        val inputValue = parseWeave.value.accept(this)
+        val tempVarName = tempVarGenerator.nextName()
+        val tempVariableDeclaration = NameDeclaration(
+            enclosingScope = CompilationScope(ScopeType.Package),
+            public = false,
+            name = tempVarName,
+            value = inputValue,
+            mutable = false,
+            expectedType = null,
+            sourceSection = parseWeave.value.section
+        ).also {
+            addLocalSymbol(it.name, type = null, it.mutable, it.public)
+        }
+
+        val readVariable = VariableAccess(
+            target = LocalSymbol(tempVariableDeclaration.name, tempVariableDeclaration.mutable),
+            sourceSection = parseWeave.value.section
+        )
+
+        val filledTemplate = weaveContext.withWeaveInput(readVariable) {
+            parseWeave.opTemplate.accept(this)
+        }
+
+        return Block(
+            listOf(tempVariableDeclaration, filledTemplate),
+            parseWeave.section
+        )
     }
 
-    override fun visitPlaceholder(parseWeavePlaceholder: ParseWeavePlaceholder): Expression {
-        TODO("Not yet implemented")
-    }
+    override fun visitPlaceholder(parseWeavePlaceholder: ParseWeavePlaceholder): Expression =
+        weaveContext.currentInput()
 
     override fun visitReturn(parseReturn: ParseReturn): Expression =
         Return(parseReturn.value?.accept(this), parseReturn.section)

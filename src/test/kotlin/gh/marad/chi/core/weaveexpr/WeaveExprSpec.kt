@@ -1,11 +1,9 @@
 package gh.marad.chi.core.weaveexpr
 
+import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.core.*
-import gh.marad.chi.core.OldType.Companion.string
-import gh.marad.chi.core.expressionast.ConversionContext
-import gh.marad.chi.core.expressionast.generateExpressionAst
+import gh.marad.chi.core.expressionast.internal.convertAst
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.parser.shouldBeStringValue
 import gh.marad.chi.core.parser.testParse
@@ -58,13 +56,13 @@ class WeaveExprSpec {
 
     @Test
     fun `converting to expression`() {
+        val ns = GlobalCompilationNamespace()
+        ns.addSymbolInDefaultPackage("toUpper")
         val code = """
-            "hello" ~> str.toUpper(_)
+            "hello" ~> toUpper(_)
         """.trimIndent()
         val ast = testParse(code)
-        val ctx = ConversionContext(GlobalCompilationNamespace())
-        ctx.imports.addImport(Import("std", "string", "str", emptyList(), withinSameModule = true, null))
-        val expr = generateExpressionAst(ctx, ast[0])
+        val expr = convertAst(ast[0], ns)
 
         val body = expr.shouldBeTypeOf<Block>().body
         val tempVar = body[0].shouldBeTypeOf<NameDeclaration>()
@@ -76,6 +74,8 @@ class WeaveExprSpec {
 
     @Test
     fun `converting chain to expressions`() {
+        val ns = GlobalCompilationNamespace()
+        ns.addSymbolInDefaultPackage("toUpper")
         val code = """
             "2hello" 
                 ~> toUpper(_)
@@ -83,9 +83,7 @@ class WeaveExprSpec {
                 ~> 2 + _
         """.trimIndent()
         val ast = testParse(code)
-        val ctx = ConversionContext(GlobalCompilationNamespace())
-        ctx.currentScope.addSymbol("toUpper", OldType.fn(string, string), SymbolType.Local)
-        val expr = generateExpressionAst(ctx, ast[0])
+        val expr = convertAst(ast[0], ns)
 
         val body = expr.shouldBeTypeOf<Block>().body
         body[0].shouldBeTypeOf<NameDeclaration>()
