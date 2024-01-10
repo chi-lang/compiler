@@ -27,7 +27,6 @@ interface ParseAstVisitor<T> {
     fun visitNameDeclaration(parseNameDeclaration: ParseNameDeclaration): T
     fun visitFieldAccess(parseFieldAccess: ParseFieldAccess): T
     fun visitFieldAssignment(parseFieldAssignment: ParseFieldAssignment): T
-    fun visitMethodInvocation(parseMethodInvocation: ParseMethodInvocation): T
     fun visitEffectDefinition(parseEffectDefinition: ParseEffectDefinition): T
     fun visitHandle(parseHandle: ParseHandle): T
     fun visitNot(parseNot: ParseNot): T

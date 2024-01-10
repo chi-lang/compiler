@@ -79,7 +79,7 @@ class VariablesConversionsKtTest {
     fun `should generate variable access through package name`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbol("foo", "bar", "variable", public = true)
+        ns.addSymbol("foo", "bar", "variable", Types.int, public = true)
 
         // when
         val result = ast("""

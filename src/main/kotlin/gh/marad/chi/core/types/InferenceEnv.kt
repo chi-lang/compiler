@@ -56,7 +56,7 @@ class InferenceEnv(private val pkgDef: Package, private val tables: CompileTable
                 }
             }
         }
-        return type ?: throw TypeInferenceFailed("Symbol $target not found in scope.", section)
+        return type ?: throw TypeInferenceFailed("Type not found for $target.", section)
 
     }
 

@@ -69,12 +69,11 @@ expression
     | whenExpression # WhenExpr
     | '(' expression ')' # GroupExpr
     | expression callGenericParameters? '(' expr_comma_list ')' # FnCallExpr
+    | receiver=expression ws PERIOD memberName=ID # FieldAccessExpr
     | variable=expression '[' index=expression ']' # IndexOperator
     | func_with_name # FuncWithName
     | name_declaration #NameDeclarationExpr
     | string # StringExpr
-    | receiver=expression ws PERIOD methodName=ID callGenericParameters? '(' arguments=expr_comma_list ')' # MethodInvocation
-    | receiver=expression ws PERIOD memberName=ID # FieldAccessExpr
     | MINUS expression # NegationExpr
     | expression BIT_SHL expression # BinOp
     | expression BIT_SHR expression # BinOp

@@ -122,7 +122,7 @@ class AtomReaderTest {
             it.parts[0].shouldBeTypeOf<StringText>()
                 .text shouldBe "simple "
             it.parts[1].shouldBeTypeOf<ParseInterpolation>()
-                .value.shouldBeTypeOf<ParseMethodInvocation>()
+                .value.shouldBeTypeOf<ParseFnCall>()
         }
     }
 

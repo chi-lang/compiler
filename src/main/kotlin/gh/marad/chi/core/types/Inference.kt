@@ -28,7 +28,6 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             InferenceResult(expr.newType!!, emptySet())
         }
         is VariableAccess -> {
-//            val t = env[expr.target.name] ?: throw TypeInferenceFailed("Symbol ${expr.target.name} not found in scope.", expr.sourceSection)
             val t = env.getType(expr.target, expr.sourceSection)
             val finalType = instantiate(ctx, t)
             expr.newType = finalType
@@ -249,7 +248,6 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             constraints.addAll(body.constraints)
 
             expr.cases.forEach { handleCase ->
-//                val effectType = env[handleCase.effectName] ?: throw TypeInferenceFailed("Symbol ${handleCase.effectName} not found in scope.", handleCase.sourceSection)
                 val effectType = env.getType(handleCase.effectName, handleCase.sourceSection)
                 if (effectType is FunctionType) {
                     env.withNewLocalEnv {
@@ -569,32 +567,4 @@ private fun generalize(
     val generalizedType = newType.generalize(generalizedTypeVariables.toList())
     env.setType(name, generalizedType)
     return generalizedType
-}
-
-internal fun OldType.toNewType(): Type {
-    return when (this) {
-        is AnyType -> Types.any
-        is ArrayType -> Types.array(this.elementType.toNewType())
-        is VariantType -> {
-            val variant = this.variant
-            // FIXME - handle generics
-            val type = if (variant != null) {
-                SimpleType(moduleName, packageName, variant.variantName)
-            } else {
-                SimpleType(moduleName, packageName, simpleName)
-            }
-            type
-        }
-        is FnType -> {
-            val types = mutableListOf<Type>()
-            types.addAll(this.paramTypes.map { it.toNewType() })
-            types.add(this.returnType.toNewType())
-            Types.fn(*types.toTypedArray())
-        }
-        is GenericTypeParameter -> TypeVariable(name)
-        is OverloadedFnType -> TODO()
-        is PrimitiveType -> SimpleType(moduleName, packageName, name)
-        is StringType -> Types.string
-        is UndefinedType -> TODO()
-    }
 }

@@ -23,7 +23,7 @@ class WeaveExprSpec {
 
         ast[0].shouldBeTypeOf<ParseWeave>() should { weave ->
             weave.value.shouldBeStringValue("hello")
-            weave.opTemplate.shouldBeTypeOf<ParseMethodInvocation>() should { call ->
+            weave.opTemplate.shouldBeTypeOf<ParseFnCall>() should { call ->
                 call.arguments.first().shouldBeTypeOf<ParseWeavePlaceholder>()
             }
             weave.section?.getCode() shouldBe code
@@ -48,7 +48,7 @@ class WeaveExprSpec {
             val op3 = weave3.opTemplate
 
             weave1.value.shouldBeStringValue("2hello")
-            op1.shouldBeTypeOf<ParseMethodInvocation>()
+            op1.shouldBeTypeOf<ParseFnCall>()
             op2.shouldBeTypeOf<ParseCast>()
             op3.shouldBeTypeOf<ParseBinaryOp>()
         }

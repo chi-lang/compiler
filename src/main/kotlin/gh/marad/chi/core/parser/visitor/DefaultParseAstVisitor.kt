@@ -76,9 +76,6 @@ open class DefaultParseAstVisitor : ParseAstVisitor<Unit> {
     override fun visitFieldAssignment(parseFieldAssignment: ParseFieldAssignment) =
         parseFieldAssignment.children().forEach { it.accept(this) }
 
-    override fun visitMethodInvocation(parseMethodInvocation: ParseMethodInvocation) =
-        parseMethodInvocation.children().forEach { it.accept(this) }
-
     override fun visitEffectDefinition(parseEffectDefinition: ParseEffectDefinition) =
         parseEffectDefinition.children().forEach { it.accept(this) }
 
