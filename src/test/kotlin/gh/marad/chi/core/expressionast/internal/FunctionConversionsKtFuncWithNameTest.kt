@@ -21,7 +21,6 @@ class FunctionConversionsKtFuncWithNameTest {
     @Test
     fun `named function should be converted to name declaration`() {
         // given
-        val context = defaultContext()
         val funcWithName = sampleFuncWithName.copy(
             public = true,
             name = "funcName",
@@ -29,7 +28,7 @@ class FunctionConversionsKtFuncWithNameTest {
         )
 
         // when
-        val result = convertFuncWithName(context, funcWithName)
+        val result = convertAst(funcWithName)
 
         // then
         val nameDecl = result.shouldBeTypeOf<NameDeclaration>()
@@ -37,30 +36,28 @@ class FunctionConversionsKtFuncWithNameTest {
         nameDecl.mutable.shouldBeFalse()
         nameDecl.name shouldBe "funcName"
         nameDecl.value.shouldBeTypeOf<Fn>()
-        nameDecl.enclosingScope shouldBe context.currentScope
     }
 
     @Test
     fun `when return type is not provided it is set to unit`() {
         // given
-        val context = defaultContext()
         val funcWithName = sampleFuncWithName.copy(
             returnTypeRef = null
         )
 
         // when
-        val fn = convertFuncWithName(context, funcWithName)
-            .shouldBeTypeOf<NameDeclaration>().value
-            .shouldBeTypeOf<Fn>()
+        val fn = convertAst(funcWithName)
 
         // then
-        fn.newType shouldBe Types.fn(Types.unit)
+        fn.shouldBeTypeOf<NameDeclaration>().should {
+            it.expectedType shouldBe Types.fn(Types.unit)
+            it.value.shouldBeTypeOf<Fn>()
+        }
     }
 
     @Test
     fun `should define arguments in function scope`() {
         // given
-        val context = defaultContext()
         val funcWithName = sampleFuncWithName.copy(
             formalArguments = listOf(
                 intArg("a"),
@@ -69,7 +66,7 @@ class FunctionConversionsKtFuncWithNameTest {
         )
 
         // when
-        val fn = convertFuncWithName(context, funcWithName)
+        val fn = convertAst(funcWithName)
             .shouldBeTypeOf<NameDeclaration>().value
             .shouldBeTypeOf<Fn>()
 
@@ -89,29 +86,28 @@ class FunctionConversionsKtFuncWithNameTest {
     @Test
     fun `type parameters should be resolved in return type`() {
         // given
-        val context = defaultContext()
         val funcWithName = sampleFuncWithName.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
             returnTypeRef = TypeNameRef("T", sectionB)
         )
 
         // when
-        val fn = convertFuncWithName(context, funcWithName)
-            .shouldBeTypeOf<NameDeclaration>().value
-            .shouldBeTypeOf<Fn>()
+        val fn = convertAst(funcWithName)
 
         // then
         val T = TypeVariable("T")
-        fn.newType shouldBe FunctionType(
-            listOf(T), listOf(T)
-        )
+        fn.shouldBeTypeOf<NameDeclaration>().should {
+            it.value.shouldBeTypeOf<Fn>()
+            it.expectedType shouldBe FunctionType(
+                    listOf(T), listOf(T)
+            )
+        }
 
     }
 
     @Test
     fun `type parameters should be resolved in body`() {
         // given
-        val context = defaultContext()
         val funcWithName = sampleFuncWithName.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
             body = ParseBlock(
@@ -124,30 +120,31 @@ class FunctionConversionsKtFuncWithNameTest {
         )
 
         // when
-        val fn = convertFuncWithName(context, funcWithName)
-            .shouldBeTypeOf<NameDeclaration>().value
-            .shouldBeTypeOf<Fn>()
+        val fn = convertAst(funcWithName)
 
         // then
-        fn.body.body.first().shouldBeTypeOf<NameDeclaration>()
-            .expectedType shouldBe OldType.typeParameter("T")
+        fn.shouldBeTypeOf<NameDeclaration>().value
+            .shouldBeTypeOf<Fn>().should {
+                it.body.body.first().shouldBeTypeOf<NameDeclaration>()
+                    .expectedType shouldBe TypeVariable("T")
+            }
     }
 
     @Test
     fun `type parameters should be resolved in arguments`() {
         // given
-        val context = defaultContext()
         val funcWithName = sampleFuncWithName.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
             formalArguments = listOf(FormalArgument("a", TypeNameRef("T", sectionB), sectionC))
         )
 
         // when
-        val fn = convertFuncWithName(context, funcWithName)
+        val fn = convertAst(funcWithName)
             .shouldBeTypeOf<NameDeclaration>().value
             .shouldBeTypeOf<Fn>()
 
-        fn.parameters.first().type shouldBe OldType.typeParameter("T")
+        // then
+        fn.parameters.first().type shouldBe TypeVariable("T")
     }
 
 
