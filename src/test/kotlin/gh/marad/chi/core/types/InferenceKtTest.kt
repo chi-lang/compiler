@@ -7,9 +7,7 @@ import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.compiler.CompileTables
 import gh.marad.chi.core.compiler.Compiler2
-import gh.marad.chi.core.namespace.CompilationScope
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.ScopeType
 import gh.marad.chi.core.utils.printAst
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -99,7 +97,6 @@ class InferenceKtTest {
         // given
         val nameDecl = NameDeclaration(
             public = false,
-            enclosingScope = CompilationScope(ScopeType.Package),
             name = "a",
             value = Atom.int(5, null),
             mutable = false,
@@ -189,7 +186,6 @@ class InferenceKtTest {
     fun `test lambda type inference`() {
         // given
         val lambda = Fn(
-            fnScope = CompilationScope(ScopeType.Function),
             typeVariables = emptyList(),
             parameters = listOf(
                 FnParam("param", Types.int, null)

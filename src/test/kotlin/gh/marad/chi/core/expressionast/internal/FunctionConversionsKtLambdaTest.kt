@@ -8,7 +8,6 @@ import gh.marad.chi.core.shouldBeAtom
 import gh.marad.chi.core.types.Types
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -30,7 +29,6 @@ class FunctionConversionsKtLambdaTest {
         // then
         fn.parameters.shouldBeEmpty()
         fn.body.body[0].shouldBeAtom("10", Types.int)
-        fn.fnScope.shouldNotBeNull()
         fn.sourceSection shouldBe testSection
     }
 

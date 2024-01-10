@@ -3,7 +3,8 @@ package gh.marad.chi.core.compiler
 import gh.marad.chi.core.*
 import gh.marad.chi.core.Target
 import gh.marad.chi.core.compiler.Compiler2.resolveType
-import gh.marad.chi.core.namespace.*
+import gh.marad.chi.core.namespace.FnSymbol
+import gh.marad.chi.core.namespace.FnSymbolTable
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.*
@@ -97,7 +98,6 @@ class ExprConversionVisitor(
         }
 
         return Fn(
-            fnScope = CompilationScope(ScopeType.Package),
             typeVariables = emptyList(),
             parameters = params,
             body = Block(body, parseLambda.section),
@@ -118,7 +118,6 @@ class ExprConversionVisitor(
         }
 
         val function = Fn(
-            fnScope = CompilationScope(ScopeType.Package), // TODO remove
             typeVariables = ast.typeParameters.map { TypeVariable(it.name) },
             parameters = params,
             body = withFnSymbolTable(fnSymbolTable) {
@@ -143,7 +142,6 @@ class ExprConversionVisitor(
 
         return NameDeclaration(
             public = ast.public,
-            enclosingScope = CompilationScope(ScopeType.Package), // TODO remove
             name = ast.name,
             value = function,
             mutable = false,
@@ -200,7 +198,6 @@ class ExprConversionVisitor(
             value = parseNameDeclaration.value.accept(this),
             sourceSection = parseNameDeclaration.section,
             expectedType = parseNameDeclaration.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it) },
-            enclosingScope = CompilationScope(ScopeType.Package), // TODO to remove
         ).also {
             addLocalSymbol(it.name, type = null, it.mutable, it.public)
         }
@@ -286,7 +283,6 @@ class ExprConversionVisitor(
                     effectName = it.effectName,
                     argumentNames = it.argumentNames,
                     body = it.body.accept(this),
-                    scope = CompilationScope(ScopeType.Package), // TODO remove
                     sourceSection = it.section
                 ).also {
                     removeLocalSymbol("resume")
@@ -362,7 +358,6 @@ class ExprConversionVisitor(
         val inputValue = parseWeave.value.accept(this)
         val tempVarName = tempVarGenerator.nextName()
         val tempVariableDeclaration = NameDeclaration(
-            enclosingScope = CompilationScope(ScopeType.Package),
             public = false,
             name = tempVarName,
             value = inputValue,

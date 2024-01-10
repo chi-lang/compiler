@@ -1,7 +1,6 @@
 package gh.marad.chi.core
 
 import gh.marad.chi.core.expressionast.ExpressionVisitor
-import gh.marad.chi.core.namespace.CompilationScope
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeVariable
@@ -41,11 +40,9 @@ data class Import(
 )
 
 data class DefineVariantType(
-    val baseVariantType: VariantType,
     val constructors: List<VariantTypeConstructor>,
     override val sourceSection: ChiSource.Section?,
 ) : Expression {
-    val name get() = baseVariantType.simpleName
     override var newType: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitDefineVariantType(this)
     override fun children(): List<Expression> = listOf()
@@ -56,18 +53,13 @@ data class VariantTypeConstructor(
     val name: String,
     val fields: List<VariantTypeField>,
     val sourceSection: ChiSource.Section?
-) {
-    fun toVariant() = VariantType.Variant(public, name, fields.map { it.toVariantField() })
-}
+)
 
 data class VariantTypeField(
     val public: Boolean,
     val name: String,
-    val type: OldType,
     val sourceSection: ChiSource.Section?
-) {
-    fun toVariantField() = VariantType.VariantField(public, name, type)
-}
+)
 
 data class Atom(val value: String,
                 override var newType: Type?,
@@ -163,7 +155,6 @@ data class Assignment(
 
 data class NameDeclaration(
     val public: Boolean,
-    val enclosingScope: CompilationScope,
     val name: String,
     val value: Expression,
     val mutable: Boolean,
@@ -183,7 +174,6 @@ data class Group(val value: Expression, override val sourceSection: ChiSource.Se
 
 data class FnParam(val name: String, val type: Type?, val sourceSection: ChiSource.Section?)
 data class Fn(
-    val fnScope: CompilationScope,
 //    val genericTypeParameters: List<GenericTypeParameter>,
     val typeVariables: List<TypeVariable>,
     val parameters: List<FnParam>,
@@ -330,7 +320,6 @@ data class HandleCase(
     val effectName: String,
     val argumentNames: List<String>,
     val body: Expression,
-    val scope: CompilationScope,
     val sourceSection: ChiSource.Section?
 )
 
