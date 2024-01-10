@@ -205,13 +205,21 @@ class ExprConversionVisitor(
             addLocalSymbol(it.name, type = null, it.mutable, it.public)
         }
 
-    override fun visitFieldAccess(parseFieldAccess: ParseFieldAccess): Expression {
+    override fun visitFieldAccess(ast: ParseFieldAccess): Expression {
+        val pkg = tables.packageTable.get(ast.receiverName)
+        val pkgSymbol = pkg?.symbols?.get(ast.memberName)
+        if (pkg != null && pkgSymbol != null) {
+            return VariableAccess(
+                PackageSymbol(pkg.moduleName, pkg.packageName, ast.memberName, pkgSymbol.mutable),
+                ast.receiver.section)
+        }
+
         return FieldAccess(
-            receiver = parseFieldAccess.receiver.accept(this),
-            fieldName = parseFieldAccess.memberName,
+            receiver = ast.receiver.accept(this),
+            fieldName = ast.memberName,
             typeIsModuleLocal = false, // TODO to remove, checking imports should be before conversion
-            sourceSection = parseFieldAccess.section,
-            memberSection = parseFieldAccess.memberSection
+            sourceSection = ast.section,
+            memberSection = ast.memberSection
         )
     }
 

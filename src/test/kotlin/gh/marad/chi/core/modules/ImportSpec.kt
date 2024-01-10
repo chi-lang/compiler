@@ -2,13 +2,12 @@ package gh.marad.chi.core.modules
 
 import gh.marad.chi.addSymbol
 import gh.marad.chi.ast
+import gh.marad.chi.asts
 import gh.marad.chi.compile
 import gh.marad.chi.core.FnCall
-import gh.marad.chi.core.OldType
 import gh.marad.chi.core.PackageSymbol
 import gh.marad.chi.core.VariableAccess
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.types.Types
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -102,7 +101,7 @@ class ImportSpec {
     fun `whole package alias`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbol("std", "time", "millis", Types.fn(Types.int))
+        ns.addSymbol("std", "time", "millis", Types.fn(Types.int), public = true)
 
         // when
         val result = ast(
@@ -130,28 +129,27 @@ class ImportSpec {
     fun `import package and functions and alias everything`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.getOrCreatePackage("std", "time")
-            .scope.addSymbol("millis", OldType.fn(OldType.int), SymbolType.Local)
+        ns.addSymbol("std", "time", "millis", Types.fn(Types.int), public = true)
 
         // when
-        val result = compile(
+        val result = asts(
             """
                 import std/time as time { millis as coreMillis }
                 time.millis
                 coreMillis
-            """.trimIndent(), namespace = ns
+            """.trimIndent(),
+            ns
         )
 
         // then
-        result.expressions// drop implicit package and import
-            .forEach { expr ->
-                expr.shouldBeTypeOf<VariableAccess>()
-                    .target.shouldBeTypeOf<PackageSymbol>()
-                    .should { target ->
-                        target.moduleName shouldBe "std"
-                        target.packageName shouldBe "time"
-                        target.name shouldBe "millis"
-                    }
-            }
+        result.forEach { expr ->
+            expr.shouldBeTypeOf<VariableAccess>()
+                .target.shouldBeTypeOf<PackageSymbol>()
+                .should { target ->
+                    target.moduleName shouldBe "std"
+                    target.packageName shouldBe "time"
+                    target.name shouldBe "millis"
+                }
+        }
     }
 }
