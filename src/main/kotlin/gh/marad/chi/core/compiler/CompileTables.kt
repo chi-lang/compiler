@@ -6,6 +6,7 @@ import gh.marad.chi.core.parser.readers.ParseImportDefinition
 import gh.marad.chi.core.types.SumType
 
 class CompileTables(val currentPackage: Package, val ns: GlobalCompilationNamespace) {
+    val packageTable = PackageTable()
     val localSymbolTable = SymbolTable()
     val localTypeTable = TypeTable()
 
@@ -41,6 +42,10 @@ class CompileTables(val currentPackage: Package, val ns: GlobalCompilationNamesp
 
     fun addImport(import: ParseImportDefinition) {
         val importPkg = ns.getOrCreatePackage(import.moduleName.name, import.packageName.name)
+        if (import.packageAlias != null) {
+            packageTable.add(import.packageAlias.alias, importPkg)
+        }
+
         import.entries.forEach { entry ->
             val importedName =  entry.alias?.alias ?: entry.name
             // find the symbol in target package

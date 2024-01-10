@@ -100,12 +100,17 @@ class ImportSpec {
     // TODO this should be moved to FnCall generation tests
     @Test
     fun `whole package alias`() {
+        // given
+        val ns = GlobalCompilationNamespace()
+        ns.addSymbol("std", "time", "millis", Types.fn(Types.int))
+
         // when
         val result = ast(
             """
                 import std/time as time
                 time.millis()
-            """.trimIndent()
+            """.trimIndent(),
+            ns
         )
 
         // then

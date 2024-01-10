@@ -3,14 +3,16 @@ package gh.marad.chi.core.compiler
 import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.analyzer.UnrecognizedName
 import gh.marad.chi.core.analyzer.toCodePoint
-import gh.marad.chi.core.namespace.SymbolTable
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.parser.visitor.DefaultParseAstVisitor
 
-class CheckNamesVisitor(private val node: ParseAst, symbolTable: SymbolTable) : DefaultParseAstVisitor() {
+class CheckNamesVisitor(private val node: ParseAst, compileTables: CompileTables) : DefaultParseAstVisitor() {
     private var messages = mutableListOf<Message>()
     private var definedNames = mutableSetOf<String>().apply {
-        symbolTable.forEach { name, symbol ->
+        compileTables.localSymbolTable.forEach { name, _ ->
+            add(name)
+        }
+        compileTables.packageTable.forEach { name, _ ->
             add(name)
         }
     }

@@ -142,7 +142,7 @@ object Compiler2 {
         }
 
         // analyze parse ast
-        CheckNamesVisitor(parsedProgram, tables.localSymbolTable).check(resultMessages)
+        CheckNamesVisitor(parsedProgram, tables).check(resultMessages)
 
         if (resultMessages.isNotEmpty()) {
             return Pair(

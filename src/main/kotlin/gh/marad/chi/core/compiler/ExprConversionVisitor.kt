@@ -225,7 +225,24 @@ class ExprConversionVisitor(
         )
     }
 
-    override fun visitMethodInvocation(parseMethodInvocation: ParseMethodInvocation): Expression {
+    override fun visitMethodInvocation(ast: ParseMethodInvocation): Expression {
+        // dostęp do pola + wywołanie funkcji
+        // wywołanie lokalnej funkcji na obiekcie
+        // wywołanie funkcji z pakietu po aliasie
+
+        val args = ast.arguments.map { it.accept(this) }
+
+        // try to get function from aliased package
+        val pkg = tables.packageTable.get(ast.receiverName)
+        val pkgSymbol = pkg?.symbols?.get(ast.methodName)
+        if (pkg != null && pkgSymbol != null) {
+            val function = VariableAccess(
+                PackageSymbol(pkg.moduleName, pkg.packageName, ast.methodName, pkgSymbol.mutable),
+                ast.receiver.section)
+            return FnCall(function, emptyList(), parameters = args, ast.section)
+        }
+
+
         TODO()
     }
 
