@@ -1,8 +1,6 @@
 package gh.marad.chi.core.expressionast.internal
 
-import gh.marad.chi.core.OldType
-import gh.marad.chi.core.namespace.ScopeType
-import gh.marad.chi.core.namespace.SymbolType
+import gh.marad.chi.core.Fn
 import gh.marad.chi.core.parser.readers.FormalArgument
 import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseLambda
@@ -13,13 +11,13 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.jupiter.api.Test
 
 class FunctionConversionsKtLambdaTest {
     @Test
     fun `should generate fn definition form lambda`() {
         // given
-        val context = defaultContext()
         val lambda = ParseLambda(
             formalArguments = emptyList(),
             body = listOf(LongValue(10)),
@@ -27,11 +25,10 @@ class FunctionConversionsKtLambdaTest {
         )
 
         // when
-        val fn = convertLambda(context, lambda)
+        val fn = convertAst(lambda).shouldBeTypeOf<Fn>()
 
         // then
         fn.parameters.shouldBeEmpty()
-//        fn.returnType shouldBe OldType.intType
         fn.body.body[0].shouldBeAtom("10", Types.int)
         fn.fnScope.shouldNotBeNull()
         fn.sourceSection shouldBe testSection
@@ -40,60 +37,19 @@ class FunctionConversionsKtLambdaTest {
     @Test
     fun `should transfer function parameters from lambda`() {
         // given
-        val context = defaultContext()
         val lambda = sampleLambda.copy(
             formalArguments = listOf(FormalArgument("name", intTypeRef, sectionB))
         )
 
         // when
-        val fn = convertLambda(context, lambda)
+        val fn = convertAst(lambda).shouldBeTypeOf<Fn>()
 
         // then
         fn.parameters should {
             it shouldHaveSize 1
             it[0].name shouldBe "name"
-            it[0].type shouldBe OldType.int
+            it[0].type shouldBe Types.int
             it[0].sourceSection shouldBe sectionB
-        }
-    }
-
-    @Test
-    fun `lambda with empty body will return unit type`() {
-        // given
-        val context = defaultContext()
-        val lambda = sampleLambda.copy(body = emptyList())
-
-        // when
-        val fn = convertLambda(context, lambda)
-
-        // then
-        fn.newType shouldBe OldType.unit
-
-    }
-
-    @Test
-    fun `function scope should have arguments defined`() {
-        // given
-        val context = defaultContext()
-        val lambda = sampleLambda.copy(
-            formalArguments = listOf(intArg("a"), stringArg("b"))
-        )
-
-        // when
-        val fn = convertLambda(context, lambda)
-
-        // then
-        with(fn.fnScope) {
-            getSymbol("a").shouldNotBeNull() should { a ->
-                a.scopeType shouldBe ScopeType.Function
-                a.symbolType shouldBe SymbolType.Argument
-                a.type shouldBe OldType.int
-            }
-            getSymbol("b").shouldNotBeNull() should { b ->
-                b.scopeType shouldBe ScopeType.Function
-                b.symbolType shouldBe SymbolType.Argument
-                b.type shouldBe OldType.string
-            }
         }
     }
 

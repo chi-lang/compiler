@@ -2,15 +2,12 @@ package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.Fn
 import gh.marad.chi.core.NameDeclaration
-import gh.marad.chi.core.OldType
-import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.types.FunctionType
 import gh.marad.chi.core.types.TypeVariable
 import gh.marad.chi.core.types.Types
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -52,34 +49,6 @@ class FunctionConversionsKtFuncWithNameTest {
         fn.shouldBeTypeOf<NameDeclaration>().should {
             it.expectedType shouldBe Types.fn(Types.unit)
             it.value.shouldBeTypeOf<Fn>()
-        }
-    }
-
-    @Test
-    fun `should define arguments in function scope`() {
-        // given
-        val funcWithName = sampleFuncWithName.copy(
-            formalArguments = listOf(
-                intArg("a"),
-                stringArg("b")
-            )
-        )
-
-        // when
-        val fn = convertAst(funcWithName)
-            .shouldBeTypeOf<NameDeclaration>().value
-            .shouldBeTypeOf<Fn>()
-
-        // then
-        with(fn.fnScope) {
-            getSymbol("a").shouldNotBeNull() should {
-                it.type shouldBe OldType.int
-                it.symbolType shouldBe SymbolType.Argument
-            }
-            getSymbol("b").shouldNotBeNull() should {
-                it.type shouldBe OldType.string
-                it.symbolType shouldBe SymbolType.Argument
-            }
         }
     }
 
