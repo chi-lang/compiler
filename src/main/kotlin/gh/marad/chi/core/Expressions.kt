@@ -116,6 +116,12 @@ data class VariableAccess(
     override fun children(): List<Expression> = listOf()
 }
 
+sealed interface DotTarget {
+    object Field : DotTarget
+    object LocalFunction: DotTarget
+    data class PackageFunction(val moduleName: String, val packageName: String, val name: String) : DotTarget
+}
+
 data class FieldAccess(
     val receiver: Expression,
     val fieldName: String,
@@ -123,6 +129,7 @@ data class FieldAccess(
     override val sourceSection: ChiSource.Section?,
     val memberSection: ChiSource.Section?,
 ) : Expression {
+    var target: DotTarget? = null
     override var newType: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitFieldAccess(this)
     override fun children(): List<Expression> = listOf(receiver)
@@ -189,9 +196,9 @@ data class Block(val body: List<Expression>, override val sourceSection: ChiSour
 }
 
 data class FnCall(
-    val function: Expression,
+    var function: Expression,
     val callTypeParameters: List<Type>,
-    val parameters: List<Expression>,
+    val parameters: MutableList<Expression>,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
     override var newType: Type? = null

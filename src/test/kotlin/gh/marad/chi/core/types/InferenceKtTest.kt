@@ -144,7 +144,7 @@ class InferenceKtTest {
     fun `test assignment type inference`() {
         // given
         val assignment = Assignment(
-            target = PackageSymbol("","","", false),
+            target = PackageSymbol("","",""),
             value = Atom.int(5, null),
             sourceSection = null
         )

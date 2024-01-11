@@ -35,6 +35,7 @@ class InferenceEnv(private val pkgDef: Package, private val tables: CompileTable
     fun findAllTypeVariables(): List<TypeVariable> =
         currentLocalEnv.flatMap { it.value.findTypeVariables() }
 
+    fun getTypeOrNull(name: String): Type? = currentLocalEnv[name]
     fun getType(name: String, section: ChiSource.Section?): Type {
         return currentLocalEnv[name]
             ?: throw TypeInferenceFailed("Symbol $name not found in scope.", section)

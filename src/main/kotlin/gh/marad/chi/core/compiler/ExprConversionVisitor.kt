@@ -158,7 +158,7 @@ class ExprConversionVisitor(
             parseFnCall.concreteTypeParameters.map {
                 resolveType(typeTable, currentTypeSchemeVariables, it)
             },
-            parseFnCall.arguments.map { it.accept(this) },
+            parseFnCall.arguments.map { it.accept(this) }.toMutableList(),
             parseFnCall.section
         )
 

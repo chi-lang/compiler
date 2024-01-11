@@ -125,6 +125,31 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             val t = ctx.nextTypeVariable()
 
             val funcType = inferTypes(ctx, env, expr.function)
+
+            // Rewrite the AST when field is actually a function that we want to call on a receiver
+            if (expr.function is FieldAccess) {
+                val dotOp = expr.function as FieldAccess
+                val target = dotOp.target!!
+                expr.function = when (target) {
+                    DotTarget.Field -> dotOp
+                    DotTarget.LocalFunction -> {
+                        expr.parameters.add(0, dotOp.receiver)
+                        VariableAccess(LocalSymbol(dotOp.fieldName), dotOp.memberSection).also {
+                            it.newType = dotOp.newType
+                        }
+                    }
+                    is DotTarget.PackageFunction -> {
+                        expr.parameters.add(0, dotOp.receiver)
+                        VariableAccess(PackageSymbol(
+                            target.moduleName, target.packageName, target.name
+                        ), dotOp.memberSection).also {
+                            it.newType = dotOp.newType
+                        }
+                    }
+                }
+            }
+
+
             val paramTypes = expr.parameters.map { inferTypes(ctx, env, it) }
 
             val constraints = mutableSetOf<Constraint>()
@@ -392,16 +417,38 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             val solution = unify(receiverInferred.constraints)
             val receiverType = applySubstitution(receiverInferred.type, solution)
 
-            val typeInfo = ctx.typeTable.find(receiverType)
-                ?: throw TypeInferenceFailed("Unknown type $receiverType", expr.receiver.sourceSection)
+            // try to find a function in current local scope
+            val funcType = env.getTypeOrNull(expr.fieldName)
+            if (funcType != null && funcType is FunctionType && funcType.types.size >= 2 && funcType.types.first() == receiverType) {
+                expr.target = DotTarget.LocalFunction
+                expr.newType = funcType
+            }
+            else {
+                // then try to find a function in receiver types package
+                val typePkg = ctx.getTypePackageOrNull(receiverType)
+                val symbol = typePkg?.symbols?.get(expr.fieldName)
+                val symbolType = symbol?.type
+                if (symbolType is FunctionType && symbolType.types.size >= 2 && symbolType.types.first() == receiverType) {
+                    expr.target = DotTarget.PackageFunction(symbol.moduleName, symbol.packageName, symbol.name)
+                    expr.newType = symbolType
+                } else {
+                    // eventually try to find a field
+                    val typeInfo = ctx.typeTable.find(receiverType)
+                        ?: throw TypeInferenceFailed("Unknown type $receiverType", expr.receiver.sourceSection)
 
-            val field = typeInfo.fields.firstOrNull { it.name == expr.fieldName }
-                ?: throw CompilerMessageException(MemberDoesNotExist(
-                    receiverType, expr.fieldName, expr.memberSection.toCodePoint()))
+                    val field = typeInfo.fields.firstOrNull { it.name == expr.fieldName }
+                        ?: throw CompilerMessageException(
+                            MemberDoesNotExist(
+                                receiverType, expr.fieldName, expr.memberSection.toCodePoint()
+                            )
+                        )
+                    expr.target = DotTarget.Field
+                    expr.newType = field.type
+                }
+            }
 
-            expr.newType = field.type
             expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(field.type, receiverInferred.constraints)
+            InferenceResult(expr.newType!!, receiverInferred.constraints)
         }
         is FieldAssignment -> {
             val t = ctx.nextTypeVariable()

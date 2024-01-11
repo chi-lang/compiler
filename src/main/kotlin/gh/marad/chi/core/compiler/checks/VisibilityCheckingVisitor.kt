@@ -38,11 +38,23 @@ class VisibilityCheckingVisitor(
     }
 
     override fun visitFieldAccess(fieldAccess: FieldAccess) {
-        verifyFieldAccessible(
-            fieldAccess.receiver.newType!!,
-            fieldAccess.fieldName,
-            fieldAccess.memberSection
-        )
+        val target = fieldAccess.target!!
+        when(target) {
+            DotTarget.Field -> {
+                verifyFieldAccessible(
+                    fieldAccess.receiver.newType!!,
+                    fieldAccess.fieldName,
+                    fieldAccess.memberSection
+                )
+            }
+            DotTarget.LocalFunction -> {}
+            is DotTarget.PackageFunction -> {
+                val symbol = ns.getOrCreatePackage(target.moduleName, target.packageName).symbols.get(target.name)
+                if (symbol?.moduleName != currentModule && symbol?.public == false) {
+                    messages.add(CannotAccessInternalName(target.name, fieldAccess.memberSection.toCodePoint()))
+                }
+            }
+        }
         super.visitFieldAccess(fieldAccess)
     }
 

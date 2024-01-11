@@ -139,7 +139,7 @@ fun mapAst(expression: Expression, func: (Expression) -> Expression): Expression
             func(
                 expression.copy(
                     function = mappedFunction,
-                    parameters = mappedParams
+                    parameters = mappedParams.toMutableList()
                 )
             )
         }

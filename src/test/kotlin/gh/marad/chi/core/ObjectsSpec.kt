@@ -1,5 +1,6 @@
 package gh.marad.chi.core
 
+import gh.marad.chi.ast
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.MemberDoesNotExist
 import gh.marad.chi.core.analyzer.TypeMismatch
@@ -45,6 +46,23 @@ class ObjectsSpec {
             it.level shouldBe Level.ERROR
             it.expected shouldBe Types.int
             it.actual shouldBe Types.string
+        }
+    }
+
+    @Test
+    fun `should be able to access object field`() {
+        // when
+        val result = ast(
+            """
+                data Foo = Foo(i: int)
+                val f = Foo(10)
+                f.i
+            """.trimIndent()
+        )
+
+        // then
+        result.shouldBeTypeOf<FieldAccess>().should {
+            it.newType shouldBe Types.int
         }
     }
 }

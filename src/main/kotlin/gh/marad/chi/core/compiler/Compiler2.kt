@@ -182,13 +182,13 @@ object Compiler2 {
             )
         }
 
-        // perform post construction checks
-        // ================================
+        // perform post construction updates and checks
+        // ============================================
         VisibilityCheckingVisitor(packageDefinition.moduleName, typeLookupTable, ns)
             .check(expressions, resultMessages)
         FnCallCheckingVisitor()
             .check(expressions, resultMessages)
-        ImmutabilityCheckVisitor(resultMessages)
+        ImmutabilityCheckVisitor(resultMessages, tables, ns)
             .check(expressions)
         ReturnTypeCheckVisitor(resultMessages)
             .check(expressions)

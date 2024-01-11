@@ -2,6 +2,7 @@ package gh.marad.chi.core.namespace
 
 import gh.marad.chi.core.CompilationDefaults
 import gh.marad.chi.core.Package
+import gh.marad.chi.core.PackageSymbol
 
 class GlobalCompilationNamespace(val prelude: List<PreludeImport> = emptyList()) {
     private val modules: MutableMap<String, ModuleDescriptor> = mutableMapOf()
@@ -18,6 +19,10 @@ class GlobalCompilationNamespace(val prelude: List<PreludeImport> = emptyList())
 
     fun getOrCreatePackage(pkg: Package): PackageDescriptor =
         getOrCreateModule(pkg.moduleName).getOrCreatePackage(pkg.packageName)
+
+    fun getSymbol(target: PackageSymbol) =
+        getOrCreatePackage(target.moduleName, target.packageName)
+            .symbols.get(target.name)
 
     private fun getOrCreateModule(moduleName: String) = modules.getOrPut(moduleName) { ModuleDescriptor(moduleName) }
 }
