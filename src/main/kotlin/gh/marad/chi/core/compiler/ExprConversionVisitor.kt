@@ -207,7 +207,7 @@ class ExprConversionVisitor(
         val pkgSymbol = pkg?.symbols?.get(ast.memberName)
         if (pkg != null && pkgSymbol != null) {
             return VariableAccess(
-                PackageSymbol(pkg.moduleName, pkg.packageName, ast.memberName, pkgSymbol.mutable),
+                PackageSymbol(pkg.moduleName, pkg.packageName, ast.memberName),
                 ast.receiver.section)
         }
 
@@ -369,7 +369,7 @@ class ExprConversionVisitor(
         }
 
         val readVariable = VariableAccess(
-            target = LocalSymbol(tempVariableDeclaration.name, tempVariableDeclaration.mutable),
+            target = LocalSymbol(tempVariableDeclaration.name),
             sourceSection = parseWeave.value.section
         )
 
@@ -406,8 +406,8 @@ class ExprConversionVisitor(
         }
     }
 
-    private fun FnSymbol.toLocalSymbol() = LocalSymbol(name, mutable)
-    private fun Symbol.toPackageSymbol() = PackageSymbol(moduleName, packageName, name, mutable)
+    private fun FnSymbol.toLocalSymbol() = LocalSymbol(name)
+    private fun Symbol.toPackageSymbol() = PackageSymbol(moduleName, packageName, name)
 
     private fun addLocalSymbol(name: String, type: Type?, isMutable: Boolean, isPublic: Boolean) {
         val fnSymbolTable = currentFnSymbolTable

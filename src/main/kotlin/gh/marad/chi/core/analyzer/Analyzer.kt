@@ -1,8 +1,5 @@
 package gh.marad.chi.core.analyzer
 
-import gh.marad.chi.core.Expression
-import gh.marad.chi.core.Program
-import gh.marad.chi.core.forEachAst
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeInferenceFailed
@@ -117,21 +114,6 @@ data class TypeInferenceFailed(val cause: TypeInferenceFailed) : Message {
         get() = cause.message!!
 }
 
-fun analyze(program: Program): List<Message> {
-    val messages = mutableListOf<Message>()
-    program.packageDefinition?.let { checkModuleAndPackageNames(it, messages) }
-    program.imports.forEach { checkImports(it, messages) }
-    program.expressions.forEach {
-        analyze(it, messages)
-    }
-    return messages
-}
-
-fun analyze(expr: Expression): List<Message> {
-    val messages = mutableListOf<Message>()
-    analyze(expr, messages)
-    return messages
-}
 
 // Rzeczy do sprawdzenia
 // - Prosta zgodność typów wyrażeń
@@ -139,13 +121,7 @@ fun analyze(expr: Expression): List<Message> {
 // - Redeklaracja zmiennych (drugie zapisanie var/val w tym samym scope - ale pozwala na shadowing)
 // - Obecność funkcji `main` bez parametrów (później trzeba będzie ogarnąć listę argumentów)
 // - przypisanie unit
-fun analyze(expr: Expression, messages: MutableList<Message>) {
     // TODO: pozostałe checki
     // Chyba poprawność wywołań i obecność zmiennych w odpowiednich miejscach powinna być przed sprawdzaniem typów.
     // W przeciwnym wypadku wyznaczanie typów wyrażeń może się nie udać
 
-    forEachAst(expr) {
-        checkTypes(it, messages)
-        checkThatAssignmentDoesNotChangeImmutableValue(it, messages)
-    }
-}

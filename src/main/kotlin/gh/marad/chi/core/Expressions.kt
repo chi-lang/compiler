@@ -91,21 +91,18 @@ data class InterpolatedString(val parts: List<Expression>, override val sourceSe
 
 sealed interface Target {
     val name : String
-    val mutable: Boolean
 }
 
 data class PackageSymbol(
     val moduleName: String,
     val packageName: String,
     override val name: String,
-    override val mutable: Boolean
 ) : Target {
     override fun toString(): String = "$moduleName::$packageName::$name"
 }
 
 data class LocalSymbol(
     override val name: String,
-    override val mutable: Boolean,
 ) : Target {
     override fun toString(): String = name
 }
