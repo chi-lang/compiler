@@ -1,6 +1,7 @@
 package gh.marad.chi.core
 
 import gh.marad.chi.core.expressionast.ExpressionVisitor
+import gh.marad.chi.core.namespace.TypeInfo
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.Import
 import gh.marad.chi.core.types.Type
@@ -18,6 +19,7 @@ sealed interface Expression {
 data class Program(
     val packageDefinition: Package,
     val imports: List<Import>,
+    val definedTypes: List<TypeInfo>,
     val expressions: List<Expression>,
     val sourceSection: ChiSource.Section? = null)
 

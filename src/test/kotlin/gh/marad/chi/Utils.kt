@@ -105,7 +105,6 @@ fun GlobalCompilationNamespace.addProductType(
         moduleName, packageName, typeName,
         type,
         isPublic = public,
-        isVariantConstructor = true,
         fields = fields
     )
 
@@ -137,7 +136,6 @@ fun GlobalCompilationNamespace.addSumType(
         name,
         type,
         public,
-        isVariantConstructor = false,
         fields = emptyList())
 
     val pkg = getOrCreatePackage(moduleName, packageName)
@@ -166,7 +164,6 @@ fun GlobalCompilationNamespace.addType(
             typeName,
             type,
             isPublic = true,
-            isVariantConstructor = true,
             fields = fields
         )
     )

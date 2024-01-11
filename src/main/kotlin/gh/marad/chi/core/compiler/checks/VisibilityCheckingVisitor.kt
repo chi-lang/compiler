@@ -2,6 +2,7 @@ package gh.marad.chi.core.compiler.checks
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.analyzer.CannotAccessInternalName
+import gh.marad.chi.core.analyzer.ErrorMessage
 import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.analyzer.toCodePoint
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
@@ -69,11 +70,16 @@ class VisibilityCheckingVisitor(
     private fun verifyFieldAccessible(receiverType: Type, fieldName: String, sourceSection: ChiSource.Section?) {
 
         val info = typeLookupTable.find(receiverType)
-            ?: TODO("Type $receiverType not found in type table!")
+        if (info == null) {
+            messages.add(ErrorMessage("Type $receiverType not found in type table!", sourceSection.toCodePoint()))
+            return
+        }
 
         val field = info.fields.firstOrNull { it.name == fieldName }
-            ?: TODO("Field $fieldName not found in type $receiverType!")
-
+        if (field == null) {
+            messages.add(ErrorMessage("Field $fieldName not found in type $receiverType!", sourceSection.toCodePoint()))
+            return
+        }
 
         if (!field.public && info.moduleName != currentModule) {
             messages.add(CannotAccessInternalName(fieldName, sourceSection.toCodePoint()))

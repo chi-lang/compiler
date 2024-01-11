@@ -22,7 +22,6 @@ class TypeTable {
                 name = "array",
                 type = Types.array(TypeVariable("T")),
                 isPublic = true,
-                isVariantConstructor = false,
                 fields = emptyList()
             )
 
@@ -59,7 +58,6 @@ class TypeTable {
                 name = t.name,
                 type = t,
                 isPublic = true,
-                isVariantConstructor = false,
                 fields = emptyList()
             )
 
@@ -73,7 +71,6 @@ data class TypeInfo(
     val name: String,
     val type: Type,
     val isPublic: Boolean,
-    val isVariantConstructor: Boolean,
     val fields: List<VariantField>
 )
 

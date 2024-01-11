@@ -23,17 +23,6 @@ data class ErrorMessage(override val message: String, override val codePoint: Co
     override val level: Level = Level.ERROR
 }
 
-data class InvalidImport(val details: String?, override val codePoint: CodePoint?) : Message {
-    override val level: Level = Level.ERROR
-    override val message: String = if (details != null) "Invalid import: $details" else "Invalid import"
-}
-
-data class ImportInternal(val symbolName: String, override val codePoint: CodePoint?) : Message {
-    override val level: Level = Level.ERROR
-    override val message: String
-        get() = "$symbolName is not public"
-}
-
 data class InvalidModuleName(val moduleName: String, override val codePoint: CodePoint?) : Message {
     override val level: Level = Level.ERROR
     override val message: String = "Invalid module name '$moduleName' at $codePoint"
@@ -56,11 +45,6 @@ data class TypeMismatch(val expected: Type, val actual: Type, override val codeP
     override val level = Level.ERROR
     override val message =
         "Expected type is '$expected' but got '$actual' at $codePoint"
-}
-
-data class MissingReturnValue(val expectedType: Type, override val codePoint: CodePoint?) : Message {
-    override val level: Level = Level.ERROR
-    override val message: String = "Missing return value at $codePoint"
 }
 
 data class NotAFunction(override val codePoint: CodePoint?) : Message {
@@ -113,15 +97,3 @@ data class TypeInferenceFailed(val cause: TypeInferenceFailed) : Message {
     override val message: String
         get() = cause.message!!
 }
-
-
-// Rzeczy do sprawdzenia
-// - Prosta zgodność typów wyrażeń
-// - Nieużywane zmienne
-// - Redeklaracja zmiennych (drugie zapisanie var/val w tym samym scope - ale pozwala na shadowing)
-// - Obecność funkcji `main` bez parametrów (później trzeba będzie ogarnąć listę argumentów)
-// - przypisanie unit
-    // TODO: pozostałe checki
-    // Chyba poprawność wywołań i obecność zmiennych w odpowiednich miejscach powinna być przed sprawdzaniem typów.
-    // W przeciwnym wypadku wyznaczanie typów wyrażeń może się nie udać
-

@@ -63,30 +63,36 @@ object Compiler {
         val tables = CompileTables(packageDefinition, ns)
         tables.addImports(parsedProgram.imports)
 
+        val definedTypes = mutableListOf<TypeInfo>()
 
         parsedProgram.typeDefinitions.forEach { typeDef ->
             val typeSchemeVariables = typeDef.typeParameters.map { TypeVariable(it.name) }
 
-            val base = SumType(
-                moduleName = packageDefinition.moduleName,
-                packageName = packageDefinition.packageName,
-                name = typeDef.typeName,
-                typeParams = typeSchemeVariables,
-                subtypes = typeDef.variantConstructors.map { it.name },
-                typeSchemeVariables = typeSchemeVariables,
-            )
+            val isSingleConstructorType = typeDef.variantConstructors.size == 1
+                    && typeDef.typeName == typeDef.variantConstructors[0].name
 
-            val baseTypeInfo = TypeInfo(
-                moduleName = packageDefinition.moduleName,
-                packageName = packageDefinition.packageName,
-                name = typeDef.typeName,
-                type = base,
-                isPublic = true,
-                isVariantConstructor = false,
-                fields = emptyList()
-            )
+            if (!isSingleConstructorType) {
+                val base = SumType(
+                    moduleName = packageDefinition.moduleName,
+                    packageName = packageDefinition.packageName,
+                    name = typeDef.typeName,
+                    typeParams = typeSchemeVariables,
+                    subtypes = typeDef.variantConstructors.map { it.name },
+                    typeSchemeVariables = typeSchemeVariables,
+                )
 
-            tables.defineType(baseTypeInfo)
+                val baseTypeInfo = TypeInfo(
+                    moduleName = packageDefinition.moduleName,
+                    packageName = packageDefinition.packageName,
+                    name = typeDef.typeName,
+                    type = base,
+                    isPublic = true,
+                    fields = emptyList()
+                )
+
+                tables.defineType(baseTypeInfo)
+                definedTypes.add(baseTypeInfo)
+            }
 
             typeDef.variantConstructors.map { ctor ->
                 val paramTypeNames = ctor.formalFields.flatMap { it.typeRef.findTypeNames() }
@@ -131,11 +137,11 @@ object Compiler {
                     name = ctor.name,
                     type = type,
                     isPublic = ctor.public,
-                    isVariantConstructor = true,
                     fields = fields,
                 )
 
                 tables.defineType(variantTypeInfo)
+                definedTypes.add(variantTypeInfo)
 
                 return@map type
             }
@@ -147,16 +153,22 @@ object Compiler {
         if (resultMessages.isNotEmpty()) {
             return CompilationResult(
                 refineMessages(resultMessages),
-                Program(packageDefinition, parsedProgram.imports, emptyList(), parsedProgram.section),
+                Program(packageDefinition, parsedProgram.imports, definedTypes, emptyList(), parsedProgram.section),
             )
         }
 
         // convert to ast
         // ==============
-        val converter = ExprConversionVisitor(packageDefinition, tables)
-        val functions = parsedProgram.functions.map { converter.visit(it) }
-        val code = parsedProgram.topLevelCode.map { converter.visit(it) }
-        val expressions = functions + code
+        val expressions = try {
+            val converter = ExprConversionVisitor(packageDefinition, tables)
+            val functions = parsedProgram.functions.map { converter.visit(it) }
+            val code = parsedProgram.topLevelCode.map { converter.visit(it) }
+            functions + code
+        } catch (ex: CompilerMessageException) {
+            resultMessages.add(ex.msg)
+            emptyList()
+        }
+
 
         // autocast & unit insert
         // ======================
@@ -178,7 +190,7 @@ object Compiler {
         if (resultMessages.isNotEmpty()) {
             return CompilationResult(
                 refineMessages(resultMessages),
-                Program(packageDefinition, parsedProgram.imports, expressions, parsedProgram.section),
+                Program(packageDefinition, parsedProgram.imports, definedTypes, expressions, parsedProgram.section),
             )
         }
 
@@ -198,7 +210,7 @@ object Compiler {
 
         return CompilationResult(
             refineMessages(resultMessages),
-            Program(packageDefinition, parsedProgram.imports, expressions, parsedProgram.section),
+            Program(packageDefinition, parsedProgram.imports, definedTypes, expressions, parsedProgram.section),
         )
     }
 
@@ -210,7 +222,7 @@ object Compiler {
                     TypeVariable(ref.typeName).also { it.sourceSection = ref.section }
                 } else {
                     typeTable.get(ref.typeName)?.type?.also { it.sourceSection = ref.section }
-                        ?: TODO("Type $ref not found.")
+                        ?: throw CompilerMessageException(ErrorMessage("Type $ref not found", ref.section.toCodePoint()))
                 }
 
             is TypeConstructorRef -> {
@@ -219,7 +231,8 @@ object Compiler {
                 return when (base) {
                     is SumType -> base.copy(typeParams = typeParameters)
                     is ProductType -> base.copy(types = typeParameters)
-                    else -> TODO("INVALID TYPE CONSTRUCTOR - change this to compiler message")
+                    else -> throw CompilerMessageException(
+                        ErrorMessage("Invalid type constructor. Only product and sum types are supported", ref.section.toCodePoint()))
                 }.also { it.sourceSection = ref.section }
             }
 
