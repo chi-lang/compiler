@@ -29,15 +29,15 @@ class ParseProgramReaderTest {
         val program = parseProgram(code)
 
         program.packageDefinition.shouldNotBeNull().should {
-            it.moduleName.name shouldBe "mod"
-            it.packageName.name shouldBe "pkg"
+            it.moduleName shouldBe "mod"
+            it.packageName shouldBe "pkg"
         }
 
         program.imports.should {
             it shouldHaveSize 1
-            it[0].moduleName.name shouldBe "othermod"
-            it[0].packageName.name shouldBe "otherpkg"
-            it[0].packageAlias.shouldNotBeNull().alias shouldBe "oth"
+            it[0].moduleName shouldBe "othermod"
+            it[0].packageName shouldBe "otherpkg"
+            it[0].packageAlias.shouldNotBeNull() shouldBe "oth"
             it[0].entries.shouldBeEmpty()
         }
 

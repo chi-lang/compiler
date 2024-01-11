@@ -41,13 +41,13 @@ class CompileTables(val currentPackage: Package, val ns: GlobalCompilationNamesp
     }
 
     fun addImport(import: ParseImportDefinition) {
-        val importPkg = ns.getOrCreatePackage(import.moduleName.name, import.packageName.name)
+        val importPkg = ns.getOrCreatePackage(import.moduleName, import.packageName)
         if (import.packageAlias != null) {
-            packageTable.add(import.packageAlias.alias, importPkg)
+            packageTable.add(import.packageAlias, importPkg)
         }
 
         import.entries.forEach { entry ->
-            val importedName =  entry.alias?.alias ?: entry.name
+            val importedName =  entry.alias ?: entry.name
             // find the symbol in target package
             importPkg.symbols.get(entry.name)?.let { symbol ->
                 // import it to local symbol table

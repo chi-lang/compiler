@@ -24,7 +24,7 @@ object Compiler {
         // parsing
         val (parsedProgram, messages) = parseSource(source)
         val packageDefinition = parsedProgram.packageDefinition?.let {
-            Package(it.moduleName.name, it.packageName.name)
+            Package(it.moduleName, it.packageName)
         } ?: Package("user", "default")
 
         val resultMessages = messages.toMutableList()
@@ -43,11 +43,11 @@ object Compiler {
 
         // check that imported names exist and are public
         parsedProgram.imports.forEach { import ->
-            val importPkg = ns.getOrCreatePackage(import.moduleName.name, import.packageName.name)
+            val importPkg = ns.getOrCreatePackage(import.moduleName, import.packageName)
             import.entries.forEach { entry ->
                 val symbol = importPkg.symbols.get(entry.name)
                 val type = importPkg.types.get(entry.name)
-                if (symbol != null && !symbol.public && import.moduleName.name != packageDefinition.moduleName) {
+                if (symbol != null && !symbol.public && import.moduleName != packageDefinition.moduleName) {
                     resultMessages.add(CannotAccessInternalName(entry.name, entry.section.toCodePoint()))
                 }
 

@@ -7,14 +7,14 @@ import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 object PackageReader {
     fun read(source: ChiSource, ctx: ChiParser.Package_definitionContext): ParsePackageDefinition {
-        val moduleName = CommonReader.readModuleName(source, ctx.module_name())
-        val packageName = CommonReader.readPackageName(source, ctx.package_name())
+        val moduleName = CommonReader.readModuleName(ctx.module_name())
+        val packageName = CommonReader.readPackageName(ctx.package_name())
         return ParsePackageDefinition(moduleName, packageName, getSection(source, ctx))
     }
 }
 
 data class ParsePackageDefinition(
-    val moduleName: ModuleName, val packageName: PackageName,
+    val moduleName: String, val packageName: String,
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitPackageDefinition(this)
