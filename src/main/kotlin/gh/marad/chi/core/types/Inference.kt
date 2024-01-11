@@ -417,33 +417,33 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             val solution = unify(receiverInferred.constraints)
             val receiverType = applySubstitution(receiverInferred.type, solution)
 
-            // try to find a function in current local scope
-            val funcType = env.getTypeOrNull(expr.fieldName)
-            if (funcType != null && funcType is FunctionType && funcType.types.size >= 2 && funcType.types.first() == receiverType) {
-                expr.target = DotTarget.LocalFunction
-                expr.newType = funcType
-            }
-            else {
-                // then try to find a function in receiver types package
-                val typePkg = ctx.getTypePackageOrNull(receiverType)
-                val symbol = typePkg?.symbols?.get(expr.fieldName)
-                val symbolType = symbol?.type
-                if (symbolType is FunctionType && symbolType.types.size >= 2 && symbolType.types.first() == receiverType) {
-                    expr.target = DotTarget.PackageFunction(symbol.moduleName, symbol.packageName, symbol.name)
-                    expr.newType = symbolType
+            // try to find field
+            val typeInfo = ctx.typeTable.find(receiverType)
+            val field = typeInfo?.fields?.firstOrNull { it.name == expr.fieldName }
+            if (field != null) {
+                expr.target = DotTarget.Field
+                expr.newType = field.type
+            } else {
+                // then try to find a function in current local scope
+                val funcType = env.getTypeOrNull(expr.fieldName)
+                if (funcType != null && funcType is FunctionType && funcType.types.size >= 2 && funcType.types.first() == receiverType) {
+                    expr.target = DotTarget.LocalFunction
+                    expr.newType = funcType
                 } else {
-                    // eventually try to find a field
-                    val typeInfo = ctx.typeTable.find(receiverType)
-                        ?: throw TypeInferenceFailed("Unknown type $receiverType", expr.receiver.sourceSection)
-
-                    val field = typeInfo.fields.firstOrNull { it.name == expr.fieldName }
-                        ?: throw CompilerMessageException(
+                    // finally try to find a function in receiver types package
+                    val typePkg = ctx.getTypePackageOrNull(receiverType)
+                    val symbol = typePkg?.symbols?.get(expr.fieldName)
+                    val symbolType = symbol?.type
+                    if (symbolType is FunctionType && symbolType.types.size >= 2 && symbolType.types.first() == receiverType) {
+                        expr.target = DotTarget.PackageFunction(symbol.moduleName, symbol.packageName, symbol.name)
+                        expr.newType = symbolType
+                    } else {
+                        throw CompilerMessageException(
                             MemberDoesNotExist(
                                 receiverType, expr.fieldName, expr.memberSection.toCodePoint()
                             )
                         )
-                    expr.target = DotTarget.Field
-                    expr.newType = field.type
+                    }
                 }
             }
 

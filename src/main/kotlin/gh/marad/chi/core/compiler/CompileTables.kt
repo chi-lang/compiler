@@ -52,7 +52,8 @@ class CompileTables(val currentPackage: Package, val ns: GlobalCompilationNamesp
             importPkg.symbols.get(entry.name)?.let { symbol ->
                 // import it to local symbol table
                 localSymbolTable.add(importedName, symbol)
-            } ?: importPkg.types.get(entry.name)?.let { typeInfo ->
+            }
+            importPkg.types.get(entry.name)?.let { typeInfo ->
                 // if symbol was not found - try the sum type
                 localTypeTable.add(importedName, typeInfo)
                 if (typeInfo.type is SumType) {
