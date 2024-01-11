@@ -4,7 +4,7 @@ import gh.marad.chi.core.Expression
 import gh.marad.chi.core.Program
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.Message
-import gh.marad.chi.core.compiler.Compiler2
+import gh.marad.chi.core.compiler.Compiler
 import gh.marad.chi.core.expressionast.internal.defaultModule
 import gh.marad.chi.core.expressionast.internal.defaultPackage
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
@@ -20,11 +20,13 @@ fun compile(
     namespace: GlobalCompilationNamespace = GlobalCompilationNamespace(),
     ignoreCompilationErrors: Boolean = false
 ): Program {
-    val (program, messages) = Compiler2.compile(code, namespace)
+    val result = Compiler.compile(code, namespace)
+    val program = result.program
+    val messages = result.messages
 
     if (!ignoreCompilationErrors) {
         messages.forEach { msg ->
-            System.err.println(Compiler2.formatCompilationMessage(code, msg))
+            System.err.println(Compiler.formatCompilationMessage(code, msg))
             System.err.flush()
         }
 
@@ -41,8 +43,8 @@ fun asts(code: String, ns: GlobalCompilationNamespace, ignoreCompilationErrors: 
 }
 
 fun messages(code: String, ns: GlobalCompilationNamespace = GlobalCompilationNamespace()): List<Message> {
-    val (_, messages) = Compiler2.compile(code, ns)
-    return messages
+    val result = Compiler.compile(code, ns)
+    return result.messages
 }
 
 

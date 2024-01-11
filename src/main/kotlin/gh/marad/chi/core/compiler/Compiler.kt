@@ -16,11 +16,11 @@ import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.types.*
 import gh.marad.chi.core.types.TypeInferenceFailed
 
-object Compiler2 {
+object Compiler {
 
-    fun compile(code: String, ns: GlobalCompilationNamespace): Pair<Program, List<Message>> = compile(ChiSource(code), ns)
+    fun compile(code: String, ns: GlobalCompilationNamespace): CompilationResult = compile(ChiSource(code), ns)
 
-    fun compile(source: ChiSource, ns: GlobalCompilationNamespace): Pair<Program, List<Message>> {
+    fun compile(source: ChiSource, ns: GlobalCompilationNamespace): CompilationResult {
         // parsing
         val (parsedProgram, messages) = parseSource(source)
         val packageDefinition = parsedProgram.packageDefinition?.let {
@@ -145,9 +145,9 @@ object Compiler2 {
         CheckNamesVisitor(parsedProgram, tables).check(resultMessages)
 
         if (resultMessages.isNotEmpty()) {
-            return Pair(
+            return CompilationResult(
+                refineMessages(resultMessages),
                 Program(packageDefinition, emptyList(), emptyList(), parsedProgram.section),
-                refineMessages(resultMessages)
             )
         }
 
@@ -176,9 +176,9 @@ object Compiler2 {
         }
 
         if (resultMessages.isNotEmpty()) {
-            return Pair(
+            return CompilationResult(
+                refineMessages(resultMessages),
                 Program(packageDefinition, emptyList(), expressions, parsedProgram.section),
-                refineMessages(resultMessages)
             )
         }
 
@@ -196,9 +196,9 @@ object Compiler2 {
         // make messages more informative
         // ==============================
 
-        return Pair(
-            Program(packageDefinition, emptyList(), expressions, parsedProgram.section),
+        return CompilationResult(
             refineMessages(resultMessages),
+            Program(packageDefinition, emptyList(), expressions, parsedProgram.section),
         )
     }
 

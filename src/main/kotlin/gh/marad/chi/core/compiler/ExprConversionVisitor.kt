@@ -2,7 +2,7 @@ package gh.marad.chi.core.compiler
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.Target
-import gh.marad.chi.core.compiler.Compiler2.resolveType
+import gh.marad.chi.core.compiler.Compiler.resolveType
 import gh.marad.chi.core.namespace.FnSymbol
 import gh.marad.chi.core.namespace.FnSymbolTable
 import gh.marad.chi.core.namespace.Symbol

@@ -6,7 +6,7 @@ import gh.marad.chi.core.analyzer.CompilerMessageException
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.compiler.CompileTables
-import gh.marad.chi.core.compiler.Compiler2
+import gh.marad.chi.core.compiler.Compiler
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.utils.printAst
 import io.kotest.assertions.throwables.shouldThrow
@@ -551,45 +551,20 @@ class InferenceKtTest {
         }
     }
 
-    // This is done by Compiler before inference
-//    @Test
-//    fun `variant type definitions should define constructors in env`() {
-//        // given
-//        val typeDefinition = DefineVariantType(
-//            baseVariantType = VariantType("user", "default", "A", emptyList(), emptyMap(), null),
-//            constructors = listOf(
-//                VariantTypeConstructor(true, "B", emptyList(), null),
-//                VariantTypeConstructor(true, "C", listOf(
-//                    VariantTypeField(true, "i", OldType.int, null)
-//                ), null),
-//            ),
-//            null
-//        )
-//        val env = emptyEnv()
-//
-//        // when
-//        val result = inferTypes(env, typeDefinition)
-//
-//        // then
-//        env.getType("A", null) shouldBe SimpleType("user", "default", "A")
-//        env.getType("B", null) shouldBe SimpleType("user", "default", "B")
-//        env.getType("C", null) shouldBe FunctionType(types = listOf(
-//            Types.int,
-//            SimpleType("user", "default", "C")
-//        ))
-//    }
-
     fun testInference(code: String, givenEnv: Map<String, Type> = mapOf(), ignoreErrors: Boolean = false): Result {
         val ns = GlobalCompilationNamespace()
         givenEnv.forEach { (name, type) ->
             ns.addSymbolInDefaultPackage(name, type, public = true)
         }
 
-        val (program, messages) = Compiler2.compile(code, ns)
+        val result = Compiler.compile(code, ns)
+        val program = result.program
+        val messages = result.messages
+
 
         if (messages.any { it.level == Level.ERROR } && !ignoreErrors) {
             for (message in messages) {
-                println(Compiler2.formatCompilationMessage(code, message))
+                println(Compiler.formatCompilationMessage(code, message))
             }
             throw AssertionError("There were errors")
         }
