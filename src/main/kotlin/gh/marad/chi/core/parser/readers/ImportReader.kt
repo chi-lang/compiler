@@ -8,8 +8,8 @@ import gh.marad.chi.core.parser.readers.CommonReader.readPackageName
 import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 object ImportReader {
-    fun read(source: ChiSource, ctx: ChiParser.Import_definitionContext): ParseImportDefinition =
-        ParseImportDefinition(
+    fun read(source: ChiSource, ctx: ChiParser.Import_definitionContext): Import =
+        Import(
             moduleName = readModuleName(ctx.module_name()),
             packageName = readPackageName(ctx.package_name()),
             packageAlias = readPackageAlias(ctx.package_import_alias()),
@@ -20,8 +20,8 @@ object ImportReader {
     private fun readPackageAlias(ctx: ChiParser.Package_import_aliasContext?): String? =
         ctx?.text
 
-    private fun readImportEntry(source: ChiSource, ctx: ChiParser.Import_entryContext): ParseImportDefinition.Entry =
-        ParseImportDefinition.Entry(
+    private fun readImportEntry(source: ChiSource, ctx: ChiParser.Import_entryContext): Import.Entry =
+        Import.Entry(
             name = ctx.import_name().text,
             alias = readImportNameAlias(ctx.name_import_alias()),
             section = getSection(source, ctx)
@@ -32,7 +32,7 @@ object ImportReader {
 
 }
 
-data class ParseImportDefinition(
+data class Import(
     val moduleName: String, val packageName: String, val packageAlias: String?, val entries: List<Entry>,
     override val section: ChiSource.Section?
 ) : ParseAst {

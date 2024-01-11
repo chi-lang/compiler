@@ -29,7 +29,7 @@ internal object ProgramReader {
 
 data class ParseProgram(
     val packageDefinition: ParsePackageDefinition?,
-    val imports: List<ParseImportDefinition>,
+    val imports: List<Import>,
     val typeDefinitions: List<ParseVariantTypeDefinition>,
     val functions: List<ParseAst>,
     val topLevelCode: List<ParseAst>,

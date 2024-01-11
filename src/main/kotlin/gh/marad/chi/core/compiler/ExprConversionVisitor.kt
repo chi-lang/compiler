@@ -49,8 +49,8 @@ class ExprConversionVisitor(
     override fun visitPackageDefinition(parsePackageDefinition: ParsePackageDefinition): Expression =
         Atom.unit(parsePackageDefinition.section)
 
-    override fun visitImportDefinition(parseImportDefinition: ParseImportDefinition): Expression =
-        Atom.unit(parseImportDefinition.section)
+    override fun visitImportDefinition(anImport: Import): Expression =
+        Atom.unit(anImport.section)
 
     override fun visitVariantTypeDefinition(parseVariantTypeDefinition: ParseVariantTypeDefinition): Expression {
         TODO("Not yet implemented")

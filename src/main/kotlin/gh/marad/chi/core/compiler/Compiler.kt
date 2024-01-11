@@ -147,7 +147,7 @@ object Compiler {
         if (resultMessages.isNotEmpty()) {
             return CompilationResult(
                 refineMessages(resultMessages),
-                Program(packageDefinition, emptyList(), emptyList(), parsedProgram.section),
+                Program(packageDefinition, parsedProgram.imports, emptyList(), parsedProgram.section),
             )
         }
 
@@ -178,7 +178,7 @@ object Compiler {
         if (resultMessages.isNotEmpty()) {
             return CompilationResult(
                 refineMessages(resultMessages),
-                Program(packageDefinition, emptyList(), expressions, parsedProgram.section),
+                Program(packageDefinition, parsedProgram.imports, expressions, parsedProgram.section),
             )
         }
 
@@ -198,7 +198,7 @@ object Compiler {
 
         return CompilationResult(
             refineMessages(resultMessages),
-            Program(packageDefinition, emptyList(), expressions, parsedProgram.section),
+            Program(packageDefinition, parsedProgram.imports, expressions, parsedProgram.section),
         )
     }
 

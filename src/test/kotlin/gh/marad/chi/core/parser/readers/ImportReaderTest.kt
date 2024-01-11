@@ -14,7 +14,7 @@ class ImportReaderTest {
         val code = "import some.module/some.pkg as pkgAlias { foo as fooAlias, bar as barAlias }"
         val ast = testParse(code)
         ast shouldHaveSize 1
-        ast[0].shouldBeTypeOf<ParseImportDefinition>() should {
+        ast[0].shouldBeTypeOf<Import>() should {
             it.moduleName shouldBe "some.module"
             it.packageName shouldBe "some.pkg"
             it.packageAlias shouldBe "pkgAlias"

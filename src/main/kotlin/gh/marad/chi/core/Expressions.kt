@@ -2,6 +2,7 @@ package gh.marad.chi.core
 
 import gh.marad.chi.core.expressionast.ExpressionVisitor
 import gh.marad.chi.core.parser.ChiSource
+import gh.marad.chi.core.parser.readers.Import
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeVariable
 import gh.marad.chi.core.types.Types
@@ -21,23 +22,6 @@ data class Program(
     val sourceSection: ChiSource.Section? = null)
 
 data class Package(val moduleName: String, val packageName: String)
-
-data class ImportEntry(
-    val name: String,
-    val alias: String?,
-    val isTypeImport: Boolean,
-    val isPublic: Boolean?,
-    val sourceSection: ChiSource.Section?
-)
-
-data class Import(
-    val moduleName: String,
-    val packageName: String,
-    val packageAlias: String?,
-    val entries: List<ImportEntry>,
-    val withinSameModule: Boolean,
-    val sourceSection: ChiSource.Section?
-)
 
 data class DefineVariantType(
     val constructors: List<VariantTypeConstructor>,

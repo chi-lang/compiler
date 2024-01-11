@@ -2,7 +2,7 @@ package gh.marad.chi.core.compiler
 
 import gh.marad.chi.core.Package
 import gh.marad.chi.core.namespace.*
-import gh.marad.chi.core.parser.readers.ParseImportDefinition
+import gh.marad.chi.core.parser.readers.Import
 import gh.marad.chi.core.types.SumType
 
 class CompileTables(val currentPackage: Package, val ns: GlobalCompilationNamespace) {
@@ -36,11 +36,11 @@ class CompileTables(val currentPackage: Package, val ns: GlobalCompilationNamesp
         ns.getOrCreatePackage(info.moduleName, info.packageName).types.add(info)
     }
 
-    fun addImports(imports: List<ParseImportDefinition>) {
+    fun addImports(imports: List<Import>) {
         imports.forEach(this::addImport)
     }
 
-    fun addImport(import: ParseImportDefinition) {
+    fun addImport(import: Import) {
         val importPkg = ns.getOrCreatePackage(import.moduleName, import.packageName)
         if (import.packageAlias != null) {
             packageTable.add(import.packageAlias, importPkg)

@@ -13,8 +13,8 @@ open class DefaultParseAstVisitor : ParseAstVisitor<Unit> {
     override fun visitPackageDefinition(parsePackageDefinition: ParsePackageDefinition) =
         parsePackageDefinition.children().forEach { it.accept(this) }
 
-    override fun visitImportDefinition(parseImportDefinition: ParseImportDefinition) =
-        parseImportDefinition.children().forEach { it.accept(this) }
+    override fun visitImportDefinition(anImport: Import) =
+        anImport.children().forEach { it.accept(this) }
 
     override fun visitVariantTypeDefinition(parseVariantTypeDefinition: ParseVariantTypeDefinition) =
         parseVariantTypeDefinition.children().forEach { it.accept(this) }
