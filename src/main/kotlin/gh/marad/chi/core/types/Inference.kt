@@ -462,7 +462,7 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
 }
 
 fun unify(constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
-    var q = ArrayDeque(constraints)
+    val q = ArrayDeque(constraints)
     val substitutions = mutableListOf<Pair<TypeVariable, Type>>()
 
     while (q.isNotEmpty()) {
@@ -476,7 +476,7 @@ fun unify(constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
             if (e == Types.any) {
                 continue
             }
-            typeMismatch(expected = e, actual = a, section = section, history)
+            typeMismatch(expected = e, actual = a, section = section)
         } else if (a is FunctionType && e is FunctionType) {
             val aHead = a.types.first()
             val eHead = e.types.first()
@@ -530,7 +530,7 @@ fun unify(constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
             ) {
                 continue
             } else {
-                typeMismatch(expected = e, actual = a, section, history)
+                typeMismatch(expected = e, actual = a, section)
             }
         } else if (e is SumType && a is ProductType) {
             if (e.moduleName == a.moduleName &&
@@ -548,7 +548,7 @@ fun unify(constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
                     )
                 }
             } else {
-                typeMismatch(expected = e, actual = a, section, history)
+                typeMismatch(expected = e, actual = a, section)
             }
         } else if (e is ProductType && a is ProductType) {
             if (e.moduleName == a.moduleName &&
@@ -561,7 +561,7 @@ fun unify(constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
                     q.add(Constraint(actual, expected, section, paramSections, history = history + constraint))
                 }
             } else {
-                typeMismatch(expected = e, actual = a, section, history)
+                typeMismatch(expected = e, actual = a, section)
             }
         } else if (e is SumType && a is SumType) {
             CompilerMessage.from(
@@ -571,19 +571,19 @@ fun unify(constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
             // paramTypes should be equal
             // zip param types together and create new constraints
         } else {
-            typeMismatch(expected = e, actual = a, section = section, history)
+            typeMismatch(expected = e, actual = a, section = section)
         }
     }
 
     return substitutions
 }
 
-fun typeMismatch(expected: Type, actual: Type, section: ChiSource.Section?, history: List<Constraint>) {
-    val section = actual.sourceSection ?: section
+fun typeMismatch(expected: Type, actual: Type, section: ChiSource.Section?) {
+    val selectedSection = actual.sourceSection ?: section
     throw CompilerMessage(TypeMismatch(
         expected = expected,
         actual = actual,
-        codePoint = section.toCodePoint()))
+        codePoint = selectedSection.toCodePoint()))
 }
 
 fun applySubstitution(type: Type, solutions: List<Pair<TypeVariable, Type>>): Type {

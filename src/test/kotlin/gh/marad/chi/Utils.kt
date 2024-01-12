@@ -11,7 +11,9 @@ import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.namespace.TypeInfo
 import gh.marad.chi.core.namespace.VariantField
-import gh.marad.chi.core.types.*
+import gh.marad.chi.core.types.FunctionType
+import gh.marad.chi.core.types.ProductType
+import gh.marad.chi.core.types.Type
 
 data class ErrorMessagesException(val errors: List<Message>) : AssertionError("Chi compilation errors")
 
@@ -55,7 +57,7 @@ fun ast(
 ): Expression = asts(code, ns, ignoreCompilationErrors).last()
 
 fun GlobalCompilationNamespace.addSymbolInDefaultPackage(name: String, type: Type? = null, public: Boolean = false,
-                                                         mutable: Boolean = false, slot: Int = 0) {
+                                                         mutable: Boolean = false, @Suppress("UNUSED_PARAMETER") slot: Int = 0) {
     val pkg = getDefaultPackage()
     pkg.symbols.add(
         Symbol(
@@ -69,7 +71,7 @@ fun GlobalCompilationNamespace.addSymbolInDefaultPackage(name: String, type: Typ
 }
 
 fun GlobalCompilationNamespace.addSymbol(moduleName: String, packageName: String, name: String, type: Type? = null,
-                                         public: Boolean = false, mutable: Boolean = false, slot: Int = 0) {
+                                         public: Boolean = false, mutable: Boolean = false, @Suppress("UNUSED_PARAMETER") slot: Int = 0) {
     val pkg = getOrCreatePackage(moduleName, packageName)
     pkg.symbols.add(
         Symbol(
@@ -112,59 +114,4 @@ fun GlobalCompilationNamespace.addProductType(
     val pkg = getOrCreatePackage(moduleName, packageName)
     pkg.types.add(typeInfo)
     return type
-}
-
-fun GlobalCompilationNamespace.addSumTypeInDefaultPackage(name: String, subTypes: List<String>, public: Boolean = true) =
-    addSumType(defaultModule.name, defaultPackage.name, name, subTypes, public)
-
-fun GlobalCompilationNamespace.addSumType(
-    moduleName: String,
-    packageName: String,
-    name: String,
-    subTypes: List<String>,
-    public: Boolean = true
-): SumType {
-    val type = SumType(
-        moduleName, packageName, name,
-        subtypes = subTypes,
-        typeParams = emptyList(),
-        typeSchemeVariables = emptyList()
-        )
-    val typeInfo = TypeInfo(
-        moduleName,
-        packageName,
-        name,
-        type,
-        public,
-        fields = emptyList())
-
-    val pkg = getOrCreatePackage(moduleName, packageName)
-
-    pkg.types.add(typeInfo)
-    return type
-}
-
-
-
-fun GlobalCompilationNamespace.addType(
-    moduleName: String,
-    packageName: String,
-    typeName: String,
-    fields: List<VariantField>,
-    public: Boolean = true,
-) {
-    val pkg = getOrCreatePackage(moduleName, packageName)
-    val type = SimpleType(moduleName, packageName, typeName)
-    val constructorType = Types.fn(Types.int, Types.float, type)
-    addSymbol(moduleName, packageName, typeName, constructorType, public = public)
-    pkg.types.add(
-        TypeInfo(
-            moduleName,
-            packageName,
-            typeName,
-            type,
-            isPublic = true,
-            fields = fields
-        )
-    )
 }

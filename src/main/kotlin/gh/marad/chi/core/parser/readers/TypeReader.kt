@@ -106,20 +106,3 @@ data class TypeConstructorRef(
 
     override fun hashCode(): Int = Objects.hash(baseType)
 }
-
-data class VariantNameRef(
-    val variantType: TypeRef,
-    val variantName: String,
-    val variantFields: List<FormalField>,
-    override val section: ChiSource.Section?
-) : TypeRef {
-    override fun findTypeNames(): Set<String> = variantFields.flatMap { it.typeRef.findTypeNames() }.toSet() + variantType.findTypeNames()
-
-    override fun equals(other: Any?): Boolean =
-        other != null && other is VariantNameRef
-                && variantType == other.variantType
-                && variantFields == other.variantFields
-                && variantName == other.variantName
-
-    override fun hashCode(): Int = Objects.hash(variantType, variantFields, variantName)
-}

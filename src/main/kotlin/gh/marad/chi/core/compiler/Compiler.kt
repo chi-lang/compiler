@@ -255,7 +255,6 @@ object Compiler {
                     types.flatMap { it.typeSchemeVariables() },
                 ).also { it.sourceSection = ref.section }
             }
-            else -> throw RuntimeException("This should not happen!")
         }
     }
 

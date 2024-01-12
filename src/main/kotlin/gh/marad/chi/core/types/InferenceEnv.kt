@@ -8,7 +8,7 @@ import gh.marad.chi.core.compiler.CompileTables
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parser.ChiSource
 
-class InferenceEnv(private val pkgDef: Package, private val tables: CompileTables, private val ns: GlobalCompilationNamespace) {
+class InferenceEnv(private val pkgDef: Package, tables: CompileTables, private val ns: GlobalCompilationNamespace) {
     private val packageEnv = mutableMapOf<String, Type>()
     private var currentLocalEnv: MutableMap<String, Type> = packageEnv
 

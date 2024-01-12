@@ -1,8 +1,8 @@
 package gh.marad.chi.core.analyzer
 
+import gh.marad.chi.addProductType
 import gh.marad.chi.addSymbol
 import gh.marad.chi.addSymbolInDefaultPackage
-import gh.marad.chi.addType
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.VariantField
 import gh.marad.chi.core.types.Types
@@ -157,13 +157,12 @@ class SymbolCheckingSpec {
     @Test
     fun `should not allow using non-public fields in type from other module`() {
         val ns = GlobalCompilationNamespace()
-        ns.addType("foo", "bar", "Foo",
-            public = true,
+        ns.addProductType("foo", "bar", "Foo",
             fields = listOf(
                 VariantField("i", Types.int, public = true),
                 VariantField("f", Types.float, public = false)
-            )
-        )
+            ),
+            public = true)
 
         // when
         val code = """

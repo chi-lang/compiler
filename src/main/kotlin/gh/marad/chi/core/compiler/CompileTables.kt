@@ -5,7 +5,7 @@ import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.parser.readers.Import
 import gh.marad.chi.core.types.SumType
 
-class CompileTables(val currentPackage: Package, val ns: GlobalCompilationNamespace) {
+class CompileTables(currentPackage: Package, val ns: GlobalCompilationNamespace) {
     val packageTable = PackageTable()
     val localSymbolTable = SymbolTable()
     val localTypeTable = TypeTable()

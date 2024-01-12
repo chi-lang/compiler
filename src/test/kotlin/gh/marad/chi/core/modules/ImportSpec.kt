@@ -54,8 +54,8 @@ class ImportSpec {
         )
 
         // then
-        val call = result.expressions.first()
-        call.shouldBeTypeOf<FnCall>().should { call ->
+        val expr = result.expressions.first()
+        expr.shouldBeTypeOf<FnCall>().should { call ->
             call.function.shouldBeTypeOf<VariableAccess>()
                 .target.shouldBeTypeOf<PackageSymbol>()
                 .should { fn ->
@@ -81,8 +81,8 @@ class ImportSpec {
         )
 
         // then
-        val call = result.expressions.first()
-        call.shouldBeTypeOf<FnCall>().should { call ->
+        val expr = result.expressions.first()
+        expr.shouldBeTypeOf<FnCall>().should { call ->
             call.function.shouldBeTypeOf<VariableAccess>()
                 .target.shouldBeTypeOf<PackageSymbol>()
                 .should { fn ->

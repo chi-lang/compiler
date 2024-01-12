@@ -18,7 +18,7 @@ fun parser(source: ChiSource): ChiParser {
     val parser = ChiParser(tokenStream)
     parser.errorHandler = DefaultErrorStrategy()
     parser.removeErrorListeners()
-    var errorListener = MessageCollectingErrorListener()
+    val errorListener = MessageCollectingErrorListener()
     parser.addErrorListener(errorListener)
     return parser
 }
@@ -32,7 +32,7 @@ fun testParse(code: String): List<ParseAst> {
     val parser = ChiParser(tokenStream)
     parser.errorHandler = DefaultErrorStrategy()
     parser.removeErrorListeners()
-    var errorListener = MessageCollectingErrorListener()
+    val errorListener = MessageCollectingErrorListener()
     parser.addErrorListener(errorListener)
     val visitor = ParserVisitor(source)
     val block = visitor.visitProgram(parser.program()) as ParseBlock

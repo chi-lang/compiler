@@ -84,28 +84,28 @@ class ExprConversionVisitor(
         )
     }
 
-    override fun visitFuncWithName(ast: ParseFuncWithName): Expression {
+    override fun visitFuncWithName(parseFuncWithName: ParseFuncWithName): Expression {
         val fnSymbolTable = FnSymbolTable()
 
         val prevTypeSchemeVariables = currentTypeSchemeVariables
-        currentTypeSchemeVariables = ast.typeParameters.map { it.name }
+        currentTypeSchemeVariables = parseFuncWithName.typeParameters.map { it.name }
 
-        val params = ast.formalArguments.map {
+        val params = parseFuncWithName.formalArguments.map {
             val type = resolveType(typeTable, currentTypeSchemeVariables, it.typeRef)
             fnSymbolTable.addArgument(it.name, type)
             FnParam(it.name, type, it.section)
         }
 
         val function = Fn(
-            typeVariables = ast.typeParameters.map { TypeVariable(it.name) },
+            typeVariables = parseFuncWithName.typeParameters.map { TypeVariable(it.name) },
             parameters = params,
             body = withFnSymbolTable(fnSymbolTable) {
-                ast.body.accept(this) as Block
+                parseFuncWithName.body.accept(this) as Block
             },
-            ast.body.section
+            parseFuncWithName.body.section
         )
 
-        val returnType = ast.returnTypeRef
+        val returnType = parseFuncWithName.returnTypeRef
             ?.let { resolveType(typeTable, currentTypeSchemeVariables, it) }
             ?: Types.unit
 
@@ -120,12 +120,12 @@ class ExprConversionVisitor(
         currentTypeSchemeVariables = prevTypeSchemeVariables
 
         return NameDeclaration(
-            public = ast.public,
-            name = ast.name,
+            public = parseFuncWithName.public,
+            name = parseFuncWithName.name,
             value = function,
             mutable = false,
             expectedType = funcType,
-            sourceSection = ast.section
+            sourceSection = parseFuncWithName.section
         ).also {
             addLocalSymbol(it.name, type = null, it.mutable, it.public)
         }
@@ -181,20 +181,20 @@ class ExprConversionVisitor(
             addLocalSymbol(it.name, type = null, it.mutable, it.public)
         }
 
-    override fun visitFieldAccess(ast: ParseFieldAccess): Expression {
-        val pkg = tables.packageTable.get(ast.receiverName)
-        val pkgSymbol = pkg?.symbols?.get(ast.memberName)
+    override fun visitFieldAccess(parseFieldAccess: ParseFieldAccess): Expression {
+        val pkg = tables.packageTable.get(parseFieldAccess.receiverName)
+        val pkgSymbol = pkg?.symbols?.get(parseFieldAccess.memberName)
         if (pkg != null && pkgSymbol != null) {
             return VariableAccess(
-                PackageSymbol(pkg.moduleName, pkg.packageName, ast.memberName),
-                ast.receiver.section)
+                PackageSymbol(pkg.moduleName, pkg.packageName, parseFieldAccess.memberName),
+                parseFieldAccess.receiver.section)
         }
 
         return FieldAccess(
-            receiver = ast.receiver.accept(this),
-            fieldName = ast.memberName,
-            sourceSection = ast.section,
-            memberSection = ast.memberSection
+            receiver = parseFieldAccess.receiver.accept(this),
+            fieldName = parseFieldAccess.memberName,
+            sourceSection = parseFieldAccess.section,
+            memberSection = parseFieldAccess.memberSection
         )
     }
 
@@ -208,11 +208,11 @@ class ExprConversionVisitor(
         )
     }
 
-    override fun visitEffectDefinition(ast: ParseEffectDefinition): Expression {
+    override fun visitEffectDefinition(parseEffectDefinition: ParseEffectDefinition): Expression {
         val prevTypeSchemeVariables = currentTypeSchemeVariables
-        currentTypeSchemeVariables = ast.typeParameters.map { it.name }
+        currentTypeSchemeVariables = parseEffectDefinition.typeParameters.map { it.name }
 
-        val params = ast.formalArguments.map {
+        val params = parseEffectDefinition.formalArguments.map {
             FnParam(
                 it.name,
                 resolveType(typeTable, currentTypeSchemeVariables, it.typeRef),
@@ -220,36 +220,36 @@ class ExprConversionVisitor(
             )
         }
 
-        val types = params.map { it.type!! } + resolveType(typeTable, currentTypeSchemeVariables, ast.returnTypeRef)
+        val types = params.map { it.type!! } + resolveType(typeTable, currentTypeSchemeVariables, parseEffectDefinition.returnTypeRef)
 
         val type = FunctionType(
             types = types,
-            typeSchemeVariables = ast.typeParameters.map {
+            typeSchemeVariables = parseEffectDefinition.typeParameters.map {
                 resolveType(typeTable, currentTypeSchemeVariables, it)  as TypeVariable
             }
-        ).also { it.sourceSection = ast.section }
+        ).also { it.sourceSection = parseEffectDefinition.section }
 
         currentTypeSchemeVariables = prevTypeSchemeVariables
 
         return EffectDefinition(
             moduleName = pkg.moduleName,
             packageName = pkg.packageName,
-            name = ast.name,
-            public = ast.public,
-            typeVariables = ast.typeParameters.map { TypeVariable(it.name) },
+            name = parseEffectDefinition.name,
+            public = parseEffectDefinition.public,
+            typeVariables = parseEffectDefinition.typeParameters.map { TypeVariable(it.name) },
             parameters = params,
-            sourceSection = ast.section
+            sourceSection = parseEffectDefinition.section
         ).also {
             it.newType = type
             addLocalSymbol(it.name, type = type, isMutable = false, it.public)
         }
     }
 
-    override fun visitHandle(ast: ParseHandle): Expression =
+    override fun visitHandle(parseHandle: ParseHandle): Expression =
         Handle(
-            body = ast.body.accept(this) as Block,
-            cases = ast.cases.map {
-                val info = getSymbol(it.effectName, ast.section) as PackageSymbol
+            body = parseHandle.body.accept(this) as Block,
+            cases = parseHandle.cases.map {
+                val info = getSymbol(it.effectName, parseHandle.section) as PackageSymbol
                 addLocalSymbol("resume", type = null, isMutable = false, isPublic = true)
                 it.argumentNames.forEach {
                     addLocalSymbol(it, type = null, isMutable = false, isPublic = true)
@@ -269,7 +269,7 @@ class ExprConversionVisitor(
                     }
                 }
             },
-            sourceSection = ast.section
+            sourceSection = parseHandle.section
         )
 
     override fun visitNot(parseNot: ParseNot): Expression =
@@ -295,39 +295,39 @@ class ExprConversionVisitor(
     override fun visitIs(parseIs: ParseIs): Expression =
         Is(parseIs.value.accept(this), parseIs.typeName, parseIs.section)
 
-    override fun visitIfElse(ast: ParseIfElse): Expression =
+    override fun visitIfElse(parseIfElse: ParseIfElse): Expression =
         IfElse(
-            condition = ast.condition.accept(this),
-            thenBranch = ast.thenBody.accept(this),
-            elseBranch = ast.elseBody?.accept(this),
-            sourceSection = ast.section
+            condition = parseIfElse.condition.accept(this),
+            thenBranch = parseIfElse.thenBody.accept(this),
+            elseBranch = parseIfElse.elseBody?.accept(this),
+            sourceSection = parseIfElse.section
         )
 
-    override fun visitWhile(ast: ParseWhile): Expression =
+    override fun visitWhile(parseWhile: ParseWhile): Expression =
         WhileLoop(
-            condition = ast.condition.accept(this),
-            loop = ast.body.accept(this),
-            sourceSection = ast.section
+            condition = parseWhile.condition.accept(this),
+            loop = parseWhile.body.accept(this),
+            sourceSection = parseWhile.section
         )
 
     override fun visitBreak(parseBreak: ParseBreak): Expression = Break(parseBreak.section)
 
     override fun visitContinue(parseContinue: ParseContinue): Expression = Continue(parseContinue.section)
 
-    override fun visitWhen(ast: ParseWhen): Expression {
-        if (ast.cases.isEmpty() && ast.elseCase == null) {
-            return Atom.unit(ast.section)
+    override fun visitWhen(parseWhen: ParseWhen): Expression {
+        if (parseWhen.cases.isEmpty() && parseWhen.elseCase == null) {
+            return Atom.unit(parseWhen.section)
         }
-        if (ast.cases.isEmpty() && ast.elseCase != null) {
-            return ast.elseCase.body.accept(this)
+        if (parseWhen.cases.isEmpty() && parseWhen.elseCase != null) {
+            return parseWhen.elseCase.body.accept(this)
         }
-        val lastCase = ast.cases.last()
-        val last = if (ast.elseCase != null) {
-            IfElse(lastCase.condition.accept(this), lastCase.body.accept(this), ast.elseCase.body.accept(this), lastCase.section)
+        val lastCase = parseWhen.cases.last()
+        val last = if (parseWhen.elseCase != null) {
+            IfElse(lastCase.condition.accept(this), lastCase.body.accept(this), parseWhen.elseCase.body.accept(this), lastCase.section)
         } else {
             IfElse(lastCase.condition.accept(this), lastCase.body.accept(this), null, lastCase.section)
         }
-        return ast.cases.dropLast(1).foldRight(last) { case, prev ->
+        return parseWhen.cases.dropLast(1).foldRight(last) { case, prev ->
             IfElse(case.condition.accept(this), case.body.accept(this), prev, case.section)
         }
     }
@@ -376,10 +376,10 @@ class ExprConversionVisitor(
     private fun getSymbol(name: String, sourceSection: ChiSource.Section?): Target {
         val fnSymbolTable = currentFnSymbolTable
         return if (fnSymbolTable != null) {
-            fnSymbolTable.get(name)?.let { it.toLocalSymbol() }
+            fnSymbolTable.get(name)?.toLocalSymbol()
                 ?: throw ExprConversionException("Tried to get local symbol '$name'", sourceSection)
         } else {
-            tables.localSymbolTable.get(name)?.let { it.toPackageSymbol() }
+            tables.localSymbolTable.get(name)?.toPackageSymbol()
                 ?: throw ExprConversionException("Tried to get symbol '$name'", sourceSection)
         }
     }

@@ -11,11 +11,11 @@ internal object IfElseReader {
         ParseIfElse(
             condition = ctx.condition.accept(parser),
             thenBody = ctx.then_expr.accept(parser),
-            elseBody = ctx.else_expr?.let { readElse(parser, source, it) },
+            elseBody = ctx.else_expr?.let { readElse(parser, it) },
             section = getSection(source, ctx)
         )
 
-    private fun readElse(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.If_expr_elseContext): ParseAst {
+    private fun readElse(parser: ParserVisitor, ctx: ChiParser.If_expr_elseContext): ParseAst {
         return if (ctx.block() != null) {
             ctx.block().accept(parser)
         } else {

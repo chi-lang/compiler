@@ -42,10 +42,6 @@ class TypeTable {
 
     fun get(name: String): TypeInfo? = typeMap[name]
 
-    fun find(type: SimpleType) = typeMap.values.firstOrNull {
-        it.type == type
-    }
-
     fun forEach(f: (String, TypeInfo) -> Unit) {
         typeMap.forEach(f)
     }
