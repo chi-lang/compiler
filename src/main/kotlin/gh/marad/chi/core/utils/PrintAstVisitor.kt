@@ -28,10 +28,6 @@ class PrintAstVisitor : ExpressionVisitor {
 
     override fun visit(expr: Expression) = expr.accept(this)
 
-    override fun visitDefineVariantType(defineVariantType: DefineVariantType) {
-        TODO("Not yet implemented")
-    }
-
     override fun visitAtom(atom: Atom) {
         sb.appendLine()
         sb.append(indent)

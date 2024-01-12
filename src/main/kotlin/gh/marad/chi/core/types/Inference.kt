@@ -389,29 +389,6 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             expr.newType?.sourceSection = expr.sourceSection
             InferenceResult(Types.unit, constraints)
         }
-        is DefineVariantType -> {
-//            val newEnv = env.toMutableMap()
-//            val base = expr.baseVariantType
-//            val typeSchemeVariables = base.genericTypeParameters.map { it.toNewType() as TypeVariable }
-//            val baseType = SimpleType(base.moduleName, base.packageName, expr.name)
-//            newEnv[expr.name] = baseType
-//
-//            expr.constructors.forEach { constructor ->
-//                val type = SimpleType(base.moduleName, base.packageName, constructor.name)
-//                if (constructor.fields.isEmpty()) {
-//                    newEnv[constructor.name] = type
-//                } else {
-//                    val paramVariables = constructor.fields.map { it.type.toNewType() }
-//                    newEnv[constructor.name] = FunctionType(
-//                        paramVariables + type,
-//                        typeSchemeVariables.filter { paramVariables.contains(it) }
-//                    )
-//                }
-//            }
-            expr.newType = Types.unit
-            expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(Types.unit, setOf(),)
-        }
         is FieldAccess -> {
             val receiverInferred = inferTypes(ctx, env, expr.receiver)
             val solution = unify(receiverInferred.constraints)

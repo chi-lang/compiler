@@ -6,9 +6,6 @@ interface DefaultExpressionVisitor : ExpressionVisitor {
     fun visitAll(exprs: List<Expression>) = exprs.forEach(this::visit)
     override fun visit(expr: Expression) = expr.accept(this)
 
-    override fun visitDefineVariantType(defineVariantType: DefineVariantType) =
-        defineVariantType.children().forEach { visit(it) }
-
     override fun visitAtom(atom: Atom) =
         atom.children().forEach { visit(it) }
 

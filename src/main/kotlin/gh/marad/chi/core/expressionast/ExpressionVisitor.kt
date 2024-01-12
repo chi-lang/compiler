@@ -4,7 +4,6 @@ import gh.marad.chi.core.*
 
 interface ExpressionVisitor {
     fun visit(expr: Expression)
-    fun visitDefineVariantType(defineVariantType: DefineVariantType)
     fun visitAtom(atom: Atom)
     fun visitInterpolatedString(interpolatedString: InterpolatedString)
     fun visitVariableAccess(variableAccess: VariableAccess)

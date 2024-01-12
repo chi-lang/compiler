@@ -25,28 +25,6 @@ data class Program(
 
 data class Package(val moduleName: String, val packageName: String)
 
-data class DefineVariantType(
-    val constructors: List<VariantTypeConstructor>,
-    override val sourceSection: ChiSource.Section?,
-) : Expression {
-    override var newType: Type? = null
-    override fun accept(visitor: ExpressionVisitor) = visitor.visitDefineVariantType(this)
-    override fun children(): List<Expression> = listOf()
-}
-
-data class VariantTypeConstructor(
-    val public: Boolean,
-    val name: String,
-    val fields: List<VariantTypeField>,
-    val sourceSection: ChiSource.Section?
-)
-
-data class VariantTypeField(
-    val public: Boolean,
-    val name: String,
-    val sourceSection: ChiSource.Section?
-)
-
 data class Atom(val value: String,
                 override var newType: Type?,
                 override val sourceSection: ChiSource.Section?
