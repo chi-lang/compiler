@@ -27,7 +27,7 @@ object Compiler {
             try { parseSource(source) }
             catch (ex: CompilerMessage) {
                 Pair(
-                    ParseProgram(null, emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), null),
+                    ParseProgram(null, emptyList(), emptyList(), emptyList(), emptyList(), null),
                     listOf(ex.msg)
                 )
             }
