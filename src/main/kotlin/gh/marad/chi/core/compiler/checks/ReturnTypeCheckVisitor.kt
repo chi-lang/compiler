@@ -19,7 +19,7 @@ class ReturnTypeCheckVisitor(val messages: MutableList<Message>) : DefaultExpres
     }
 
     override fun visitNameDeclaration(nameDeclaration: NameDeclaration) {
-        val t = nameDeclaration.newType!!
+        val t = nameDeclaration.type!!
         val prevExpectedReturnType = expectedReturnType
         if (t is FunctionType) {
             expectedReturnType = t.types.last()
@@ -36,8 +36,8 @@ class ReturnTypeCheckVisitor(val messages: MutableList<Message>) : DefaultExpres
             messages.add(ErrorMessage("Return used outside of function body.", arg.sourceSection.toCodePoint()))
         }
 
-        if (expRet != null && arg.newType!! != expRet) {
-            messages.add(TypeMismatch(expRet, arg.newType!!, arg.sourceSection.toCodePoint()))
+        if (expRet != null && arg.type!! != expRet) {
+            messages.add(TypeMismatch(expRet, arg.type!!, arg.sourceSection.toCodePoint()))
         }
     }
 

@@ -24,14 +24,14 @@ internal fun inferTypes(env: InferenceEnv, expr: Expression): InferenceResult {
 internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expression): InferenceResult {
     return when (expr) {
         is Atom -> {
-            expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(expr.newType!!, emptySet())
+            expr.type?.sourceSection = expr.sourceSection
+            InferenceResult(expr.type!!, emptySet())
         }
         is VariableAccess -> {
             val t = env.getType(expr.target, expr.sourceSection)
             val finalType = instantiate(ctx, t)
-            expr.newType = finalType
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = finalType
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(finalType, emptySet())
         }
 
@@ -39,19 +39,19 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             val valueType = inferTypes(ctx, env, expr.value)
             val generalizedType = generalize(valueType.constraints, env, expr.name, valueType.type)
             val constraints = if (expr.expectedType != null) {
-                expr.newType = expr.expectedType
+                expr.type = expr.expectedType
                 valueType.constraints + (Constraint(generalizedType, expr.expectedType, expr.sourceSection))
             } else {
-                expr.newType = generalizedType
+                expr.type = generalizedType
                 valueType.constraints
             }
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(generalizedType, constraints)
         }
 
         is EffectDefinition -> {
-            if (expr.newType != null) {
-                val type = expr.newType!!
+            if (expr.type != null) {
+                val type = expr.type!!
                 type.sourceSection = expr.sourceSection
                 env.setType(expr.name, type)
                 InferenceResult(type, emptySet())
@@ -59,7 +59,7 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
                 val t = ctx.nextTypeVariable()
                 val generalizedType = generalize(emptySet(), env, expr.name, t)
                 generalizedType.sourceSection = expr.sourceSection
-                expr.newType = generalizedType
+                expr.type = generalizedType
                 InferenceResult(generalizedType, emptySet())
             }
         }
@@ -76,8 +76,8 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             //        ref.value(5)
             //      More info: https://www.youtube.com/watch?v=6tj9WrRqPeU
             val result = inferTypes(ctx, env, expr.value)
-            expr.newType = result.type
-            expr.newType?.sourceSection = expr.value.sourceSection
+            expr.type = result.type
+            expr.type?.sourceSection = expr.value.sourceSection
             result
         }
 
@@ -88,8 +88,8 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
                 constraints.addAll(result.constraints)
                 result
             }.lastOrNull() ?: InferenceResult(Types.unit, setOf())
-            expr.newType = last.type
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = last.type
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(last.type, constraints)
         }
 
@@ -116,8 +116,8 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             funcTypes.add(bodyType.type)
 
             val inferredType = FunctionType(funcTypes)
-            expr.newType = inferredType
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = inferredType
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(inferredType, bodyType.constraints)
         }
 
@@ -135,7 +135,7 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
                     DotTarget.LocalFunction -> {
                         expr.parameters.add(0, dotOp.receiver)
                         VariableAccess(LocalSymbol(dotOp.fieldName), dotOp.memberSection).also {
-                            it.newType = dotOp.newType
+                            it.type = dotOp.type
                         }
                     }
                     is DotTarget.PackageFunction -> {
@@ -143,7 +143,7 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
                         VariableAccess(PackageSymbol(
                             target.moduleName, target.packageName, target.name
                         ), dotOp.memberSection).also {
-                            it.newType = dotOp.newType
+                            it.type = dotOp.type
                         }
                     }
                 }
@@ -162,8 +162,8 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             constraints.addAll(funcType.constraints)
             paramTypes.forEach { constraints.addAll(it.constraints) }
 
-            expr.newType = t
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = t
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(t, constraints)
         }
 
@@ -199,8 +199,8 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             constraints.addAll(condType.constraints)
             constraints.addAll(thenBranchType.constraints)
             constraints.addAll(elseBranchType.constraints)
-            expr.newType = t
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = t
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(t, constraints)
         }
 
@@ -234,34 +234,34 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             }
             constraints.addAll(left.constraints)
             constraints.addAll(right.constraints)
-            expr.newType = t
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = t
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(t, constraints)
         }
 
         is Break -> {
-            expr.newType = Types.unit
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = Types.unit
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(Types.unit, emptySet())
         }
         is Continue -> {
-            expr.newType = Types.unit
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = Types.unit
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(Types.unit, emptySet())
         }
         is Cast -> {
             val inferred = inferTypes(ctx, env, expr.expression)
-            expr.newType = expr.targetType
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = expr.targetType
+            expr.type?.sourceSection = expr.sourceSection
             if (expr.expression is VariableAccess) {
                 env.setType(expr.expression.target.name, expr.targetType)
             }
-            InferenceResult(expr.newType!!, inferred.constraints)
+            InferenceResult(expr.type!!, inferred.constraints)
         }
         is Group -> {
             val value = inferTypes(ctx, env, expr.value)
-            expr.newType = value.type
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = value.type
+            expr.type?.sourceSection = expr.sourceSection
             value
         }
         is Handle -> {
@@ -290,8 +290,8 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
                 }
             }
 
-            expr.newType = t
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = t
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(t, constraints)
         }
         is PrefixOp -> {
@@ -301,8 +301,8 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
 
             val value = inferTypes(ctx, env, expr.expr)
             val type = value.type
-            expr.newType = type
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = type
+            expr.type?.sourceSection = expr.sourceSection
             value.copy(constraints =
                 value.constraints + Constraint(type, Types.bool, expr.expr.sourceSection)
             )
@@ -321,8 +321,8 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             constraints.addAll(variableType.constraints)
             constraints.addAll(indexType.constraints)
 
-            expr.newType = element
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = element
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(element, constraints)
         }
         is IndexedAssignment -> {
@@ -342,8 +342,8 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             constraints.addAll(indexType.constraints)
             constraints.addAll(valueType.constraints)
 
-            expr.newType = element
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = element
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(element, constraints)
         }
         is InterpolatedString -> {
@@ -354,25 +354,25 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
                 constraints.addAll(inferred.constraints)
             }
 
-            expr.newType = Types.string
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = Types.string
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(Types.string, constraints)
         }
         is Is -> {
             val valueType = inferTypes(ctx, env, expr.value)
-            expr.newType = Types.bool
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = Types.bool
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(Types.bool, valueType.constraints)
         }
         is Return -> {
             if (expr.value != null) {
                 val inferredValue = inferTypes(ctx, env, expr.value)
-                expr.newType = inferredValue.type
-                expr.newType?.sourceSection = expr.sourceSection
+                expr.type = inferredValue.type
+                expr.type?.sourceSection = expr.sourceSection
                 inferredValue
             } else {
-                expr.newType = Types.unit
-                expr.newType?.sourceSection = expr.sourceSection
+                expr.type = Types.unit
+                expr.type?.sourceSection = expr.sourceSection
                 InferenceResult(Types.unit, setOf())
             }
         }
@@ -385,8 +385,8 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             constraints.addAll(condition.constraints)
             constraints.addAll(loop.constraints)
 
-            expr.newType = Types.unit
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = Types.unit
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(Types.unit, constraints)
         }
         is FieldAccess -> {
@@ -399,13 +399,13 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             val field = typeInfo?.fields?.firstOrNull { it.name == expr.fieldName }
             if (field != null) {
                 expr.target = DotTarget.Field
-                expr.newType = field.type
+                expr.type = field.type
             } else {
                 // then try to find a function in current local scope
                 val funcType = env.getTypeOrNull(expr.fieldName)
                 if (funcType != null && funcType is FunctionType && funcType.types.size >= 2 && funcType.types.first() == receiverType) {
                     expr.target = DotTarget.LocalFunction
-                    expr.newType = funcType
+                    expr.type = funcType
                 } else {
                     // finally try to find a function in receiver types package
                     val typePkg = ctx.getTypePackageOrNull(receiverType)
@@ -413,7 +413,7 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
                     val symbolType = symbol?.type
                     if (symbolType is FunctionType && symbolType.types.size >= 2 && symbolType.types.first() == receiverType) {
                         expr.target = DotTarget.PackageFunction(symbol.moduleName, symbol.packageName, symbol.name)
-                        expr.newType = symbolType
+                        expr.type = symbolType
                     } else {
                         throw CompilerMessage(
                             MemberDoesNotExist(
@@ -424,15 +424,15 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
                 }
             }
 
-            expr.newType?.sourceSection = expr.sourceSection
-            InferenceResult(expr.newType!!, receiverInferred.constraints)
+            expr.type?.sourceSection = expr.sourceSection
+            InferenceResult(expr.type!!, receiverInferred.constraints)
         }
         is FieldAssignment -> {
             val t = ctx.nextTypeVariable()
             val receiverInferred = inferTypes(ctx, env, expr.receiver)
             val valueInferred = inferTypes(ctx, env, expr.value)
-            expr.newType = t
-            expr.newType?.sourceSection = expr.sourceSection
+            expr.type = t
+            expr.type?.sourceSection = expr.sourceSection
             InferenceResult(t, receiverInferred.constraints + valueInferred.constraints)
         }
     }

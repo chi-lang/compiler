@@ -31,13 +31,13 @@ class PrintAstVisitor : ExpressionVisitor {
     override fun visitAtom(atom: Atom) {
         sb.appendLine()
         sb.append(indent)
-        sb.append("(Atom ${atom.value} : ${atom.newType})")
+        sb.append("(Atom ${atom.value} : ${atom.type})")
     }
 
     override fun visitInterpolatedString(interpolatedString: InterpolatedString) {
         sb.appendLine()
         sb.append(indent)
-        sb.append("(InterpolatedString : ${interpolatedString.newType}")
+        sb.append("(InterpolatedString : ${interpolatedString.type}")
         withIndent {
             for (part in interpolatedString.parts) {
                 part.accept(this)
@@ -52,7 +52,7 @@ class PrintAstVisitor : ExpressionVisitor {
         sb.append("(VariableAccess ")
         sb.append(variableAccess.target)
         sb.append(" : ")
-        sb.append(variableAccess.newType)
+        sb.append(variableAccess.type)
         sb.append(")")
     }
 
@@ -62,7 +62,7 @@ class PrintAstVisitor : ExpressionVisitor {
         sb.append("(FieldAccess ")
         sb.append(fieldAccess.fieldName)
         sb.append(" : ")
-        sb.append(fieldAccess.newType)
+        sb.append(fieldAccess.type)
         withIndent {
             fieldAccess.receiver.accept(this)
         }
@@ -75,7 +75,7 @@ class PrintAstVisitor : ExpressionVisitor {
         sb.append("(FieldAssignment ")
         sb.append(fieldAssignment.fieldName)
         sb.append(" : ")
-        sb.append(fieldAssignment.newType)
+        sb.append(fieldAssignment.type)
         withIndent {
             fieldAssignment.receiver.accept(this)
             fieldAssignment.value.accept(this)
@@ -93,7 +93,7 @@ class PrintAstVisitor : ExpressionVisitor {
         sb.append("(NameDeclaration ")
         sb.append(nameDeclaration.name)
         sb.append(" : ")
-        sb.append(nameDeclaration.newType)
+        sb.append(nameDeclaration.type)
         withIndent {
             nameDeclaration.value.accept(this)
         }
@@ -107,7 +107,7 @@ class PrintAstVisitor : ExpressionVisitor {
     override fun visitFn(fn: Fn) {
         sb.appendLine()
         sb.append(indent)
-        sb.append("(Fn : ${fn.newType}")
+        sb.append("(Fn : ${fn.type}")
         withIndent {
             fn.body.accept(this)
         }
@@ -118,7 +118,7 @@ class PrintAstVisitor : ExpressionVisitor {
         sb.appendLine()
         sb.append(indent)
         sb.append("(Block : ")
-        sb.append(block.newType)
+        sb.append(block.type)
         val prev = indent
         indent = "$indent\t"
         for (expression in block.body) {
@@ -131,7 +131,7 @@ class PrintAstVisitor : ExpressionVisitor {
     override fun visitFnCall(fnCall: FnCall) {
         sb.appendLine()
         sb.append(indent)
-        sb.append("(FnCall : ${fnCall.newType}")
+        sb.append("(FnCall : ${fnCall.type}")
         val prev = indent
         indent = "$indent\t"
         fnCall.function.accept(this)
@@ -145,7 +145,7 @@ class PrintAstVisitor : ExpressionVisitor {
     override fun visitIfElse(ifElse: IfElse) {
         sb.appendLine()
         sb.append(indent)
-        sb.append("(If : ${ifElse.newType}")
+        sb.append("(If : ${ifElse.type}")
         val prev = indent
         indent = "$indent\t"
         ifElse.thenBranch.accept(this)
@@ -165,7 +165,7 @@ class PrintAstVisitor : ExpressionVisitor {
     override fun visitCast(cast: Cast) {
         sb.appendLine()
         sb.append(indent)
-        sb.append("(Cast : ${cast.newType}")
+        sb.append("(Cast : ${cast.type}")
         withIndent {
             cast.expression.accept(this)
         }
@@ -173,7 +173,7 @@ class PrintAstVisitor : ExpressionVisitor {
     }
 
     override fun visitWhileLoop(whileLoop: WhileLoop) {
-        node("WhileLoop", whileLoop.newType) {
+        node("WhileLoop", whileLoop.type) {
             whileLoop.condition.accept(this)
             whileLoop.loop.accept(this)
         }
@@ -188,17 +188,17 @@ class PrintAstVisitor : ExpressionVisitor {
     }
 
     override fun visitBreak(arg: Break) {
-        node("Break", arg.newType)
+        node("Break", arg.type)
     }
 
     override fun visitContinue(arg: Continue) {
-        node("Continue", arg.newType)
+        node("Continue", arg.type)
     }
 
     override fun visitIndexOperator(indexOperator: IndexOperator) {
         sb.appendLine()
         sb.append(indent)
-        sb.append("(IndexOperator : ${indexOperator.newType}")
+        sb.append("(IndexOperator : ${indexOperator.type}")
         val prev = indent
         indent = "$indent\t"
         indexOperator.variable.accept(this)
@@ -217,7 +217,7 @@ class PrintAstVisitor : ExpressionVisitor {
     override fun visitIndexedAssignment(indexedAssignment: IndexedAssignment) {
         sb.appendLine()
         sb.append(indent)
-        sb.append("(IndexedAssignment : ${indexedAssignment.newType}")
+        sb.append("(IndexedAssignment : ${indexedAssignment.type}")
         val prev = indent
         indent = "$indent\t"
         indexedAssignment.variable.accept(this)
@@ -234,7 +234,7 @@ class PrintAstVisitor : ExpressionVisitor {
     override fun visitEffectDefinition(effectDefinition: EffectDefinition) {
         sb.appendLine()
         sb.append(indent)
-        sb.append("(EffectDefinition ${effectDefinition.name} : ${effectDefinition.newType}")
+        sb.append("(EffectDefinition ${effectDefinition.name} : ${effectDefinition.type}")
         withIndent {
             effectDefinition.parameters.forEach {
                 sb.appendLine()

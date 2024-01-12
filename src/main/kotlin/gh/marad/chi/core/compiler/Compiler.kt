@@ -18,8 +18,10 @@ import gh.marad.chi.core.types.TypeInferenceFailed
 
 object Compiler {
 
+    @JvmStatic
     fun compile(code: String, ns: GlobalCompilationNamespace): CompilationResult = compile(ChiSource(code), ns)
 
+    @JvmStatic
     fun compile(source: ChiSource, ns: GlobalCompilationNamespace): CompilationResult {
         // parsing
 

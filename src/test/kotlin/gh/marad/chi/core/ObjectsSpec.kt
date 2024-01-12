@@ -69,7 +69,7 @@ class ObjectsSpec {
 
         // then
         result.shouldBeTypeOf<FieldAccess>().should {
-            it.newType shouldBe Types.int
+            it.type shouldBe Types.int
         }
     }
 

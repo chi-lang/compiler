@@ -38,15 +38,15 @@ class InferenceKtTest {
         val polymorphicFunctionType = FunctionType(listOf(a, a), listOf(a))
 
         result.block.should { block ->
-            block.newType.shouldBe(Types.bool)
+            block.type.shouldBe(Types.bool)
             block.body[0].shouldBeTypeOf<NameDeclaration>().should {
-                it.newType.shouldBe(polymorphicFunctionType)
+                it.type.shouldBe(polymorphicFunctionType)
             }
             block.body[1].shouldBeTypeOf<FnCall>().should {
-                it.newType.shouldBe(Types.int)
+                it.type.shouldBe(Types.int)
             }
             block.body[2].shouldBeTypeOf<FnCall>().should {
-                it.newType.shouldBe(Types.bool)
+                it.type.shouldBe(Types.bool)
             }
         }
     }
@@ -55,25 +55,25 @@ class InferenceKtTest {
     fun `test atom type inference`() {
         // int
         testInference("5").block.body[0].shouldBeTypeOf<Atom>().should {
-            it.newType.shouldBe(Types.int)
+            it.type.shouldBe(Types.int)
         }
 
         // float
         testInference("5.5").block.body[0].shouldBeTypeOf<Atom>().should {
-            it.newType.shouldBe(Types.float)
+            it.type.shouldBe(Types.float)
         }
 
         // bool
         testInference("true").block.body[0].shouldBeTypeOf<Atom>().should {
-            it.newType.shouldBe(Types.bool)
+            it.type.shouldBe(Types.bool)
         }
         testInference("false").block.body[0].shouldBeTypeOf<Atom>().should {
-            it.newType.shouldBe(Types.bool)
+            it.type.shouldBe(Types.bool)
         }
 
         // string
         testInference("\"hello\"").block.body[0].shouldBeTypeOf<Atom>().should {
-            it.newType.shouldBe(Types.string)
+            it.type.shouldBe(Types.string)
         }
     }
 
@@ -88,7 +88,7 @@ class InferenceKtTest {
         // then
         result.inferred.constraints.shouldBeEmpty()
         result.firstExpr().shouldBeTypeOf<VariableAccess>().should {
-            it.newType.shouldBe(Types.int)
+            it.type.shouldBe(Types.int)
         }
     }
 
@@ -171,15 +171,15 @@ class InferenceKtTest {
 
         // then
         result.block.body[0].shouldBeTypeOf<NameDeclaration>().should {
-            it.newType.shouldBe(Types.int)
+            it.type.shouldBe(Types.int)
         }
         result.block.body[1].shouldBeTypeOf<NameDeclaration>().should {
-            it.newType.shouldBe(Types.int)
+            it.type.shouldBe(Types.int)
         }
         result.block.body[2].shouldBeTypeOf<NameDeclaration>().should {
-            it.newType.shouldBe(Types.int)
+            it.type.shouldBe(Types.int)
         }
-        result.block.newType.shouldBe(Types.int)
+        result.block.type.shouldBe(Types.int)
     }
 
     @Test
@@ -213,7 +213,7 @@ class InferenceKtTest {
         """.trimIndent())
 
         // then
-        result.firstExpr().newType shouldBe Types.fn(Types.int, Types.int)
+        result.firstExpr().type shouldBe Types.fn(Types.int, Types.int)
     }
 
     @Test
@@ -226,7 +226,7 @@ class InferenceKtTest {
 
         // then
         printAst(result.block)
-        result.block.newType.shouldBe(Types.bool)
+        result.block.type.shouldBe(Types.bool)
         result.inferred.constraints shouldHaveSize 1
         result.inferred.constraints.first().should {
             it.expected shouldBe FunctionType(listOf(Types.int, Types.bool))
@@ -252,7 +252,7 @@ class InferenceKtTest {
 
         // then
         result.firstExpr().shouldBeTypeOf<IfElse>().should {
-            it.newType.shouldBe(Types.int)
+            it.type.shouldBe(Types.int)
         }
     }
 
@@ -297,7 +297,7 @@ class InferenceKtTest {
 
         // then
         result.firstExpr().shouldBeTypeOf<IfElse>().should {
-            it.newType.shouldBe(Types.unit)
+            it.type.shouldBe(Types.unit)
         }
     }
 
@@ -415,7 +415,7 @@ class InferenceKtTest {
         """.trimIndent())
 
         // then
-        result.block.body[1].newType shouldBe Types.bool
+        result.block.body[1].type shouldBe Types.bool
     }
 
     @Test
@@ -427,7 +427,7 @@ class InferenceKtTest {
         val result = testInference("!x".trimIndent(), env)
 
         // then
-        result.firstExpr().newType shouldBe Types.bool
+        result.firstExpr().type shouldBe Types.bool
     }
 
     @Test
@@ -457,9 +457,9 @@ class InferenceKtTest {
 
         // then
         result.firstExpr().shouldBeTypeOf<IndexOperator>().should {
-            it.newType shouldBe Types.string
-            it.index.newType shouldBe Types.int
-            it.variable.newType shouldBe Types.array(Types.string)
+            it.type shouldBe Types.string
+            it.index.type shouldBe Types.int
+            it.variable.type shouldBe Types.array(Types.string)
         }
     }
 
@@ -473,10 +473,10 @@ class InferenceKtTest {
 
         // then
         result.firstExpr().shouldBeTypeOf<IndexedAssignment>().should {
-            it.newType shouldBe Types.string
-            it.index.newType shouldBe Types.int
-            it.variable.newType shouldBe Types.array(Types.string)
-            it.value.newType shouldBe Types.string
+            it.type shouldBe Types.string
+            it.index.type shouldBe Types.int
+            it.variable.type shouldBe Types.array(Types.string)
+            it.value.type shouldBe Types.string
         }
     }
 
@@ -490,11 +490,11 @@ class InferenceKtTest {
 
         // then
         result.firstExpr().shouldBeTypeOf<InterpolatedString>().should {
-            it.newType shouldBe Types.string
+            it.type shouldBe Types.string
             it.parts shouldHaveSize 2
-            it.parts[0].newType shouldBe Types.string
+            it.parts[0].type shouldBe Types.string
             it.parts[1].shouldBeTypeOf<Cast>().should { cast ->
-                cast.expression.newType shouldBe Types.int
+                cast.expression.type shouldBe Types.int
             }
         }
     }
@@ -509,8 +509,8 @@ class InferenceKtTest {
 
         // then
         result.firstExpr().shouldBeTypeOf<Is>().should {
-            it.newType shouldBe Types.bool
-            it.value.newType shouldBe Types.int
+            it.type shouldBe Types.bool
+            it.value.type shouldBe Types.int
         }
     }
 
@@ -521,8 +521,8 @@ class InferenceKtTest {
 
         // then
         result.firstExpr().shouldBeTypeOf<Return>().should {
-            it.newType shouldBe Types.int
-            it.value?.newType shouldBe Types.int
+            it.type shouldBe Types.int
+            it.value?.type shouldBe Types.int
         }
         result.inferred.constraints shouldBe emptySet()
     }
@@ -534,9 +534,9 @@ class InferenceKtTest {
 
         // then
         result.firstExpr().shouldBeTypeOf<WhileLoop>().should {
-            it.newType shouldBe Types.unit
-            it.condition.newType shouldBe Types.bool
-            it.loop.newType shouldBe Types.int
+            it.type shouldBe Types.unit
+            it.condition.type shouldBe Types.bool
+            it.loop.type shouldBe Types.int
         }
     }
 

@@ -17,7 +17,7 @@ class FnCallCheckingVisitor : DefaultExpressionVisitor {
     }
 
     override fun visitFnCall(fnCall: FnCall) {
-        val t = fnCall.function.newType!!
+        val t = fnCall.function.type!!
         if (t is FunctionType) {
             val expectedCount = t.types.size - 1
             val actualCount = fnCall.parameters.size

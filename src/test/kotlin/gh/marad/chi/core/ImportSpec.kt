@@ -160,6 +160,6 @@ class ImportSpec {
         val result = ast("baz", ns)
 
         // then
-        result.newType shouldBe Types.int
+        result.type shouldBe Types.int
     }
 }

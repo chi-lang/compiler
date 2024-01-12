@@ -10,7 +10,7 @@ import gh.marad.chi.core.types.Types
 
 sealed interface Expression {
     val sourceSection: ChiSource.Section?
-    var newType: Type?
+    var type: Type?
 
     fun accept(visitor: ExpressionVisitor)
     fun children(): List<Expression>
@@ -26,7 +26,7 @@ data class Program(
 data class Package(val moduleName: String, val packageName: String)
 
 data class Atom(val value: String,
-                override var newType: Type?,
+                override var type: Type?,
                 override val sourceSection: ChiSource.Section?
 ) :
     Expression {
@@ -43,12 +43,12 @@ data class Atom(val value: String,
     override fun accept(visitor: ExpressionVisitor) = visitor.visitAtom(this)
     override fun children(): List<Expression> = listOf()
 
-    override fun toString(): String = "Atom($value: $newType)"
+    override fun toString(): String = "Atom($value: $type)"
 }
 
 data class InterpolatedString(val parts: List<Expression>, override val sourceSection: ChiSource.Section?) :
     Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitInterpolatedString(this)
     override fun children(): List<Expression> = parts
 }
@@ -75,7 +75,7 @@ data class VariableAccess(
     val target: Target,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitVariableAccess(this)
     override fun children(): List<Expression> = listOf()
 }
@@ -93,7 +93,7 @@ data class FieldAccess(
     val memberSection: ChiSource.Section?,
 ) : Expression {
     var target: DotTarget? = null
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitFieldAccess(this)
     override fun children(): List<Expression> = listOf(receiver)
 }
@@ -105,7 +105,7 @@ data class FieldAssignment(
     val memberSection: ChiSource.Section?,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitFieldAssignment(this)
     override fun children(): List<Expression> = listOf(receiver, value)
 }
@@ -115,7 +115,7 @@ data class Assignment(
     val value: Expression,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitAssignment(this)
     override fun children(): List<Expression> = listOf(value)
 }
@@ -128,13 +128,13 @@ data class NameDeclaration(
     val expectedType: Type?,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitNameDeclaration(this)
     override fun children(): List<Expression> = listOf(value)
 }
 
 data class Group(val value: Expression, override val sourceSection: ChiSource.Section?) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitGroup(this)
     override fun children(): List<Expression> = listOf(value)
 }
@@ -147,13 +147,13 @@ data class Fn(
     val body: Block,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitFn(this)
     override fun children(): List<Expression> = listOf(body)
 }
 
 data class Block(val body: List<Expression>, override val sourceSection: ChiSource.Section?) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitBlock(this)
     override fun children(): List<Expression> = body
 }
@@ -164,7 +164,7 @@ data class FnCall(
     val parameters: MutableList<Expression>,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitFnCall(this)
     override fun children(): List<Expression> = listOf(function) + parameters
 }
@@ -175,7 +175,7 @@ data class IfElse(
     val elseBranch: Expression?,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitIfElse(this)
     override fun children(): List<Expression> = if (elseBranch != null) {
         listOf(condition, thenBranch, elseBranch)
@@ -191,39 +191,39 @@ data class InfixOp(
     override val sourceSection: ChiSource.Section?
 ) :
     Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitInfixOp(this)
     override fun children(): List<Expression> = listOf(left, right)
 }
 
 data class PrefixOp(val op: String, val expr: Expression, override val sourceSection: ChiSource.Section?) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitPrefixOp(this)
     override fun children(): List<Expression> = listOf(expr)
 }
 
 data class Cast(val expression: Expression, val targetType: Type, override val sourceSection: ChiSource.Section?) :
     Expression {
-    override var newType: Type? = targetType
+    override var type: Type? = targetType
     override fun accept(visitor: ExpressionVisitor) = visitor.visitCast(this)
     override fun children(): List<Expression> = listOf(expression)
 }
 
 data class WhileLoop(val condition: Expression, val loop: Expression, override val sourceSection: ChiSource.Section?) :
     Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitWhileLoop(this)
     override fun children(): List<Expression> = listOf(condition, loop)
 }
 
 data class Break(override val sourceSection: ChiSource.Section?) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitBreak(this)
     override fun children(): List<Expression> = listOf()
 }
 
 data class Continue(override val sourceSection: ChiSource.Section?) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitContinue(this)
     override fun children(): List<Expression> = listOf()
 }
@@ -233,7 +233,7 @@ data class IndexOperator(
     val index: Expression,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitIndexOperator(this)
     override fun children(): List<Expression> = listOf(variable, index)
 }
@@ -244,14 +244,14 @@ data class IndexedAssignment(
     val value: Expression,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitIndexedAssignment(this)
     override fun children(): List<Expression> = listOf(variable, index, value)
 }
 
 data class Is(val value: Expression, val typeOrVariant: String, override val sourceSection: ChiSource.Section?) :
     Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitIs(this)
     override fun children(): List<Expression> = listOf(value)
 }
@@ -266,7 +266,7 @@ data class EffectDefinition(
     val parameters: List<FnParam>,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitEffectDefinition(this)
     override fun children(): List<Expression> = listOf()
 }
@@ -276,7 +276,7 @@ data class Handle(
     val cases: List<HandleCase>,
     override val sourceSection: ChiSource.Section?,
 ) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitHandle(this)
     override fun children(): List<Expression> = listOf(body) + cases.map { it.body }
 }
@@ -292,7 +292,7 @@ data class HandleCase(
 
 data class Return(val value: Expression?,
                   override val sourceSection: ChiSource.Section?) : Expression {
-    override var newType: Type? = null
+    override var type: Type? = null
     override fun accept(visitor: ExpressionVisitor) = visitor.visitReturn(this)
     override fun children(): List<Expression> = if (value != null) {
         listOf(value)

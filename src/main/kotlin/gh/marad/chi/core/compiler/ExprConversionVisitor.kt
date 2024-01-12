@@ -240,7 +240,7 @@ class ExprConversionVisitor(
             parameters = params,
             sourceSection = parseEffectDefinition.section
         ).also {
-            it.newType = type
+            it.type = type
             addLocalSymbol(it.name, type = type, isMutable = false, it.public)
         }
     }

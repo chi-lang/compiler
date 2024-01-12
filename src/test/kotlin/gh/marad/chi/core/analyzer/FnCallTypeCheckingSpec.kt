@@ -81,7 +81,7 @@ class FnCallTypeCheckingSpec {
         val result = ast("map(arr, operation)", ns)
 
         // then
-        result.newType shouldBe Types.array(Types.string)
+        result.type shouldBe Types.array(Types.string)
     }
 
     // This test is probably not necessary - along with providing types explicitly at all

@@ -43,7 +43,7 @@ class VisibilityCheckingVisitor(
         when(target) {
             DotTarget.Field -> {
                 verifyFieldAccessible(
-                    fieldAccess.receiver.newType!!,
+                    fieldAccess.receiver.type!!,
                     fieldAccess.fieldName,
                     fieldAccess.memberSection
                 )
@@ -61,7 +61,7 @@ class VisibilityCheckingVisitor(
 
     override fun visitFieldAssignment(fieldAssignment: FieldAssignment) {
         verifyFieldAccessible(
-            fieldAssignment.receiver.newType!!,
+            fieldAssignment.receiver.type!!,
             fieldAssignment.fieldName,
             fieldAssignment.memberSection)
         super.visitFieldAssignment(fieldAssignment)

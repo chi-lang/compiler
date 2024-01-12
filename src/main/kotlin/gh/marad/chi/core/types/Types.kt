@@ -3,16 +3,16 @@ package gh.marad.chi.core.types
 import gh.marad.chi.core.parser.ChiSource
 
 object Types {
-    val any = SimpleType("std", "lang", "any")
-    val int = SimpleType("std", "lang", "int")
-    val float = SimpleType("std", "lang", "float")
-    val bool = SimpleType("std", "lang", "bool")
-    val unit = SimpleType("std", "lang", "unit")
-    val string = SimpleType("std", "lang", "string")
+    @JvmStatic val any = SimpleType("std", "lang", "any")
+    @JvmStatic val int = SimpleType("std", "lang", "int")
+    @JvmStatic val float = SimpleType("std", "lang", "float")
+    @JvmStatic val bool = SimpleType("std", "lang", "bool")
+    @JvmStatic val unit = SimpleType("std", "lang", "unit")
+    @JvmStatic val string = SimpleType("std", "lang", "string")
 
-    fun fn(vararg types: Type) = FunctionType(types.toList())
+    @JvmStatic fun fn(vararg types: Type) = FunctionType(types.toList())
 
-    fun array(elementType: Type) = ProductType(
+    @JvmStatic fun array(elementType: Type) = ProductType(
         "std", "lang", "array",
         types = listOf(),
         typeParams = listOf(elementType),
