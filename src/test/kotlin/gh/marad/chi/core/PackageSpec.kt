@@ -1,4 +1,4 @@
-package gh.marad.chi.core.modules
+package gh.marad.chi.core
 
 import gh.marad.chi.compile
 import gh.marad.chi.core.analyzer.InvalidModuleName

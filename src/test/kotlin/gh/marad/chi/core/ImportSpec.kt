@@ -1,12 +1,9 @@
-package gh.marad.chi.core.modules
+package gh.marad.chi.core
 
 import gh.marad.chi.addSymbol
 import gh.marad.chi.ast
 import gh.marad.chi.asts
 import gh.marad.chi.compile
-import gh.marad.chi.core.FnCall
-import gh.marad.chi.core.PackageSymbol
-import gh.marad.chi.core.VariableAccess
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.types.Types
 import io.kotest.matchers.should
