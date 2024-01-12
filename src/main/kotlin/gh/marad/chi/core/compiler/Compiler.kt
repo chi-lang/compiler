@@ -148,7 +148,8 @@ object Compiler {
         }
 
         // analyze parse ast
-        CheckNamesVisitor(parsedProgram, tables).check(resultMessages)
+        CheckNamesVisitor(ParseBlock(parsedProgram.functions + parsedProgram.topLevelCode, parsedProgram.section), tables)
+            .check(resultMessages)
 
         if (resultMessages.isNotEmpty()) {
             return CompilationResult(

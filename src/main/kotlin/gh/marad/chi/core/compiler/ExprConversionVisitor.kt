@@ -43,17 +43,6 @@ class ExprConversionVisitor(
 
     override fun visit(node: ParseAst): Expression = node.accept(this)
 
-    override fun visitProgram(program: ParseProgram): Expression =
-        Atom.unit(program.section)
-
-    override fun visitTraitDefinition(parseTraitDefinition: ParseTraitDefinition): Expression {
-        TODO("Not yet implemented")
-    }
-
-    override fun visitTraitFunctionDefinition(parseTraitFunctionDefinition: ParseTraitFunctionDefinition): Expression {
-        TODO("Not yet implemented")
-    }
-
     override fun visitLong(longValue: LongValue): Expression = Atom.int(longValue.value, longValue.section)
 
     override fun visitFloat(floatValue: FloatValue): Expression = Atom.float(floatValue.value, floatValue.section)

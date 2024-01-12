@@ -7,15 +7,6 @@ open class DefaultParseAstVisitor : ParseAstVisitor<Unit> {
         node.accept(this)
     }
 
-    override fun visitProgram(program: ParseProgram) =
-        program.children().forEach { it.accept(this) }
-
-    override fun visitTraitDefinition(parseTraitDefinition: ParseTraitDefinition) =
-        parseTraitDefinition.children().forEach { it.accept(this) }
-
-    override fun visitTraitFunctionDefinition(parseTraitFunctionDefinition: ParseTraitFunctionDefinition) =
-        parseTraitFunctionDefinition.children().forEach { it.accept(this) }
-
     override fun visitLong(longValue: LongValue) =
         longValue.children().forEach { it.accept(this) }
 

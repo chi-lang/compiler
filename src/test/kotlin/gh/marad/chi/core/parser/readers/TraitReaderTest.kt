@@ -7,10 +7,8 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
-import org.junit.jupiter.api.Test
 
 class TraitReaderTest {
-    @Test
     fun `reading basic trait definition`() {
         val ast = testParse("""
             trait Greeter {
@@ -35,7 +33,6 @@ class TraitReaderTest {
         }
     }
 
-    @Test
     fun `read generic type parameters`() {
         val ast = testParse("""
             trait Iterable[T] {

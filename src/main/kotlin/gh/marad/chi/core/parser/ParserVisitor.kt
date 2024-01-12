@@ -97,7 +97,4 @@ internal class ParserVisitor(private val source: ChiSource) : ChiParserBaseVisit
 
     override fun visitReturnExpr(ctx: ChiParser.ReturnExprContext): ParseAst =
         ReturnReader.read(this, source, ctx)
-
-    override fun visitTraitDefinition(ctx: ChiParser.TraitDefinitionContext): ParseAst =
-        TraitReader.read(this, source, ctx)
 }

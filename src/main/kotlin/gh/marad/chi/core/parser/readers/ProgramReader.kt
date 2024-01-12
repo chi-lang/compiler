@@ -4,7 +4,6 @@ import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
-import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 internal object ProgramReader {
     fun read(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.ProgramContext): ParseProgram {
@@ -18,7 +17,7 @@ internal object ProgramReader {
             },
             functions = split[true]?.map { it.accept(parser) } ?: emptyList(),
             topLevelCode = split[false]?.map { it.accept(parser) } ?: emptyList(),
-            section = getSection(source, ctx)
+            getSection(source, ctx)
         )
     }
 
@@ -33,8 +32,5 @@ data class ParseProgram(
     val typeDefinitions: List<ParseVariantTypeDefinition>,
     val functions: List<ParseAst>,
     val topLevelCode: List<ParseAst>,
-    override val section: ChiSource.Section?
-) : ParseAst {
-    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitProgram(this)
-    override fun children(): List<ParseAst> = traitDefinitions + functions + topLevelCode
-}
+    val section: ChiSource.Section?
+)
