@@ -19,15 +19,6 @@ internal class ParserVisitor(private val source: ChiSource) : ChiParserBaseVisit
     override fun visitString(ctx: ChiParser.StringContext): ParseAst =
         AtomReader.readString(this, source, ctx)
 
-    override fun visitPackage_definition(ctx: ChiParser.Package_definitionContext): ParseAst =
-        PackageReader.read(source, ctx)
-
-    override fun visitImport_definition(ctx: ChiParser.Import_definitionContext): ParseAst =
-        ImportReader.read(source, ctx)
-
-    override fun visitVariantTypeDefinition(ctx: ChiParser.VariantTypeDefinitionContext): ParseAst =
-        VariantTypeDefinitionReader.read(this, source, ctx)
-
     override fun visitNameDeclarationExpr(ctx: ChiParser.NameDeclarationExprContext): ParseAst =
         NameDeclarationReader.read(this, source, ctx.name_declaration())
 

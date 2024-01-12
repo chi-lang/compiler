@@ -1,20 +1,19 @@
 package gh.marad.chi.core.parser.readers
 
-import gh.marad.chi.core.parser.testParse
+import gh.marad.chi.core.parser.ChiSource
+import gh.marad.chi.core.parser.parser
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.jupiter.api.Test
 
 
 class ImportReaderTest {
     @Test
     fun `parse import definition`() {
-        val code = "import some.module/some.pkg as pkgAlias { foo as fooAlias, bar as barAlias }"
-        val ast = testParse(code)
-        ast shouldHaveSize 1
-        ast[0].shouldBeTypeOf<Import>() should {
+        val source = ChiSource("import some.module/some.pkg as pkgAlias { foo as fooAlias, bar as barAlias }")
+        val import = ImportReader.read(source, parser(source).import_definition())
+        import should {
             it.moduleName shouldBe "some.module"
             it.packageName shouldBe "some.pkg"
             it.packageAlias shouldBe "pkgAlias"
@@ -29,7 +28,7 @@ class ImportReaderTest {
                 barEntry.alias shouldBe "barAlias"
                 barEntry.section?.getCode() shouldBe "bar as barAlias"
             }
-            it.section?.getCode() shouldBe code
+            it.section?.getCode() shouldBe source.code
         }
     }
 

@@ -10,15 +10,6 @@ open class DefaultParseAstVisitor : ParseAstVisitor<Unit> {
     override fun visitProgram(program: ParseProgram) =
         program.children().forEach { it.accept(this) }
 
-    override fun visitPackageDefinition(parsePackageDefinition: ParsePackageDefinition) =
-        parsePackageDefinition.children().forEach { it.accept(this) }
-
-    override fun visitImportDefinition(anImport: Import) =
-        anImport.children().forEach { it.accept(this) }
-
-    override fun visitVariantTypeDefinition(parseVariantTypeDefinition: ParseVariantTypeDefinition) =
-        parseVariantTypeDefinition.children().forEach { it.accept(this) }
-
     override fun visitTraitDefinition(parseTraitDefinition: ParseTraitDefinition) =
         parseTraitDefinition.children().forEach { it.accept(this) }
 

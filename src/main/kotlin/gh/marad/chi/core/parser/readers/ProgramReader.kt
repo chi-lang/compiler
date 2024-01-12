@@ -28,7 +28,7 @@ internal object ProgramReader {
 }
 
 data class ParseProgram(
-    val packageDefinition: ParsePackageDefinition?,
+    val packageDefinition: PackageDefinition?,
     val imports: List<Import>,
     val typeDefinitions: List<ParseVariantTypeDefinition>,
     val functions: List<ParseAst>,
@@ -36,5 +36,5 @@ data class ParseProgram(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitProgram(this)
-    override fun children(): List<ParseAst> = imports + typeDefinitions + traitDefinitions + functions + topLevelCode
+    override fun children(): List<ParseAst> = traitDefinitions + functions + topLevelCode
 }

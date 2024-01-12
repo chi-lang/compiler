@@ -9,7 +9,19 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.DefaultErrorStrategy
-import java.lang.AssertionError
+
+fun parser(source: ChiSource): ChiParser {
+    val charStream = CharStreams.fromString(source.code)
+
+    val lexer = ChiLexer(charStream)
+    val tokenStream = CommonTokenStream(lexer)
+    val parser = ChiParser(tokenStream)
+    parser.errorHandler = DefaultErrorStrategy()
+    parser.removeErrorListeners()
+    var errorListener = MessageCollectingErrorListener()
+    parser.addErrorListener(errorListener)
+    return parser
+}
 
 fun testParse(code: String): List<ParseAst> {
     val source = ChiSource(code)

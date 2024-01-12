@@ -5,7 +5,6 @@ import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
 import gh.marad.chi.core.parser.readers.CommonReader.readTypeParameters
-import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 internal object VariantTypeDefinitionReader {
     fun read(
@@ -17,7 +16,7 @@ internal object VariantTypeDefinitionReader {
             readFullDefinition(parser, source, ctx.fullVariantTypeDefinition())
         else if (ctx.simplifiedVariantTypeDefinition() != null)
             readSimplifiedDefinition(parser, source, ctx.simplifiedVariantTypeDefinition())
-        else TODO("Unsupported type definition syntax!")
+        else throw RuntimeException("Unsupported type definition syntax!")
 
     private fun readSimplifiedDefinition(
         parser: ParserVisitor,
@@ -73,7 +72,6 @@ internal object VariantTypeDefinitionReader {
     }
 
     private fun readField(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.VariantFieldContext): FormalField {
-//        TODO()
         return FormalField(
             public = ctx.PUB() != null,
             name = ctx.name.text,
@@ -87,17 +85,14 @@ data class ParseVariantTypeDefinition(
     val typeName: String,
     val typeParameters: List<TypeParameterRef>,
     val variantConstructors: List<Constructor>,
-    override val section: ChiSource.Section?
-) : ParseAst {
+    val section: ChiSource.Section?
+) {
     data class Constructor(
         val public: Boolean,
         val name: String,
         val formalFields: List<FormalField>,
         val section: ChiSource.Section?
     )
-
-    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitVariantTypeDefinition(this)
-    override fun children(): List<ParseAst> = emptyList()
 }
 
 data class FormalField(val public: Boolean, val name: String, val typeRef: TypeRef, val section: ChiSource.Section?)

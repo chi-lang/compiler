@@ -5,9 +5,6 @@ import gh.marad.chi.core.parser.readers.*
 interface ParseAstVisitor<T> {
     fun visit(node: ParseAst): T
     fun visitProgram(program: ParseProgram): T
-    fun visitPackageDefinition(parsePackageDefinition: ParsePackageDefinition): T
-    fun visitImportDefinition(anImport: Import): T
-    fun visitVariantTypeDefinition(parseVariantTypeDefinition: ParseVariantTypeDefinition): T
     fun visitTraitDefinition(parseTraitDefinition: ParseTraitDefinition): T
     fun visitTraitFunctionDefinition(parseTraitFunctionDefinition: ParseTraitFunctionDefinition): T
     fun visitLong(longValue: LongValue): T
