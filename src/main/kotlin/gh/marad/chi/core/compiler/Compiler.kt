@@ -69,6 +69,9 @@ object Compiler {
         // ============================
 
         val tables = CompileTables(packageDefinition, ns)
+        tables.addImports(ns.prelude.map {
+            Import(it.moduleName, it.packageName, null, listOf(Import.Entry(it.name, it.alias, null)), null)
+        })
         tables.addImports(parsedProgram.imports)
 
         val definedTypes = mutableListOf<TypeInfo>()

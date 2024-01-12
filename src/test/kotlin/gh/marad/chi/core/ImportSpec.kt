@@ -5,6 +5,7 @@ import gh.marad.chi.ast
 import gh.marad.chi.asts
 import gh.marad.chi.compile
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.PreludeImport
 import gh.marad.chi.core.types.Types
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -144,5 +145,21 @@ class ImportSpec {
                     target.name shouldBe "millis"
                 }
         }
+    }
+
+    @Test
+    fun `should import prelude`() {
+        // given
+        val prelude = listOf(
+            PreludeImport("foo", "bar", "baz", null)
+        )
+        val ns = GlobalCompilationNamespace(prelude)
+        ns.addSymbol("foo", "bar", "baz", public = true, type = Types.int)
+
+        // when
+        val result = ast("baz", ns)
+
+        // then
+        result.newType shouldBe Types.int
     }
 }
