@@ -12,7 +12,6 @@ import gh.marad.chi.core.parser.readers.ParseFieldAccess
 import gh.marad.chi.core.parser.readers.ParseIndexOperator
 import gh.marad.chi.core.parser.readers.ParseVariableRead
 import gh.marad.chi.core.types.Types
-import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -137,9 +136,7 @@ class VariablesConversionsKtTest {
         )
 
         // then
-        result.shouldBeTypeOf<FieldAccess>() should {
-            it.typeIsModuleLocal.shouldBeFalse()
-        }
+        result.shouldBeTypeOf<FieldAccess>()
     }
 
     private val sampleFieldAccess = ParseFieldAccess(

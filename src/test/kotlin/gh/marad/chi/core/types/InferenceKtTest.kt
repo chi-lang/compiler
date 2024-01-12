@@ -2,7 +2,7 @@ package gh.marad.chi.core.types
 
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.core.*
-import gh.marad.chi.core.analyzer.CompilerMessageException
+import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.compiler.CompileTables
@@ -268,7 +268,7 @@ class InferenceKtTest {
         )
 
         // when
-        val ex = shouldThrow<CompilerMessageException> {
+        val ex = shouldThrow<CompilerMessage> {
             testInference("""
                     if cond { thenBranch } else { elseBranch }
                 """.trimIndent(), env, ignoreErrors = true)
@@ -328,7 +328,7 @@ class InferenceKtTest {
         )
 
         // expect
-        assertThrows<CompilerMessageException> {
+        assertThrows<CompilerMessage> {
             println(testInference("b $op i", env, ignoreErrors = true))
         }.msg.shouldBeTypeOf<TypeMismatch>().should {
             it.expected shouldBe Types.bool
@@ -336,7 +336,7 @@ class InferenceKtTest {
         }
 
         // and
-        assertThrows<CompilerMessageException> {
+        assertThrows<CompilerMessage> {
             testInference("i $op b", env, ignoreErrors = true)
         }.msg.shouldBeTypeOf<TypeMismatch>().should {
             it.expected shouldBe Types.bool
@@ -386,7 +386,7 @@ class InferenceKtTest {
         )
 
         // when
-        val result = shouldThrow<CompilerMessageException> {
+        val result = shouldThrow<CompilerMessage> {
             testInference("f $op f", env, ignoreErrors = true)
         }
 
@@ -436,7 +436,7 @@ class InferenceKtTest {
         val env = mapOf("x" to Types.int)
 
         // when
-        val ex = shouldThrow<CompilerMessageException> {
+        val ex = shouldThrow<CompilerMessage> {
             testInference("!x".trimIndent(), env, ignoreErrors = true)
         }
 
@@ -543,7 +543,7 @@ class InferenceKtTest {
     @Test
     fun `while loop condition should be bool`() {
         // expect
-        shouldThrow<CompilerMessageException> {
+        shouldThrow<CompilerMessage> {
             testInference("while 5 { 5 }", ignoreErrors = true)
         }.msg.shouldBeTypeOf<TypeMismatch>().should {
             it.expected shouldBe Types.bool

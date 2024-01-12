@@ -1,5 +1,6 @@
 package gh.marad.chi.core.parser.readers
 
+import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.antlr.ChiLexer
 import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
@@ -19,8 +20,9 @@ internal object AtomReader {
             ChiLexer.FALSE -> BoolValue(false, section)
             ChiLexer.ID -> VariableReader.readVariable(source, node)
             ChiLexer.PLACEHOLDER -> ParseWeavePlaceholder(section)
-            else ->
-                TODO("Unsupported terminal type ${node.symbol.type}: '${node.symbol.text}'")
+            else -> throw CompilerMessage.from(
+                "Unsupported terminal type ${node.symbol.type}: '${node.symbol.text}'",
+                getSection(source, node.symbol))
         }
     }
 
@@ -75,7 +77,7 @@ internal object AtomReader {
                 part.ESCAPED_CR() != null -> sb.append("\r")
                 part.ESCAPED_SLASH() != null -> sb.append("\\")
                 part.ESCAPED_TAB() != null -> sb.append("\t")
-                else -> TODO("Unsupported string part!")
+                else -> CompilerMessage.from("Unsupported string part: $part!", getSection(source, ctx))
             }
         }
 

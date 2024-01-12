@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test
 
 class ImportSpec {
 
-    // TODO this should be moved to FnCall generation tests
     @Test
     fun `using simplified name for names defined in current module`() {
         // when
@@ -40,7 +39,6 @@ class ImportSpec {
         }
     }
 
-    // TODO this should be moved to FnCall generation tests
     @Test
     fun `importing function from package`() {
         // given
@@ -68,7 +66,6 @@ class ImportSpec {
         }
     }
 
-    // TODO this should be moved to FnCall generation tests
     @Test
     fun `import function with alias`() {
         // given
@@ -96,7 +93,6 @@ class ImportSpec {
         }
     }
 
-    // TODO this should be moved to FnCall generation tests
     @Test
     fun `whole package alias`() {
         // given

@@ -1,5 +1,6 @@
 package gh.marad.chi.core.parser.readers
 
+import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
@@ -16,13 +17,15 @@ internal object TypeReader {
         } else if (ctx.typeConstructorRef() != null) {
             readGenericType(parser, source, ctx.typeConstructorRef())
         } else {
-            TODO("Unexpected type at ${getSection(source, ctx)}")
+            throw CompilerMessage.from("Unknown type", getSection(source, ctx))
         }
     }
 
     private fun readTypeName(source: ChiSource, ctx: ChiParser.TypeNameRefContext): TypeNameRef {
         if (ctx.packageName != null) {
-            TODO("Resolving type from package is not supported.")
+            throw CompilerMessage.from(
+                "Resolving type from package is not supported.",
+                getSection(source, ctx))
         }
         return TypeNameRef(
             typeName = ctx.name.text,

@@ -111,7 +111,6 @@ sealed interface DotTarget {
 data class FieldAccess(
     val receiver: Expression,
     val fieldName: String,
-    val typeIsModuleLocal: Boolean,
     override val sourceSection: ChiSource.Section?,
     val memberSection: ChiSource.Section?,
 ) : Expression {

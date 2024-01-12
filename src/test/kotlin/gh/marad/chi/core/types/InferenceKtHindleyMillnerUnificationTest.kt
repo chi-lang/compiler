@@ -1,6 +1,6 @@
 package gh.marad.chi.core.types
 
-import gh.marad.chi.core.analyzer.CompilerMessageException
+import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.parser.ChiSource
 import io.kotest.assertions.throwables.shouldThrow
@@ -66,7 +66,7 @@ class InferenceKtHindleyMillnerUnificationTest {
         val section = randomSourceSection()
 
         // expect
-        shouldThrow<CompilerMessageException> {
+        shouldThrow<CompilerMessage> {
             unify(setOf(Constraint(a, b, section)))
         }.msg.shouldBeTypeOf<TypeMismatch>().should {
             it.expected shouldBe Types.bool
@@ -82,7 +82,7 @@ class InferenceKtHindleyMillnerUnificationTest {
         val section = randomSourceSection()
 
         // expect
-        shouldThrow<CompilerMessageException> {
+        shouldThrow<CompilerMessage> {
             unify(setOf(Constraint(a, b, section)))
         }.msg.shouldBeTypeOf<TypeMismatch>().should {
             it.expected shouldBe b
@@ -115,7 +115,7 @@ class InferenceKtHindleyMillnerUnificationTest {
         val fnParamSections = listOf(floatParamSection, intParamSection, boolParamSection)
 
         // when
-        val ex = shouldThrow<CompilerMessageException> {
+        val ex = shouldThrow<CompilerMessage> {
             unify(setOf(Constraint(a, b, randomSourceSection(), fnParamSections)))
         }
 
@@ -152,7 +152,7 @@ class InferenceKtHindleyMillnerUnificationTest {
         val section = randomSourceSection()
 
         // when
-        val ex = shouldThrow<CompilerMessageException> {
+        val ex = shouldThrow<CompilerMessage> {
             unify(setOf(Constraint(a, b, section, paramSections)))
         }
 

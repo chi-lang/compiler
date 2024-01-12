@@ -22,12 +22,20 @@ object Compiler {
 
     fun compile(source: ChiSource, ns: GlobalCompilationNamespace): CompilationResult {
         // parsing
-        val (parsedProgram, messages) = parseSource(source)
+
+        val (parsedProgram, messages) =
+            try { parseSource(source) }
+            catch (ex: CompilerMessage) {
+                Pair(
+                    ParseProgram(null, emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), null),
+                    listOf(ex.msg)
+                )
+            }
         val packageDefinition = parsedProgram.packageDefinition?.let {
             Package(it.moduleName, it.packageName)
         } ?: Package("user", "default")
 
-        val resultMessages = messages.toMutableList()
+        val resultMessages = mutableListOf<Message>()
         resultMessages.addAll(messages)
 
 
@@ -165,7 +173,7 @@ object Compiler {
             val functions = parsedProgram.functions.map { converter.visit(it) }
             val code = parsedProgram.topLevelCode.map { converter.visit(it) }
             functions + code
-        } catch (ex: CompilerMessageException) {
+        } catch (ex: CompilerMessage) {
             resultMessages.add(ex.msg)
             emptyList()
         }
@@ -184,7 +192,7 @@ object Compiler {
             inferAndFillTypes(inferenceContext, env, Block(expressions, parsedProgram.section))
         } catch (ex: TypeInferenceFailed) {
             resultMessages.add(gh.marad.chi.core.analyzer.TypeInferenceFailed(ex))
-        } catch (ex: CompilerMessageException) {
+        } catch (ex: CompilerMessage) {
             resultMessages.add(ex.msg)
         }
 
@@ -223,7 +231,7 @@ object Compiler {
                     TypeVariable(ref.typeName).also { it.sourceSection = ref.section }
                 } else {
                     typeTable.get(ref.typeName)?.type?.also { it.sourceSection = ref.section }
-                        ?: throw CompilerMessageException(ErrorMessage("Type $ref not found", ref.section.toCodePoint()))
+                        ?: throw CompilerMessage.from("Type $ref not found", ref.section)
                 }
 
             is TypeConstructorRef -> {
@@ -232,8 +240,9 @@ object Compiler {
                 return when (base) {
                     is SumType -> base.copy(typeParams = typeParameters)
                     is ProductType -> base.copy(types = typeParameters)
-                    else -> throw CompilerMessageException(
-                        ErrorMessage("Invalid type constructor. Only product and sum types are supported", ref.section.toCodePoint()))
+                    else -> throw CompilerMessage.from(
+                        "Invalid type constructor. Only product and sum types are supported",
+                        ref.section)
                 }.also { it.sourceSection = ref.section }
             }
 

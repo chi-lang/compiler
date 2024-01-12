@@ -193,7 +193,6 @@ class ExprConversionVisitor(
         return FieldAccess(
             receiver = ast.receiver.accept(this),
             fieldName = ast.memberName,
-            typeIsModuleLocal = false, // TODO to remove, checking imports should be before conversion
             sourceSection = ast.section,
             memberSection = ast.memberSection
         )

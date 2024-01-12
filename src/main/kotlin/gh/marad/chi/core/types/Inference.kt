@@ -1,7 +1,7 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.core.*
-import gh.marad.chi.core.analyzer.CompilerMessageException
+import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.analyzer.MemberDoesNotExist
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.analyzer.toCodePoint
@@ -438,7 +438,7 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
                         expr.target = DotTarget.PackageFunction(symbol.moduleName, symbol.packageName, symbol.name)
                         expr.newType = symbolType
                     } else {
-                        throw CompilerMessageException(
+                        throw CompilerMessage(
                             MemberDoesNotExist(
                                 receiverType, expr.fieldName, expr.memberSection.toCodePoint()
                             )
@@ -564,7 +564,9 @@ fun unify(constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
                 typeMismatch(expected = e, actual = a, section, history)
             }
         } else if (e is SumType && a is SumType) {
-            TODO("Not sure if this ever happens!")
+            CompilerMessage.from(
+                "Comparing SumTypes! This is compiler error, please report it along with the code!",
+                section)
             // if module, package or name different - fail
             // paramTypes should be equal
             // zip param types together and create new constraints
@@ -578,7 +580,7 @@ fun unify(constraints: Set<Constraint>): List<Pair<TypeVariable, Type>> {
 
 fun typeMismatch(expected: Type, actual: Type, section: ChiSource.Section?, history: List<Constraint>) {
     val section = actual.sourceSection ?: section
-    throw CompilerMessageException(TypeMismatch(
+    throw CompilerMessage(TypeMismatch(
         expected = expected,
         actual = actual,
         codePoint = section.toCodePoint()))
