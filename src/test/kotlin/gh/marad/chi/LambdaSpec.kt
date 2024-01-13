@@ -28,4 +28,5 @@ class LambdaSpec {
                 fn.body.type shouldBe Types.int
             }
     }
+
 }

@@ -250,11 +250,11 @@ object Compiler {
 
             is FunctionTypeRef -> {
                 val returnType = resolveType(typeTable, typeSchemeVariables, ref.returnType)
-                val params = ref.typeParameters.map { resolveType(typeTable, typeSchemeVariables, it) }
+                val params = ref.argumentTypeRefs.map { resolveType(typeTable, typeSchemeVariables, it) }
                 val types = listOf(*params.toTypedArray(), returnType)
                 FunctionType(
                     types,
-                    types.flatMap { it.typeSchemeVariables() },
+                    types.flatMap { it.findTypeVariables() },
                 ).also { it.sourceSection = ref.section }
             }
         }
