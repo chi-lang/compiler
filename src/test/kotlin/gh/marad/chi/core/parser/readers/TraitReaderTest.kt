@@ -29,7 +29,7 @@ class TraitReaderTest {
         func.formalArguments shouldHaveSize 1
         func.formalArguments.first().should {
             it.name shouldBe "name"
-            it.typeRef.shouldBeTypeNameRef("string")
+            it.typeRef?.shouldBeTypeNameRef("string")
         }
     }
 

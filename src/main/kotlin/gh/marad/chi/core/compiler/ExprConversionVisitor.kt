@@ -67,7 +67,7 @@ class ExprConversionVisitor(
     override fun visitLambda(parseLambda: ParseLambda): Expression {
         val fnSymbolTable = FnSymbolTable()
         val params = parseLambda.formalArguments.map {
-            val type = resolveType(typeTable, currentTypeSchemeVariables, it.typeRef)
+            val type = it.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it) }
             fnSymbolTable.addArgument(it.name, type)
             FnParam(it.name, type, it.section)
         }
@@ -91,7 +91,7 @@ class ExprConversionVisitor(
         currentTypeSchemeVariables = parseFuncWithName.typeParameters.map { it.name }
 
         val params = parseFuncWithName.formalArguments.map {
-            val type = resolveType(typeTable, currentTypeSchemeVariables, it.typeRef)
+            val type = resolveType(typeTable, currentTypeSchemeVariables, it.typeRef!!)
             fnSymbolTable.addArgument(it.name, type)
             FnParam(it.name, type, it.section)
         }
@@ -215,7 +215,7 @@ class ExprConversionVisitor(
         val params = parseEffectDefinition.formalArguments.map {
             FnParam(
                 it.name,
-                resolveType(typeTable, currentTypeSchemeVariables, it.typeRef),
+                resolveType(typeTable, currentTypeSchemeVariables, it.typeRef!!),
                 it.section
             )
         }

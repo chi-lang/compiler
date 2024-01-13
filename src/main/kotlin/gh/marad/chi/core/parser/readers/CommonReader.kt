@@ -31,6 +31,19 @@ internal object CommonReader {
     fun readFuncArgumentDefinitions(
         parser: ParserVisitor,
         source: ChiSource,
+        ctx: ChiParser.ArgumentsWithOptionalTypesContext?
+    ): List<FormalArgument> =
+        ctx?.argumentWithOptionalType()?.map {
+            FormalArgument(
+                name = it.ID().text,
+                typeRef = it.type()?.let { readTypeRef(parser, source, it) },
+                getSection(source, it)
+            )
+        } ?: emptyList()
+
+    fun readFuncArgumentDefinitions(
+        parser: ParserVisitor,
+        source: ChiSource,
         ctx: ChiParser.ArgumentsWithTypesContext?
     ): List<FormalArgument> =
         ctx?.argumentWithType()?.map {

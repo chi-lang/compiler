@@ -1,6 +1,7 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.core.Expression
+import gh.marad.chi.core.Fn
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
 
 class TypeFiller(private val solution: List<Pair<TypeVariable, Type>>) : DefaultExpressionVisitor {
@@ -16,5 +17,12 @@ class TypeFiller(private val solution: List<Pair<TypeVariable, Type>>) : Default
                 val newName = TypeVariable(Char(startLetter + i).toString())
                 SubstituteTypeVariable(v, newName).visit(expr)
             }
+    }
+
+    override fun visitFn(fn: Fn) {
+        for (parameter in fn.parameters) {
+            parameter.type = applySubstitution(parameter.type!!, solution)
+        }
+        super.visitFn(fn)
     }
 }

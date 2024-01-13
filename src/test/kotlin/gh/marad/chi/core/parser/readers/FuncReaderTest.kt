@@ -55,9 +55,9 @@ class FuncReaderTest {
             it.formalArguments.shouldHaveSize(2).should { argCollection ->
                 val args = argCollection.toList()
                 args[0].name shouldBe "a"
-                args[0].typeRef.shouldBeTypeNameRef("int")
+                args[0].typeRef?.shouldBeTypeNameRef("int")
                 args[1].name shouldBe "b"
-                args[1].typeRef.shouldBeTypeNameRef("string")
+                args[1].typeRef?.shouldBeTypeNameRef("string")
             }
         }
     }

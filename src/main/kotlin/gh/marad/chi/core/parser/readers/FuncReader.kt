@@ -9,7 +9,7 @@ import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 internal object FuncReader {
     fun readLambda(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.LambdaContext): ParseAst {
         return ParseLambda(
-            formalArguments = CommonReader.readFuncArgumentDefinitions(parser, source, ctx.argumentsWithTypes()),
+            formalArguments = CommonReader.readFuncArgumentDefinitions(parser, source, ctx.argumentsWithOptionalTypes()),
             body = ctx.expression().map { it.accept(parser) },
             section = getSection(source, ctx)
         )

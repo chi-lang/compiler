@@ -98,10 +98,13 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
                 expr.parameters.map {
                     // if param types were optional we would have to generate
                     // new types for them and normally solve with constraints
-                    if (it.type != null) {
-                        it.name to it.type
+                    val type = it.type
+                    if (type != null) {
+                        it.name to type
                     } else {
-                        it.name to ctx.nextTypeVariable()
+                        val type = ctx.nextTypeVariable()
+                        it.type = type
+                        it.name to type
                     }
                 }
 

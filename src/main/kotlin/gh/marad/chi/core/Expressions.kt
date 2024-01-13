@@ -133,9 +133,8 @@ data class NameDeclaration(
     override fun children(): List<Expression> = listOf(value)
 }
 
-data class FnParam(val name: String, val type: Type?, val sourceSection: ChiSource.Section?)
+data class FnParam(val name: String, var type: Type?, val sourceSection: ChiSource.Section?)
 data class Fn(
-//    val genericTypeParameters: List<GenericTypeParameter>,
     val typeVariables: List<TypeVariable>,
     val parameters: List<FnParam>,
     val body: Block,

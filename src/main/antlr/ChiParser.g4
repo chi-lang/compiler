@@ -102,7 +102,9 @@ expression
     | CONTINUE # ContinueExpr
     ;
 
-lambda: LBRACE ws (argumentsWithTypes '->')? ws (expression ws)* RBRACE;
+lambda: LBRACE ws (argumentsWithOptionalTypes '->')? ws (expression ws)* RBRACE;
+argumentsWithOptionalTypes : argumentWithOptionalType ws (',' ws argumentWithOptionalType ws)*;
+argumentWithOptionalType : ID (':' type)?;
 block : LBRACE ws (expression ws)* RBRACE;
 
 divMul: DIV | MUL;
