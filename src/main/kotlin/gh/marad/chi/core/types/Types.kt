@@ -22,6 +22,28 @@ object Types {
             emptyList()
         },
     )
+
+    @JvmStatic fun isSubtype(parent: Type, child: Type): Boolean {
+        if (parent == any) {
+            return true
+        }
+        if (parent !is SumType) {
+            return false
+        }
+
+        if (child is SimpleType && parent.subtypes.contains(child.name)
+            && parent.moduleName == child.moduleName
+            && parent.packageName == child.packageName) {
+            return true
+        }
+
+        if (child is ProductType && parent.subtypes.contains(child.name)
+            && parent.moduleName == child.moduleName
+            && parent.packageName == child.packageName) {
+            return true
+        }
+        return false
+    }
 }
 
 sealed interface Type {

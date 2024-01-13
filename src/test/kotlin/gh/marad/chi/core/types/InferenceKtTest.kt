@@ -268,7 +268,7 @@ class InferenceKtTest {
         // when
         val result = testInference("""
                 if cond { thenBranch } else { elseBranch }
-            """.trimIndent(), env, ignoreErrors = true)
+            """.trimIndent(), env)
 
         // then
         result.firstExpr().shouldBeTypeOf<IfElse>().should {
@@ -290,13 +290,36 @@ class InferenceKtTest {
         // when
         val result = testInference("""
                 if cond { thenBranch } else { elseBranch }
-            """.trimIndent(), env, ignoreErrors = true)
+            """.trimIndent(), env)
 
         // then
         result.firstExpr().shouldBeTypeOf<IfElse>().should {
             it.type shouldBe sumType
         }
     }
+
+    @Test
+    fun `if-else should choose broader type when then is SumType and else is SimpleType`() {
+        // given
+        val sumType = SumType("module", "package", "Sum", emptyList(), listOf("Product"), emptyList())
+        val simpleType = SimpleType("module", "package", "Product")
+        val env = mapOf(
+            "cond" to Types.bool,
+            "thenBranch" to sumType,
+            "elseBranch" to simpleType
+        )
+
+        // when
+        val result = testInference("""
+                if cond { thenBranch } else { elseBranch }
+            """.trimIndent(), env)
+
+        // then
+        result.firstExpr().shouldBeTypeOf<IfElse>().should {
+            it.type shouldBe sumType
+        }
+    }
+
 
     @Test
     fun `if-else should choose broader type when then is ProductType and else is SumType`() {
@@ -312,7 +335,29 @@ class InferenceKtTest {
         // when
         val result = testInference("""
                 if cond { thenBranch } else { elseBranch }
-            """.trimIndent(), env, ignoreErrors = true)
+            """.trimIndent(), env)
+
+        // then
+        result.firstExpr().shouldBeTypeOf<IfElse>().should {
+            it.type shouldBe sumType
+        }
+    }
+
+    @Test
+    fun `if-else should choose broader type when then is SimpleType and else is SumType`() {
+        // given
+        val sumType = SumType("module", "package", "Sum", emptyList(), listOf("Product"), emptyList())
+        val productType = SimpleType("module", "package", "Product")
+        val env = mapOf(
+            "cond" to Types.bool,
+            "thenBranch" to productType,
+            "elseBranch" to sumType
+        )
+
+        // when
+        val result = testInference("""
+                if cond { thenBranch } else { elseBranch }
+            """.trimIndent(), env)
 
         // then
         result.firstExpr().shouldBeTypeOf<IfElse>().should {

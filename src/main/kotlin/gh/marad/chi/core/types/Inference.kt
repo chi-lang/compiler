@@ -171,7 +171,6 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
         }
 
         is IfElse -> {
-            val t = ctx.nextTypeVariable()
             val condType = inferTypes(ctx, env, expr.condition)
             val thenBranchType = inferTypes(ctx, env, expr.thenBranch)
             val elseBranchType = expr.elseBranch?.let { inferTypes(ctx, env, it) }
@@ -186,24 +185,19 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             var finalType: Type? = null
 
             if (expr.elseBranch == null) {
-                finalType = Types.unit
+                finalType = Types.unit // if without else branch has unit type
             } else if (thenType == elseType) {
-                finalType = thenType
-            } else if (thenType is SumType && elseType is ProductType
-                && thenType.subtypes.contains(elseType.name)
-                && thenType.moduleName == elseType.moduleName
-                && thenType.packageName == elseType.packageName) {
-                finalType = thenType
-            } else if (thenType is ProductType && elseType is SumType
-                && thenType.moduleName == elseType.moduleName
-                && thenType.packageName == elseType.packageName) {
-                finalType = elseType
+                finalType = thenType // when types are the same - no problem
+            } else if (Types.isSubtype(thenType, elseType)) {
+                finalType = thenType // then type is broader
+            } else if (Types.isSubtype(elseType, thenType)) {
+                finalType = elseType // else type is broader
             } else if (thenType != elseType) {
-                finalType = Types.any
+                finalType = Types.any // when types are not related - if returns any
             }
 
             if (finalType == null) {
-                finalType = t
+                finalType = ctx.nextTypeVariable() // safety measure, probably not crucial
             }
 
             expr.type = finalType
