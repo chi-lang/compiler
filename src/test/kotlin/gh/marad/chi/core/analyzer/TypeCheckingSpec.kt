@@ -139,7 +139,7 @@ class IfElseTypeCheckingSpec {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
                 error.expected shouldBe Types.int
-                error.actual shouldBe Types.fn(Types.unit)
+                error.actual shouldBe Types.any
             }
         }
     }

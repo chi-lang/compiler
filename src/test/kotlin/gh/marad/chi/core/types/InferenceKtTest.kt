@@ -257,8 +257,6 @@ class InferenceKtTest {
     }
 
     @Test
-    //FIXME to wymaga, zeby było wiadomo czy expr jest używany jako wyrażenie
-    //      na razie robię, że oba mają mieć ten sam typ
     fun `test if-else type inference with different branch types`() {
         // given
         val env = mapOf(
@@ -268,18 +266,58 @@ class InferenceKtTest {
         )
 
         // when
-        val ex = shouldThrow<CompilerMessage> {
-            testInference("""
-                    if cond { thenBranch } else { elseBranch }
-                """.trimIndent(), env, ignoreErrors = true)
-        }
+        val result = testInference("""
+                if cond { thenBranch } else { elseBranch }
+            """.trimIndent(), env, ignoreErrors = true)
 
         // then
-        ex.msg.shouldBeTypeOf<TypeMismatch>().should {
-            it.expected shouldBe Types.int
-            it.actual shouldBe Types.string
+        result.firstExpr().shouldBeTypeOf<IfElse>().should {
+            it.type shouldBe Types.any
         }
+    }
 
+    @Test
+    fun `if-else should choose broader type when then is SumType and else is ProductType`() {
+        // given
+        val sumType = SumType("module", "package", "Sum", emptyList(), listOf("Product"), emptyList())
+        val productType = ProductType("module", "package", "Product", emptyList(), emptyList(), emptyList())
+        val env = mapOf(
+            "cond" to Types.bool,
+            "thenBranch" to sumType,
+            "elseBranch" to productType
+        )
+
+        // when
+        val result = testInference("""
+                if cond { thenBranch } else { elseBranch }
+            """.trimIndent(), env, ignoreErrors = true)
+
+        // then
+        result.firstExpr().shouldBeTypeOf<IfElse>().should {
+            it.type shouldBe sumType
+        }
+    }
+
+    @Test
+    fun `if-else should choose broader type when then is ProductType and else is SumType`() {
+        // given
+        val sumType = SumType("module", "package", "Sum", emptyList(), listOf("Product"), emptyList())
+        val productType = ProductType("module", "package", "Product", emptyList(), emptyList(), emptyList())
+        val env = mapOf(
+            "cond" to Types.bool,
+            "thenBranch" to productType,
+            "elseBranch" to sumType
+        )
+
+        // when
+        val result = testInference("""
+                if cond { thenBranch } else { elseBranch }
+            """.trimIndent(), env, ignoreErrors = true)
+
+        // then
+        result.firstExpr().shouldBeTypeOf<IfElse>().should {
+            it.type shouldBe sumType
+        }
     }
 
     @Test

@@ -171,40 +171,44 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
         }
 
         is IfElse -> {
-            // TODO: wymagania powinny zależeć od tego czy ten expr
-            //       jest używany jako wyrażenie czy nie
-            //       jeśli nie to jego typem powinien być po prostu unit
-
             val t = ctx.nextTypeVariable()
             val condType = inferTypes(ctx, env, expr.condition)
             val thenBranchType = inferTypes(ctx, env, expr.thenBranch)
             val elseBranchType = expr.elseBranch?.let { inferTypes(ctx, env, it) }
                 ?: InferenceResult(Types.unit, setOf())
 
-            val constraints = mutableSetOf<Constraint>()
-            constraints.add(Constraint(
-                actual = condType.type,
-                expected = Types.bool,
-                section = expr.condition.sourceSection))
-            if (expr.elseBranch != null) {
-                constraints.add(Constraint(
-                    actual = t,
-                    expected = thenBranchType.type,
-                    section = expr.sourceSection))
-                constraints.add(
-                    Constraint(t, elseBranchType.type, expr.elseBranch.sourceSection ?: expr.sourceSection)
-                )
-            } else {
-                constraints.add(
-                    Constraint(t, Types.unit, expr.sourceSection)
-                )
+            val condConstraint = Constraint(actual = condType.type, expected = Types.bool, section = expr.condition.sourceSection)
+            val allConstraints = condType.constraints + thenBranchType.constraints + elseBranchType.constraints + condConstraint
+            val solution = unify(allConstraints)
+            val thenType = applySubstitution(thenBranchType.type, solution)
+            val elseType = applySubstitution(elseBranchType.type, solution)
+
+            var finalType: Type? = null
+
+            if (expr.elseBranch == null) {
+                finalType = Types.unit
+            } else if (thenType == elseType) {
+                finalType = thenType
+            } else if (thenType is SumType && elseType is ProductType
+                && thenType.subtypes.contains(elseType.name)
+                && thenType.moduleName == elseType.moduleName
+                && thenType.packageName == elseType.packageName) {
+                finalType = thenType
+            } else if (thenType is ProductType && elseType is SumType
+                && thenType.moduleName == elseType.moduleName
+                && thenType.packageName == elseType.packageName) {
+                finalType = elseType
+            } else if (thenType != elseType) {
+                finalType = Types.any
             }
-            constraints.addAll(condType.constraints)
-            constraints.addAll(thenBranchType.constraints)
-            constraints.addAll(elseBranchType.constraints)
-            expr.type = t
+
+            if (finalType == null) {
+                finalType = t
+            }
+
+            expr.type = finalType
             expr.type?.sourceSection = expr.sourceSection
-            InferenceResult(t, constraints)
+            InferenceResult(expr.type!!, allConstraints)
         }
 
         is InfixOp -> {
