@@ -27,9 +27,11 @@ class InferenceEnv(private val pkgDef: Package, tables: CompileTables, private v
     }
 
     fun applySubstitutionToAllTypes(solutions: List<Pair<TypeVariable, Type>>) {
-        currentLocalEnv = currentLocalEnv.mapValues {
-            applySubstitution(it.value, solutions)
-        }.toMutableMap()
+        val keys = currentLocalEnv.keys
+        for (key in keys) {
+            val value = currentLocalEnv[key]!!
+            currentLocalEnv.put(key, applySubstitution(value, solutions))
+        }
     }
 
     fun findAllTypeVariables(): List<TypeVariable> =
@@ -49,7 +51,7 @@ class InferenceEnv(private val pkgDef: Package, tables: CompileTables, private v
             is PackageSymbol -> {
                 if (target.moduleName == pkgDef.moduleName && target.packageName == pkgDef.packageName) {
                     // reading name from current package
-                    currentLocalEnv[target.name]
+                    packageEnv[target.name]
                 } else {
                     // reading from other package
                     ns.getOrCreatePackage(target.moduleName, target.packageName)

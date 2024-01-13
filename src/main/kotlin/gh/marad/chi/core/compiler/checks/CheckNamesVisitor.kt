@@ -1,8 +1,9 @@
-package gh.marad.chi.core.compiler
+package gh.marad.chi.core.compiler.checks
 
 import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.analyzer.UnrecognizedName
 import gh.marad.chi.core.analyzer.toCodePoint
+import gh.marad.chi.core.compiler.CompileTables
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.parser.visitor.DefaultParseAstVisitor
 

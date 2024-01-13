@@ -249,23 +249,26 @@ class ExprConversionVisitor(
         Handle(
             body = parseHandle.body.accept(this) as Block,
             cases = parseHandle.cases.map {
-                val info = getSymbol(it.effectName, parseHandle.section) as PackageSymbol
-                addLocalSymbol("resume", type = null, isMutable = false, isPublic = true)
-                it.argumentNames.forEach {
-                    addLocalSymbol(it, type = null, isMutable = false, isPublic = true)
-                }
-
-                HandleCase(
-                    moduleName = info.moduleName,
-                    packageName = info.packageName,
-                    effectName = it.effectName,
-                    argumentNames = it.argumentNames,
-                    body = it.body.accept(this),
-                    sourceSection = it.section
-                ).also {
-                    removeLocalSymbol("resume")
+                val virtualSymbolTable = FnSymbolTable(currentFnSymbolTable)
+                withFnSymbolTable(virtualSymbolTable) {
+                    val info = getSymbol(it.effectName, parseHandle.section) as PackageSymbol
+                    addLocalSymbol("resume", type = null, isMutable = false, isPublic = true)
                     it.argumentNames.forEach {
-                        removeLocalSymbol(it)
+                        addLocalSymbol(it, type = null, isMutable = false, isPublic = true)
+                    }
+
+                    HandleCase(
+                        moduleName = info.moduleName,
+                        packageName = info.packageName,
+                        effectName = it.effectName,
+                        argumentNames = it.argumentNames,
+                        body = it.body.accept(this),
+                        sourceSection = it.section
+                    ).also {
+                        removeLocalSymbol("resume")
+                        it.argumentNames.forEach {
+                            removeLocalSymbol(it)
+                        }
                     }
                 }
             },
@@ -375,13 +378,9 @@ class ExprConversionVisitor(
 
     private fun getSymbol(name: String, sourceSection: ChiSource.Section?): Target {
         val fnSymbolTable = currentFnSymbolTable
-        return if (fnSymbolTable != null) {
-            fnSymbolTable.get(name)?.toLocalSymbol()
-                ?: throw ExprConversionException("Tried to get local symbol '$name'", sourceSection)
-        } else {
-            tables.localSymbolTable.get(name)?.toPackageSymbol()
-                ?: throw ExprConversionException("Tried to get symbol '$name'", sourceSection)
-        }
+        return fnSymbolTable?.get(name)?.toLocalSymbol()
+            ?: tables.localSymbolTable.get(name)?.toPackageSymbol()
+            ?: throw ExprConversionException("Tried to get local symbol '$name'", sourceSection)
     }
 
     private fun FnSymbol.toLocalSymbol() = LocalSymbol(name)

@@ -4,10 +4,7 @@ import gh.marad.chi.core.Block
 import gh.marad.chi.core.Package
 import gh.marad.chi.core.Program
 import gh.marad.chi.core.analyzer.*
-import gh.marad.chi.core.compiler.checks.FnCallCheckingVisitor
-import gh.marad.chi.core.compiler.checks.ImmutabilityCheckVisitor
-import gh.marad.chi.core.compiler.checks.ReturnTypeCheckVisitor
-import gh.marad.chi.core.compiler.checks.VisibilityCheckingVisitor
+import gh.marad.chi.core.compiler.checks.*
 import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.parseSource
