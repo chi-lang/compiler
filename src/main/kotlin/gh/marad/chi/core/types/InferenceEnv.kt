@@ -40,6 +40,7 @@ class InferenceEnv(private val pkgDef: Package, tables: CompileTables, private v
     fun getTypeOrNull(name: String): Type? = currentLocalEnv[name]
     fun getType(name: String, section: ChiSource.Section?): Type {
         return currentLocalEnv[name]
+            ?: packageEnv[name]
             ?: throw TypeInferenceFailed("Symbol $name not found in scope.", section)
     }
 
