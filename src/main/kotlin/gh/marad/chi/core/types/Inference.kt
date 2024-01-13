@@ -258,12 +258,6 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             }
             InferenceResult(expr.type!!, inferred.constraints)
         }
-        is Group -> {
-            val value = inferTypes(ctx, env, expr.value)
-            expr.type = value.type
-            expr.type?.sourceSection = expr.sourceSection
-            value
-        }
         is Handle -> {
             val t = ctx.nextTypeVariable()
             val constraints = mutableSetOf<Constraint>()

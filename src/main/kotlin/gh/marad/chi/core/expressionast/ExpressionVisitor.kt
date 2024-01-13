@@ -11,7 +11,6 @@ interface ExpressionVisitor {
     fun visitFieldAssignment(fieldAssignment: FieldAssignment)
     fun visitAssignment(assignment: Assignment)
     fun visitNameDeclaration(nameDeclaration: NameDeclaration)
-    fun visitGroup(group: Group)
     fun visitFn(fn: Fn)
     fun visitBlock(block: Block)
     fun visitFnCall(fnCall: FnCall)

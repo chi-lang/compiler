@@ -100,10 +100,6 @@ class PrintAstVisitor : ExpressionVisitor {
         sb.append(')')
     }
 
-    override fun visitGroup(group: Group) {
-        TODO("Not yet implemented")
-    }
-
     override fun visitFn(fn: Fn) {
         sb.appendLine()
         sb.append(indent)

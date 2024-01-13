@@ -27,9 +27,6 @@ interface DefaultExpressionVisitor : ExpressionVisitor {
     override fun visitNameDeclaration(nameDeclaration: NameDeclaration) =
         nameDeclaration.children().forEach { visit(it) }
 
-    override fun visitGroup(group: Group) =
-        group.children().forEach { visit(it) }
-
     override fun visitFn(fn: Fn) =
         fn.children().forEach { visit(it) }
 

@@ -133,12 +133,6 @@ data class NameDeclaration(
     override fun children(): List<Expression> = listOf(value)
 }
 
-data class Group(val value: Expression, override val sourceSection: ChiSource.Section?) : Expression {
-    override var type: Type? = null
-    override fun accept(visitor: ExpressionVisitor) = visitor.visitGroup(this)
-    override fun children(): List<Expression> = listOf(value)
-}
-
 data class FnParam(val name: String, val type: Type?, val sourceSection: ChiSource.Section?)
 data class Fn(
 //    val genericTypeParameters: List<GenericTypeParameter>,
