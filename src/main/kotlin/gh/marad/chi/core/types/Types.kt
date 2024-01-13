@@ -13,7 +13,7 @@ object Types {
     @JvmStatic fun fn(vararg types: Type) = FunctionType(types.toList())
 
     @JvmStatic fun array(elementType: Type) = ProductType(
-        "std", "lang", "array",
+        "std", "collections.array", "array",
         types = listOf(),
         typeParams = listOf(elementType),
         typeSchemeVariables = if (elementType is TypeVariable) {
