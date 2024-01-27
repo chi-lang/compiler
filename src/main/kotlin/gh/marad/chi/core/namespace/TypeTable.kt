@@ -21,6 +21,7 @@ class TypeTable {
                 packageName = "lang",
                 name = "array",
                 type = Types.array(TypeVariable("T")),
+                supertype = Types.any,
                 isPublic = true,
                 fields = emptyList()
             )
@@ -53,6 +54,7 @@ class TypeTable {
                 packageName = t.packageName,
                 name = t.name,
                 type = t,
+                supertype = Types.any,
                 isPublic = true,
                 fields = emptyList()
             )
@@ -66,8 +68,9 @@ data class TypeInfo(
     val packageName: String,
     val name: String,
     val type: Type,
+    val supertype: Type,
     val isPublic: Boolean,
-    val fields: List<VariantField>
+    val fields: List<VariantField>,
 )
 
 data class VariantField(

@@ -176,8 +176,13 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             val elseBranchType = expr.elseBranch?.let { inferTypes(ctx, env, it) }
                 ?: InferenceResult(Types.unit, setOf())
 
-            val condConstraint = Constraint(actual = condType.type, expected = Types.bool, section = expr.condition.sourceSection)
-            val allConstraints = condType.constraints + thenBranchType.constraints + elseBranchType.constraints + condConstraint
+            val allConstraints = mutableSetOf<Constraint>()
+            allConstraints.addAll(condType.constraints)
+            allConstraints.addAll(thenBranchType.constraints)
+            allConstraints.addAll(elseBranchType.constraints)
+            allConstraints.add(Constraint(actual = condType.type, expected = Types.bool, section = expr.condition.sourceSection))
+
+
             val solution = unify(allConstraints)
             val thenType = applySubstitution(thenBranchType.type, solution)
             val elseType = applySubstitution(elseBranchType.type, solution)
@@ -193,11 +198,29 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             } else if (Types.isSubtype(elseType, thenType)) {
                 finalType = elseType // else type is broader
             } else if (thenType != elseType) {
-                finalType = Types.any // when types are not related - if returns any
+                val a = Types.commonSupertype(thenType, elseType)
+                allConstraints.add(Constraint(thenBranchType.type, thenType, expr.thenBranch.sourceSection))
+                allConstraints.add(Constraint(elseBranchType.type, elseType, expr.elseBranch.sourceSection))
+                val thenInfo = ctx.typeTable.find(thenType)
+                val elseInfo = ctx.typeTable.find(elseType)
+                if (thenInfo?.supertype == elseInfo?.supertype) {
+                    finalType = thenInfo?.supertype
+//                    allConstraints.add(Constraint(thenBranchType.type, finalType!!, expr.thenBranch.sourceSection))
+//                    allConstraints.add(Constraint(elseBranchType.type, finalType!!, expr.thenBranch.sourceSection))
+                } else {
+                    finalType = Types.any // when types are not related - if returns any
+                }
             }
 
             if (finalType == null) {
                 finalType = ctx.nextTypeVariable() // safety measure, probably not crucial
+            }
+
+
+            allConstraints.add(Constraint(thenBranchType.type, finalType, expr.thenBranch.sourceSection))
+            if (expr.elseBranch != null) {
+            allConstraints.add(Constraint(thenBranchType.type, finalType, expr.thenBranch.sourceSection))
+                allConstraints.add(Constraint(elseBranchType.type, finalType, expr.thenBranch.sourceSection))
             }
 
             expr.type = finalType
@@ -406,7 +429,8 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
                     val typePkg = ctx.getTypePackageOrNull(receiverType)
                     val symbol = typePkg?.symbols?.get(expr.fieldName)
                     val symbolType = symbol?.type
-                    if (symbolType is FunctionType && symbolType.types.size >= 2 && symbolType.types.first() == receiverType) {
+                    if (symbolType is FunctionType && symbolType.types.size >= 2
+                        && (symbolType.types.first() == receiverType || Types.isSubtype(symbolType.types.first(), receiverType)) ) {
                         expr.target = DotTarget.PackageFunction(symbol.moduleName, symbol.packageName, symbol.name)
                         expr.type = symbolType
                     } else {

@@ -23,6 +23,20 @@ object Types {
         },
     )
 
+    @JvmStatic fun commonSupertype(a: Type, b: Type): Type {
+        // todo wywal to wszystko i zacznij od nowa kombinujac z constraintami
+        if (a == b) {
+            return a
+        }
+        if (isSubtype(a, b)) {
+            return a
+        }
+        if (isSubtype(b, a)) {
+            return b
+        }
+        return any
+    }
+
     @JvmStatic fun isSubtype(parent: Type, child: Type): Boolean {
         if (parent == any) {
             return true
@@ -40,6 +54,9 @@ object Types {
         if (child is ProductType && parent.subtypes.contains(child.name)
             && parent.moduleName == child.moduleName
             && parent.packageName == child.packageName) {
+            parent.typeParams.zip(child.typeParams).all { (pp, cp) ->
+                pp is TypeVariable || pp == cp
+            }
             return true
         }
         return false
@@ -148,9 +165,9 @@ data class FunctionType(val types: List<Type>, val typeSchemeVariables: List<Typ
 
 fun List<TypeVariable>.substitute(v: TypeVariable, t: Type) =
     if (t is TypeVariable) {
-        this.map { it.substitute(v, t) as TypeVariable }
+        this.map { it.substitute(v, t) as TypeVariable } - v
     } else {
-        this
+        this - v
     }
 
 fun List<TypeVariable>.instantiate(mappings: List<Pair<TypeVariable, Type>>): List<TypeVariable> =

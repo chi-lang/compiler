@@ -1,13 +1,10 @@
 package gh.marad.chi.core.compiler
 
-import gh.marad.chi.core.Block
-import gh.marad.chi.core.Package
-import gh.marad.chi.core.Program
+import gh.marad.chi.core.*
 import gh.marad.chi.core.analyzer.*
 import gh.marad.chi.core.compiler.checks.*
 import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.namespace.Symbol
-import gh.marad.chi.core.parseSource
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.types.*
@@ -81,7 +78,7 @@ object Compiler {
             val isSingleConstructorType = typeDef.variantConstructors.size == 1
                     && typeDef.typeName == typeDef.variantConstructors[0].name
 
-            if (!isSingleConstructorType) {
+            val supertype = if (!isSingleConstructorType) {
                 val base = SumType(
                     moduleName = packageDefinition.moduleName,
                     packageName = packageDefinition.packageName,
@@ -96,12 +93,16 @@ object Compiler {
                     packageName = packageDefinition.packageName,
                     name = typeDef.typeName,
                     type = base,
+                    supertype = Types.any,
                     isPublic = true,
                     fields = emptyList()
                 )
 
                 tables.defineType(baseTypeInfo)
                 definedTypes.add(baseTypeInfo)
+                base
+            } else {
+                Types.any
             }
 
             typeDef.variantConstructors.map { ctor ->
@@ -146,6 +147,7 @@ object Compiler {
                     packageName = packageDefinition.packageName,
                     name = ctor.name,
                     type = type,
+                    supertype = supertype,
                     isPublic = ctor.public,
                     fields = fields,
                 )
@@ -170,16 +172,18 @@ object Compiler {
 
         // convert to ast
         // ==============
-        val expressions = try {
+        val (functions, code) = try {
             val converter = ExprConversionVisitor(packageDefinition, tables)
             val functions = parsedProgram.functions.map { converter.visit(it) }
             val code = parsedProgram.topLevelCode.map { converter.visit(it) }
-            functions + code
+            Pair(functions, code)
         } catch (ex: CompilerMessage) {
             resultMessages.add(ex.msg)
-            emptyList()
+            Pair(emptyList(), emptyList())
         }
+        val expressions = functions + code
 
+        markUsed(expressions)
 
         // autocast & unit insert
         // ======================
@@ -187,11 +191,33 @@ object Compiler {
         // infer types
         // ===========
         val typeLookupTable = TypeLookupTable(ns)
-        val inferenceContext = InferenceContext(ns, typeLookupTable)
-        val env = InferenceEnv(packageDefinition, tables, ns)
+//        val inferenceContext = InferenceContext(ns, typeLookupTable)
+//        val env = InferenceEnv(packageDefinition, tables, ns)
 
         try {
-            inferAndFillTypes(inferenceContext, env, Block(expressions, parsedProgram.section))
+            // TODO: functions should probably inferred independently from code and eachother
+            //   inferring types across the whole code can lead to too specific types in some places
+//            inferAndFillTypes(inferenceContext, env, Block(expressions, parsedProgram.section))
+            val packageInferenceContext = InferenceContext(ns, typeLookupTable)
+            val packageEnv = InferenceEnv(packageDefinition, tables, ns)
+            val pkg = ns.getOrCreatePackage(packageDefinition)
+
+            for (function in functions) {
+                val inferenceContext = InferenceContext(ns, typeLookupTable)
+                val env = InferenceEnv(packageDefinition, tables, ns)
+                inferAndFillTypes(inferenceContext, env, function)
+
+                if (function is NameDeclaration) {
+                    packageEnv.setType(function.name, function.type!!)
+                    pkg.symbols.get(function.name)?.copy(type = function.type!!)
+                        ?.let { pkg.symbols.add(it) }
+                } else if (function is EffectDefinition) {
+                    packageEnv.setType(function.name, function.type!!)
+                    pkg.symbols.get(function.name)?.copy(type = function.type!!)
+                        ?.let { pkg.symbols.add(it) }
+                }
+            }
+            inferAndFillTypes(packageInferenceContext, packageEnv, Block(code, null))
         } catch (ex: TypeInferenceFailed) {
             resultMessages.add(gh.marad.chi.core.analyzer.TypeInferenceFailed(ex))
         } catch (ex: CompilerMessage) {

@@ -1,6 +1,7 @@
 package gh.marad.chi.core.compiler.checks
 
 import gh.marad.chi.core.Expression
+import gh.marad.chi.core.Fn
 import gh.marad.chi.core.NameDeclaration
 import gh.marad.chi.core.Return
 import gh.marad.chi.core.analyzer.ErrorMessage
@@ -25,9 +26,17 @@ class ReturnTypeCheckVisitor(val messages: MutableList<Message>) : DefaultExpres
             expectedReturnType = t.types.last()
         }
 
-        super.visitNameDeclaration(nameDeclaration)
-
+        visitAll(nameDeclaration.value.children())
         expectedReturnType = prevExpectedReturnType
+    }
+
+    override fun visitFn(fn: Fn) {
+        val t = fn.type!!
+        val prevReturnType = expectedReturnType
+        t as FunctionType
+        expectedReturnType = t.types.last()
+        super.visitFn(fn)
+        expectedReturnType = prevReturnType
     }
 
     override fun visitReturn(arg: Return) {

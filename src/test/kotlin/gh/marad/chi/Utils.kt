@@ -14,6 +14,7 @@ import gh.marad.chi.core.namespace.VariantField
 import gh.marad.chi.core.types.FunctionType
 import gh.marad.chi.core.types.ProductType
 import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.Types
 
 data class ErrorMessagesException(val errors: List<Message>) : AssertionError("Chi compilation errors")
 
@@ -84,15 +85,16 @@ fun GlobalCompilationNamespace.addSymbol(moduleName: String, packageName: String
     )
 }
 
-fun GlobalCompilationNamespace.addProductTypeInDefaultNamespace(name: String, fields: List<VariantField>, public: Boolean = true) =
-    addProductType(defaultModule.name, defaultPackage.name, name, fields, public)
+fun GlobalCompilationNamespace.addProductTypeInDefaultNamespace(name: String, fields: List<VariantField>, public: Boolean = true, supertype: Type = Types.any) =
+    addProductType(defaultModule.name, defaultPackage.name, name, fields, public, supertype)
 
 fun GlobalCompilationNamespace.addProductType(
     moduleName: String,
     packageName: String,
     typeName: String,
     fields: List<VariantField>,
-    public: Boolean = true
+    public: Boolean = true,
+    supertype: Type = Types.any
 ): ProductType {
     val type = ProductType(
         moduleName, packageName, typeName,
@@ -106,6 +108,7 @@ fun GlobalCompilationNamespace.addProductType(
     val typeInfo = TypeInfo(
         moduleName, packageName, typeName,
         type,
+        supertype,
         isPublic = public,
         fields = fields
     )

@@ -137,4 +137,29 @@ class FieldAccessSpec {
             it.type shouldBe Types.fn(type, Types.float)
         }
     }
+
+    @Test
+    fun `should read function from aliased package`() {
+        // given
+        val ns = GlobalCompilationNamespace()
+        ns.addSymbol("mod", "pack", "foo", Types.int, public = true)
+
+        // when
+        val result = ast(
+            """
+            import mod/pack as pkg
+            pkg.foo  
+            """.trimIndent(),
+            ns
+        )
+
+        // then
+        result.shouldBeTypeOf<VariableAccess>()
+            .target.shouldBeTypeOf<PackageSymbol>()
+            .should { symbol ->
+                symbol.moduleName shouldBe "mod"
+                symbol.packageName shouldBe "pack"
+                symbol.name shouldBe "foo"
+            }
+    }
 }

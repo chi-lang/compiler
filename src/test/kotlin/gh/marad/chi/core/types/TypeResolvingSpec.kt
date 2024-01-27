@@ -86,8 +86,8 @@ class TypeResolvingSpec {
 
 
     fun TypeTable.addType(type: SimpleType, isPublic: Boolean = true) =
-        add(TypeInfo(type.moduleName, type.packageName, type.name, type, isPublic, emptyList()))
+        add(TypeInfo(type.moduleName, type.packageName, type.name, type, Types.any, isPublic, emptyList()))
 
     fun TypeTable.addType(type: ProductType, isPublic: Boolean = true, fields: List<VariantField>) =
-        add(TypeInfo(type.moduleName, type.packageName, type.name, type, isPublic, fields))
+        add(TypeInfo(type.moduleName, type.packageName, type.name, type, Types.any, isPublic, fields))
 }

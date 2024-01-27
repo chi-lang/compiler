@@ -1,6 +1,7 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.addSymbolInDefaultPackage
+import gh.marad.chi.ast
 import gh.marad.chi.core.*
 import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.analyzer.Level
@@ -384,6 +385,51 @@ class InferenceKtTest {
         }
     }
 
+    @Test
+    fun `test if else typing for polymorphic product types`() {
+        // when
+        val code = """
+            data Option[T] = pub Just(pub value: T) | pub Nothing
+            pub fn map[T,R](option: Option[T], f: (T) -> R): Option[R] {
+                when {
+                    option is Just -> {
+                        option as Just
+                        Just(f(option.value))
+                    }
+                    else -> Nothing
+                }
+            } 
+            
+            val opt = Just(5)
+            opt.map({ it -> "hello" })
+        """.trimIndent()
+
+        val result = ast(code, GlobalCompilationNamespace())
+
+        // then
+        result.shouldBeTypeOf<FnCall>()
+            .type shouldBe SumType("user", "default", "Option",
+            typeParams = listOf(Types.string),
+            subtypes = listOf("Just", "Nothing"),
+            typeSchemeVariables = listOf()
+        )
+    }
+
+    @Test
+    fun `foo`() {
+        val code = """
+            data Option[T] = pub Just(pub value: T) | pub Nothing
+            pub fn or[T](opt: Option[T], other: Option[T]): Option[T] {
+                when {
+                    opt is Just -> opt
+                    else -> other
+                }
+            }
+        """.trimIndent()
+        val result = ast(code)
+
+        printAst(result)
+    }
 
     @ParameterizedTest
     @MethodSource("booleanOperators")
@@ -634,7 +680,7 @@ class InferenceKtTest {
         }
     }
 
-    fun testInference(code: String, givenEnv: Map<String, Type> = mapOf(), ignoreErrors: Boolean = false): Result {
+    fun testInference(code: String, givenEnv: Map<String, Type> = mapOf(), ignoreErrors: Boolean = false, skipSecondInference: Boolean = true): Result {
         val ns = GlobalCompilationNamespace()
         givenEnv.forEach { (name, type) ->
             ns.addSymbolInDefaultPackage(name, type, public = true)
@@ -649,7 +695,7 @@ class InferenceKtTest {
             for (message in messages) {
                 println(Compiler.formatCompilationMessage(code, message))
             }
-            throw AssertionError("There were errors")
+            throw AssertionError("There were errors: $messages")
         }
 
         val expr = Block(program.expressions, program.sourceSection)
