@@ -8,11 +8,11 @@ import gh.marad.chi.core.parser.readers.TypeReader.readTypeRef
 import org.antlr.v4.runtime.tree.TerminalNode
 
 internal object CommonReader {
-    fun readModuleName(source: ChiSource, ctx: ChiParser.Module_nameContext?): ModuleName =
-        ModuleName(ctx?.text ?: "", ctx?.let { getSection(source, ctx) })
+    fun readModuleName(ctx: ChiParser.ModuleNameContext?): String =
+        ctx?.text ?: ""
 
-    fun readPackageName(source: ChiSource, ctx: ChiParser.Package_nameContext?): PackageName =
-        PackageName(ctx?.text ?: "", ctx?.let { getSection(source, ctx) })
+    fun readPackageName(ctx: ChiParser.PackageNameContext?): String =
+        ctx?.text ?: ""
 
     fun readSymbol(source: ChiSource, id: TerminalNode): Symbol =
         Symbol(
@@ -27,6 +27,19 @@ internal object CommonReader {
         ctx?.ID()?.map { TypeParameterRef(it.text, getSection(source, it.symbol, it.symbol)) }
             ?: emptyList()
 
+
+    fun readFuncArgumentDefinitions(
+        parser: ParserVisitor,
+        source: ChiSource,
+        ctx: ChiParser.ArgumentsWithOptionalTypesContext?
+    ): List<FormalArgument> =
+        ctx?.argumentWithOptionalType()?.map {
+            FormalArgument(
+                name = it.ID().text,
+                typeRef = it.type()?.let { readTypeRef(parser, source, it) },
+                getSection(source, it)
+            )
+        } ?: emptyList()
 
     fun readFuncArgumentDefinitions(
         parser: ParserVisitor,

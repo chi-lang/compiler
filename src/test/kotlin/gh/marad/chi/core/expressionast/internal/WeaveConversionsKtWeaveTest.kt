@@ -24,7 +24,7 @@ class WeaveConversionsKtWeaveTest {
         )
 
         // when
-        val result = convertWeave(defaultContext(), parseWeave)
+        val result = convertAst(parseWeave)
             .shouldBeTypeOf<Block>()
 
         // then

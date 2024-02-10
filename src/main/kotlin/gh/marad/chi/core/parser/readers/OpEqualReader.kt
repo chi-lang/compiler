@@ -1,5 +1,6 @@
 package gh.marad.chi.core.parser.readers
 
+import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
@@ -10,7 +11,7 @@ internal object OpEqualReader {
         ParseAssignment(
             variableName = ctx.variable.text,
             value = ParseBinaryOp(
-                op = getOperator(ctx.opEqual()),
+                op = getOperator(source, ctx.opEqual()),
                 left = ParseVariableRead(ctx.variable.text, getSection(source, ctx.variable, ctx.variable)),
                 right = ctx.value.accept(parser),
                 section = getSection(source, ctx)
@@ -18,13 +19,15 @@ internal object OpEqualReader {
             section = getSection(source, ctx)
         )
 
-    private fun getOperator(ctx: ChiParser.OpEqualContext): String {
+    private fun getOperator(source: ChiSource, ctx: ChiParser.OpEqualContext): String {
         return when {
             ctx.PLUS_EQUAL() != null -> "+"
             ctx.MINUS_EQUAL() != null -> "-"
             ctx.MUL_EQUAL() != null -> "*"
             ctx.DIV_EQUAL() != null -> "/"
-            else -> TODO("Unsupported OpEqual operator: ${ctx.text}")
+            else -> throw CompilerMessage.from(
+                "Unsupported OpEqual operator: ${ctx.text}",
+                getSection(source, ctx))
         }
     }
 }

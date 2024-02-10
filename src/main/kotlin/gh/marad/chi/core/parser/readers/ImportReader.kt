@@ -7,36 +7,34 @@ import gh.marad.chi.core.parser.readers.CommonReader.readModuleName
 import gh.marad.chi.core.parser.readers.CommonReader.readPackageName
 
 object ImportReader {
-    fun read(source: ChiSource, ctx: ChiParser.Import_definitionContext): ParseImportDefinition =
-        ParseImportDefinition(
-            moduleName = readModuleName(source, ctx.module_name()),
-            packageName = readPackageName(source, ctx.package_name()),
-            packageAlias = readPackageAlias(source, ctx.package_import_alias()),
+    fun read(source: ChiSource, ctx: ChiParser.Import_definitionContext): Import =
+        Import(
+            moduleName = readModuleName(ctx.moduleName()),
+            packageName = readPackageName(ctx.packageName()),
+            packageAlias = readPackageAlias(ctx.package_import_alias()),
             entries = ctx.import_entry().map { readImportEntry(source, it) },
             section = getSection(source, ctx)
         )
 
-    private fun readPackageAlias(source: ChiSource, ctx: ChiParser.Package_import_aliasContext?): Alias? =
-        ctx?.let { Alias(it.text, getSection(source, it)) }
+    private fun readPackageAlias(ctx: ChiParser.Package_import_aliasContext?): String? =
+        ctx?.text
 
-    private fun readImportEntry(source: ChiSource, ctx: ChiParser.Import_entryContext): ParseImportDefinition.Entry =
-        ParseImportDefinition.Entry(
+    private fun readImportEntry(source: ChiSource, ctx: ChiParser.Import_entryContext): Import.Entry =
+        Import.Entry(
             name = ctx.import_name().text,
-            alias = readImportNameAlias(source, ctx.name_import_alias()),
+            alias = readImportNameAlias(ctx.name_import_alias()),
             section = getSection(source, ctx)
         )
 
-    private fun readImportNameAlias(source: ChiSource, ctx: ChiParser.Name_import_aliasContext?): Alias? =
-        ctx?.let { Alias(it.text, getSection(source, it)) }
+    private fun readImportNameAlias(ctx: ChiParser.Name_import_aliasContext?): String? =
+        ctx?.text
 
 }
 
-data class Alias(val alias: String, val section: ChiSource.Section?)
-
-data class ParseImportDefinition(
-    val moduleName: ModuleName, val packageName: PackageName, val packageAlias: Alias?, val entries: List<Entry>,
-    override val section: ChiSource.Section?
-) : ParseAst {
-    data class Entry(val name: String, val alias: Alias?, val section: ChiSource.Section?)
+data class Import(
+    val moduleName: String, val packageName: String, val packageAlias: String?, val entries: List<Entry>,
+    val section: ChiSource.Section?
+) {
+    data class Entry(val name: String, val alias: String?, val section: ChiSource.Section?)
 }
 

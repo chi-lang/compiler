@@ -4,6 +4,7 @@ import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 internal object FieldOperatorReader {
     fun readFieldAccess(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.FieldAccessExprContext): ParseAst =
@@ -21,23 +22,8 @@ internal object FieldOperatorReader {
             receiver = ctx.receiver.accept(parser),
             memberName = ctx.memberName.text,
             value = ctx.value.accept(parser),
-            section = getSection(source, ctx)
-        )
-
-    fun readMethodInvocation(
-        parser: ParserVisitor,
-        source: ChiSource,
-        ctx: ChiParser.MethodInvocationContext
-    ): ParseAst =
-        ParseMethodInvocation(
-            receiverName = ctx.receiver.text,
-            receiver = ctx.receiver.accept(parser),
-            methodName = ctx.methodName.text,
-            concreteTypeParameters = ctx.callGenericParameters()?.type()
-                ?.map { TypeReader.readTypeRef(parser, source, it) } ?: emptyList(),
-            arguments = ctx.expr_comma_list().expression().map { it.accept(parser) },
-            memberSection = getSection(source, ctx.methodName, ctx.methodName),
-            section = getSection(source, ctx)
+            section = getSection(source, ctx),
+            memberSection = getSection(source, ctx.memberName)
         )
 }
 
@@ -47,22 +33,19 @@ data class ParseFieldAccess(
     val receiver: ParseAst,
     val memberSection: ChiSource.Section?,
     override val section: ChiSource.Section?,
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitFieldAccess(this)
+    override fun children(): List<ParseAst> = listOf(receiver)
+}
 
 data class ParseFieldAssignment(
     val receiverName: String,
     val memberName: String,
     val receiver: ParseAst,
     val value: ParseAst,
-    override val section: ChiSource.Section?,
-) : ParseAst
-
-data class ParseMethodInvocation(
-    val receiverName: String,
-    val methodName: String,
-    val receiver: ParseAst,
-    val concreteTypeParameters: List<TypeRef>,
-    val arguments: List<ParseAst>,
     val memberSection: ChiSource.Section?,
     override val section: ChiSource.Section?,
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitFieldAssignment(this)
+    override fun children(): List<ParseAst> = listOf(receiver, value)
+}

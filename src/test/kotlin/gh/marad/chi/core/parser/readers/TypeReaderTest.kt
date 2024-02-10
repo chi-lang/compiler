@@ -39,5 +39,28 @@ class TypeReaderTest {
         typeRef.section?.getCode() shouldBe "HashMap[string, int]"
     }
 
+    @Test
+    fun `parse sum type`() {
+        val code = "val x: int | string = 0"
+        val ast = testParse(code)
+        val typeRef = ast[0].shouldBeTypeOf<ParseNameDeclaration>()
+            .typeRef.shouldBeTypeOf<SumTypeRef>()
+
+        typeRef.lhs.shouldBeTypeOf<TypeNameRef>().typeName shouldBe "int"
+        typeRef.rhs.shouldBeTypeOf<TypeNameRef>().typeName shouldBe "string"
+    }
+
+    @Test
+    fun `parse record type`() {
+        val code = "val x: { x: int, y: float } = 0"
+        val ast = testParse(code)
+        val typeRef = ast[0].shouldBeTypeOf<ParseNameDeclaration>()
+            .typeRef.shouldBeTypeOf<RecordTypeRef>()
+
+        typeRef.fields[0].shouldBeTypeOf<RecordTypeRef.Field>()
+            .typeRef.shouldBeTypeOf<TypeNameRef>().typeName shouldBe "int"
+        typeRef.fields[1].shouldBeTypeOf<RecordTypeRef.Field>()
+            .typeRef.shouldBeTypeOf<TypeNameRef>().typeName shouldBe "float"
+    }
 
 }

@@ -2,30 +2,30 @@ parser grammar ChiParser;
 
 options { tokenVocab=ChiLexer; }
 
-program : (package_definition ws)? (ws import_definition)* ws (expression | variantTypeDefinition)? (newline (expression | variantTypeDefinition))* ws EOF ;
+program : (package_definition ws)? (ws import_definition)* ws (typealias | expression | variantTypeDefinition | traitDefinition)? (newline (expression | variantTypeDefinition))* ws EOF ;
 
 newline : NEWLINE+;
 
 // ====================================================================================================
 // Package and import definitions
 // ====================================================================================================
-package_definition : 'package' module_name? '/' package_name?;
-import_definition : 'import' module_name '/' package_name ('as' package_import_alias)? (LBRACE (import_entry ','?)+ RBRACE)?;
+package_definition : 'package' moduleName? '/' packageName?;
+import_definition : 'import' moduleName '/' packageName ('as' package_import_alias)? (LBRACE (import_entry ','?)+ RBRACE)?;
 
 package_import_alias : ID;
 import_entry : import_name ('as' name_import_alias)?;
 import_name : ID;
 name_import_alias : ID;
 
-module_name : ID ('.' ID)*;
-package_name : ID ('.' ID)*;
+moduleName : ID ('.' ID)*;
+packageName : ID ('.' ID)*;
 
 // ====================================================================================================
 // Variant type definitions
 // ====================================================================================================
 variantTypeDefinition : fullVariantTypeDefinition | simplifiedVariantTypeDefinition;
-fullVariantTypeDefinition: 'data' typeName=ID generic_type_definitions? '=' ws variantTypeConstructors;
-simplifiedVariantTypeDefinition : 'data' PUB? typeName=ID generic_type_definitions? ('(' variantFields? ')')?;
+fullVariantTypeDefinition: 'data' name=ID generic_type_definitions? '=' ws variantTypeConstructors;
+simplifiedVariantTypeDefinition : 'data' PUB? name=ID generic_type_definitions? ('(' variantFields? ')')?;
 
 variantTypeConstructors : variantTypeConstructor (ws '|' ws variantTypeConstructor)*;
 variantTypeConstructor : PUB? variantName=ID ('(' variantFields? ')')? ;
@@ -51,10 +51,38 @@ handleCaseEffectParam : ID;
 handleCaseBody : block | expression;
 
 // ====================================================================================================
+// Traits
+// ====================================================================================================
+
+traitDefinition : 'trait' name=ID generic_type_definitions? '{' ws traitFunctionDefinition* '}';
+traitFunctionDefinition : FN funcName=ID arguments=func_argument_definitions (COLON func_return_type)? ws;
+
+// ====================================================================================================
+// Types
+// ====================================================================================================
+typealias : DEFTYPE name=ID generic_type_definitions? '=' type;
+
+type
+    : typeName                                              #TypeNameRef
+    | '(' type? (COMMA type)* ')' ARROW func_return_type    #FunctionTypeRef
+    | '{' recordField (',' recordField)* '}'                #RecordType
+    | type '|' type                                         #SumType
+    | typeName '[' type (',' type)* ']'                     #TypeConstructorRef
+    ;
+
+typeName: simpleName | qualifiedName;
+recordField : ws name=ID ws ':' ws type ws;
+
+simpleName: name=ID;
+qualifiedName: moduleName qualifierSeparator packageName qualifierSeparator name=ID;
+qualifierSeparator: ':' ':';
+
+// ====================================================================================================
 // Expressions
 // ====================================================================================================
 expression
     : expression AS type # Cast
+    | '{' ws ID ws ':' ws expression ws (','? | (',' ws ID ':' ws expression ws)* ','?) ws '}' # CreateRecord
     | effectDefinition # EffectDef
     | handleExpression # HandleExpr
     | expression IS variantName=ID  # IsExpr
@@ -62,12 +90,11 @@ expression
     | whenExpression # WhenExpr
     | '(' expression ')' # GroupExpr
     | expression callGenericParameters? '(' expr_comma_list ')' # FnCallExpr
+    | receiver=expression ws PERIOD memberName=ID # FieldAccessExpr
     | variable=expression '[' index=expression ']' # IndexOperator
     | func_with_name # FuncWithName
     | name_declaration #NameDeclarationExpr
     | string # StringExpr
-    | receiver=expression ws PERIOD methodName=ID callGenericParameters? '(' arguments=expr_comma_list ')' # MethodInvocation
-    | receiver=expression ws PERIOD memberName=ID # FieldAccessExpr
     | MINUS expression # NegationExpr
     | expression BIT_SHL expression # BinOp
     | expression BIT_SHR expression # BinOp
@@ -96,7 +123,9 @@ expression
     | CONTINUE # ContinueExpr
     ;
 
-lambda: LBRACE ws (argumentsWithTypes '->')? ws (expression ws)* RBRACE;
+lambda: LBRACE ws (argumentsWithOptionalTypes '->')? ws (expression ws)* RBRACE;
+argumentsWithOptionalTypes : argumentWithOptionalType ws (',' ws argumentWithOptionalType ws)*;
+argumentWithOptionalType : ID (':' type)?;
 block : LBRACE ws (expression ws)* RBRACE;
 
 divMul: DIV | MUL;
@@ -116,11 +145,6 @@ expr_comma_list : expression? (COMMA expression)*;
 assignment
     : ID EQUALS value=expression
     ;
-
-type : typeNameRef | functionTypeRef | typeConstructorRef;
-typeNameRef : (packageName=ID '.')? name=ID;
-functionTypeRef : '(' type? (COMMA type)* ')' ARROW func_return_type;
-typeConstructorRef : typeNameRef '[' type (',' type)* ']';
 
 name_declaration
     : PUB? (VAL | VAR) ID (COLON type)? EQUALS expression

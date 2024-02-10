@@ -23,7 +23,7 @@ class EffectReaderTest {
             it.typeParameters.map { it.name } shouldBe listOf("T")
             it.formalArguments[0].should { param ->
                 param.name shouldBe "fileName"
-                param.typeRef.shouldBeTypeNameRef("string")
+                param.typeRef?.shouldBeTypeNameRef("string")
             }
             it.returnTypeRef.shouldBeTypeNameRef("T")
         }

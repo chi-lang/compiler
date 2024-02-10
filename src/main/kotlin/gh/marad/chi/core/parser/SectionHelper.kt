@@ -23,3 +23,9 @@ fun getSection(source: ChiSource, start: Token, stop: Token): ChiSource.Section 
         endIndex = stop.stopIndex
     )
 
+fun getSection(source: ChiSource, token: Token): ChiSource.Section =
+    source.getSection(
+        startIndex = token.startIndex,
+        endIndex = token.stopIndex
+    )
+

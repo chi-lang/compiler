@@ -4,11 +4,12 @@ import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 internal object FuncReader {
     fun readLambda(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.LambdaContext): ParseAst {
         return ParseLambda(
-            formalArguments = CommonReader.readFuncArgumentDefinitions(parser, source, ctx.argumentsWithTypes()),
+            formalArguments = CommonReader.readFuncArgumentDefinitions(parser, source, ctx.argumentsWithOptionalTypes()),
             body = ctx.expression().map { it.accept(parser) },
             section = getSection(source, ctx)
         )
@@ -46,7 +47,10 @@ data class ParseLambda(
     val formalArguments: List<FormalArgument>,
     val body: List<ParseAst>,
     override val section: ChiSource.Section?
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitLambda(this)
+    override fun children(): List<ParseAst> = body
+}
 
 data class ParseFuncWithName(
     val public: Boolean,
@@ -56,7 +60,10 @@ data class ParseFuncWithName(
     val returnTypeRef: TypeRef?,
     val body: ParseAst,
     override val section: ChiSource.Section?
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitFuncWithName(this)
+    override fun children(): List<ParseAst> = listOf(body)
+}
 
 data class ParseFnCall(
     val name: String,
@@ -64,4 +71,7 @@ data class ParseFnCall(
     val concreteTypeParameters: List<TypeRef>,
     val arguments: List<ParseAst>,
     override val section: ChiSource.Section?,
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitFnCall(this)
+    override fun children(): List<ParseAst> = listOf(function) + arguments
+}

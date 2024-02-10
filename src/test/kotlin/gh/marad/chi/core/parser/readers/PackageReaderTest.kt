@@ -1,37 +1,40 @@
 package gh.marad.chi.core.parser.readers
 
-import gh.marad.chi.core.parser.testParse
+import gh.marad.chi.core.parser.ChiSource
+import gh.marad.chi.core.parser.parser
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.jupiter.api.Test
 
 
 class PackageReaderTest {
     @Test
     fun `parse package definition`() {
-        val result = testParse("package my.module/some.pkg")
-        result[0].shouldBeTypeOf<ParsePackageDefinition>().should {
-            it.moduleName.name shouldBe "my.module"
-            it.packageName.name shouldBe "some.pkg"
+        val source = ChiSource("package my.module/some.pkg")
+        val result = PackageReader.read(source, parser(source).package_definition())
+        result should {
+            it.moduleName shouldBe "my.module"
+            it.packageName shouldBe "some.pkg"
         }
     }
 
     @Test
     fun `can parse empty module`() {
-        val result = testParse("package /some.pkg")
-        result[0].shouldBeTypeOf<ParsePackageDefinition>().should {
-            it.moduleName.name shouldBe ""
-            it.packageName.name shouldBe "some.pkg"
+        val source = ChiSource("package /some.pkg")
+        val result = PackageReader.read(source, parser(source).package_definition())
+        result should {
+            it.moduleName shouldBe ""
+            it.packageName shouldBe "some.pkg"
         }
     }
 
     @Test
     fun `can parse empty package`() {
-        val result = testParse("package my.module/")
-        result[0].shouldBeTypeOf<ParsePackageDefinition>().should {
-            it.moduleName.name shouldBe "my.module"
-            it.packageName.name shouldBe ""
+        val source = ChiSource("package my.module/")
+        val result = PackageReader.read(source, parser(source).package_definition())
+        result should {
+            it.moduleName shouldBe "my.module"
+            it.packageName shouldBe ""
         }
     }
 }
