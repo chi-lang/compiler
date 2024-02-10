@@ -71,7 +71,7 @@ type
     ;
 
 typeName: simpleName | qualifiedName;
-recordField : ws ID ws ':' ws type ws;
+recordField : ws name=ID ws ':' ws type ws;
 
 simpleName: name=ID;
 qualifiedName: moduleName qualifierSeparator packageName qualifierSeparator name=ID;
