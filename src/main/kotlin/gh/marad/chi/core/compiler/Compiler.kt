@@ -283,6 +283,9 @@ object Compiler {
                     types.flatMap { it.findTypeVariables() },
                 ).also { it.sourceSection = ref.section }
             }
+
+            is SumTypeRef -> TODO("Not implemented!")
+            is RecordTypeRef -> TODO("Not implemented!")
         }
     }
 

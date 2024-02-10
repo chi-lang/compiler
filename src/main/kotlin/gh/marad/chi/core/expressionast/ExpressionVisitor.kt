@@ -27,4 +27,5 @@ interface ExpressionVisitor {
     fun visitEffectDefinition(effectDefinition: EffectDefinition)
     fun visitHandle(handle: Handle)
     fun visitReturn(arg: Return)
+    fun visitCreateRecord(createRecord: CreateRecord)
 }

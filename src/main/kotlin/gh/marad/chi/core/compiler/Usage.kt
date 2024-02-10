@@ -13,6 +13,13 @@ fun markUsed(term: Expression) {
 }
 
 class UsageMarker : ExpressionVisitor {
+    override fun visitCreateRecord(createRecord: CreateRecord) {
+        if (createRecord.used) {
+            createRecord.fields.forEach { it.value.used = true }
+        }
+        visitChildren(createRecord)
+    }
+
     override fun visitNameDeclaration(nameDeclaration: NameDeclaration) {
         nameDeclaration.value.used = true
         visitChildren(nameDeclaration)

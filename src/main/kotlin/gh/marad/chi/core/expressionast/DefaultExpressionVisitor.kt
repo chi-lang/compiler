@@ -74,4 +74,7 @@ interface DefaultExpressionVisitor : ExpressionVisitor {
 
     override fun visitReturn(arg: Return) =
         arg.children().forEach { visit(it) }
+
+    override fun visitCreateRecord(createRecord: CreateRecord) =
+        createRecord.children().forEach { visit(it) }
 }

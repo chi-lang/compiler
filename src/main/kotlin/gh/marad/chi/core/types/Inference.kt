@@ -27,6 +27,11 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
             expr.type?.sourceSection = expr.sourceSection
             InferenceResult(expr.type!!, emptySet())
         }
+
+        is CreateRecord -> {
+            InferenceResult(Types.unit, emptySet())
+        }
+
         is VariableAccess -> {
             val t = env.getType(expr.target, expr.sourceSection)
             val finalType = instantiate(ctx, t)
@@ -157,8 +162,8 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
 
             val constraints = mutableSetOf<Constraint>()
             constraints.add(Constraint(
-                actual = FunctionType(paramTypes.map { it.type } + t),
-                expected = funcType.type,
+                expected = FunctionType(paramTypes.map { it.type } + t),
+                actual = funcType.type,
                 paramSections = expr.parameters.map { it.sourceSection },
                 section = expr.function.sourceSection
             ))
@@ -193,33 +198,17 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
                 finalType = Types.unit // if without else branch has unit type
             } else if (thenType == elseType) {
                 finalType = thenType // when types are the same - no problem
-            } else if (Types.isSubtype(thenType, elseType)) {
-                finalType = thenType // then type is broader
-            } else if (Types.isSubtype(elseType, thenType)) {
-                finalType = elseType // else type is broader
-            } else if (thenType != elseType) {
-                val a = Types.commonSupertype(thenType, elseType)
-                allConstraints.add(Constraint(thenBranchType.type, thenType, expr.thenBranch.sourceSection))
-                allConstraints.add(Constraint(elseBranchType.type, elseType, expr.elseBranch.sourceSection))
+            } else {
                 val thenInfo = ctx.typeTable.find(thenType)
                 val elseInfo = ctx.typeTable.find(elseType)
-                if (thenInfo?.supertype == elseInfo?.supertype) {
-                    finalType = thenInfo?.supertype
-//                    allConstraints.add(Constraint(thenBranchType.type, finalType!!, expr.thenBranch.sourceSection))
-//                    allConstraints.add(Constraint(elseBranchType.type, finalType!!, expr.thenBranch.sourceSection))
-                } else {
-                    finalType = Types.any // when types are not related - if returns any
-                }
-            }
+                finalType = listOf(
+                    (thenInfo?.supertype == elseType) to elseType,
+                    (elseInfo?.supertype == thenType) to thenType,
+                    (thenInfo?.supertype != null && thenInfo.supertype == elseInfo?.supertype) to thenInfo?.supertype,
+                    true to Types.any
+                ).firstOrNull { it.first }?.second
 
-            if (finalType == null) {
-                finalType = ctx.nextTypeVariable() // safety measure, probably not crucial
-            }
-
-
-            allConstraints.add(Constraint(thenBranchType.type, finalType, expr.thenBranch.sourceSection))
-            if (expr.elseBranch != null) {
-            allConstraints.add(Constraint(thenBranchType.type, finalType, expr.thenBranch.sourceSection))
+                allConstraints.add(Constraint(thenBranchType.type, finalType!!, expr.thenBranch.sourceSection))
                 allConstraints.add(Constraint(elseBranchType.type, finalType, expr.thenBranch.sourceSection))
             }
 

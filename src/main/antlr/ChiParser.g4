@@ -60,7 +60,7 @@ traitFunctionDefinition : FN funcName=ID arguments=func_argument_definitions (CO
 // ====================================================================================================
 // Types
 // ====================================================================================================
-typealias : DEFTYPE ID generic_type_definitions? '=' type;
+typealias : DEFTYPE name=ID generic_type_definitions? '=' type;
 
 type
     : typeName                                              #TypeNameRef
@@ -82,6 +82,7 @@ qualifierSeparator: ':' ':';
 // ====================================================================================================
 expression
     : expression AS type # Cast
+    | '{' ws ID ws ':' ws expression ws (','? | (',' ws ID ':' ws expression ws)* ','?) ws '}' # CreateRecord
     | effectDefinition # EffectDef
     | handleExpression # HandleExpr
     | expression IS variantName=ID  # IsExpr

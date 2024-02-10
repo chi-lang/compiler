@@ -74,6 +74,15 @@ data class LocalSymbol(
     override fun toString(): String = name
 }
 
+data class CreateRecord(val fields: List<Field>, override val sourceSection: ChiSource.Section?) : Expression {
+    data class Field(val name: String, val value: Expression)
+    override var type: Type? = null
+    override var newType: Type3? = null
+    override var used: Boolean = false
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitCreateRecord(this)
+    override fun children(): List<Expression> = fields.map { it.value }
+}
+
 data class VariableAccess(
     val target: Target,
     override val sourceSection: ChiSource.Section?
