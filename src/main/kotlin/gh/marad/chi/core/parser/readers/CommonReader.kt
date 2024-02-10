@@ -8,10 +8,10 @@ import gh.marad.chi.core.parser.readers.TypeReader.readTypeRef
 import org.antlr.v4.runtime.tree.TerminalNode
 
 internal object CommonReader {
-    fun readModuleName(ctx: ChiParser.Module_nameContext?): String =
+    fun readModuleName(ctx: ChiParser.ModuleNameContext?): String =
         ctx?.text ?: ""
 
-    fun readPackageName(ctx: ChiParser.Package_nameContext?): String =
+    fun readPackageName(ctx: ChiParser.PackageNameContext?): String =
         ctx?.text ?: ""
 
     fun readSymbol(source: ChiSource, id: TerminalNode): Symbol =

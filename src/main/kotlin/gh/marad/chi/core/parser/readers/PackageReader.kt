@@ -6,8 +6,8 @@ import gh.marad.chi.core.parser.getSection
 
 object PackageReader {
     fun read(source: ChiSource, ctx: ChiParser.Package_definitionContext): PackageDefinition {
-        val moduleName = CommonReader.readModuleName(ctx.module_name())
-        val packageName = CommonReader.readPackageName(ctx.package_name())
+        val moduleName = CommonReader.readModuleName(ctx.moduleName())
+        val packageName = CommonReader.readPackageName(ctx.packageName())
         return PackageDefinition(moduleName, packageName, getSection(source, ctx))
     }
 }

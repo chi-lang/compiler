@@ -58,7 +58,7 @@ class EffectConversionsKtDefinitionTest {
         val ns = GlobalCompilationNamespace()
         val definition = sampleEffectDefinition.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
-            returnTypeRef = TypeNameRef("T", sectionB)
+            returnTypeRef = TypeNameRef(null, null, "T", sectionB)
         )
 
         // when

@@ -21,9 +21,9 @@ val sectionC = testSource.getSection(2, 3)
 val defaultModule = ModuleName(CompilationDefaults.defaultModule, null)
 val defaultPackage = PackageName(CompilationDefaults.defaultPacakge, null)
 
-val intTypeRef = TypeNameRef("int", sectionA)
+val intTypeRef = TypeNameRef(null, null, "int", sectionA)
 
-fun arg(name: String, typeName: String) = FormalArgument(name, TypeNameRef(typeName, sectionB), sectionA)
+fun arg(name: String, typeName: String) = FormalArgument(name, TypeNameRef(null, null, typeName, sectionB), sectionA)
 fun intArg(name: String) = FormalArgument(name, intTypeRef, sectionA)
 
 fun Expression.shouldBeVariable(name: String, section: ChiSource.Section? = null) {

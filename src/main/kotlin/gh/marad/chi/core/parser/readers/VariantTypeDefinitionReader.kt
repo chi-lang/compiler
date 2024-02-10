@@ -24,12 +24,12 @@ internal object VariantTypeDefinitionReader {
         ctx: ChiParser.SimplifiedVariantTypeDefinitionContext
     ) =
         ParseVariantTypeDefinition(
-            typeName = ctx.typeName.text,
+            typeName = ctx.name.text,
             typeParameters = readTypeParameters(source, ctx.generic_type_definitions()),
             variantConstructors = listOf(
                 ParseVariantTypeDefinition.Constructor(
                     public = ctx.PUB() != null,
-                    name = ctx.typeName.text,
+                    name = ctx.name.text,
                     formalFields = readFields(parser, source, ctx.variantFields()),
                     section = getSection(source, ctx)
                 )
@@ -39,7 +39,7 @@ internal object VariantTypeDefinitionReader {
 
     fun readFullDefinition(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.FullVariantTypeDefinitionContext) =
         ParseVariantTypeDefinition(
-            typeName = ctx.typeName.text,
+            typeName = ctx.name.text,
             typeParameters = readTypeParameters(source, ctx.generic_type_definitions()),
             variantConstructors = readConstructors(parser, source, ctx.variantTypeConstructors()),
             section = getSection(source, ctx)

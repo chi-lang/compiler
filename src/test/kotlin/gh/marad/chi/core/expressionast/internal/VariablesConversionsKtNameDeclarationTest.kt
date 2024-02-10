@@ -21,7 +21,7 @@ class VariablesConversionsKtNameDeclarationTest {
                 public = true,
                 mutable = false,
                 symbol = Symbol("variable", sectionA),
-                typeRef = TypeNameRef("int", sectionB),
+                typeRef = TypeNameRef(null, null, "int", sectionB),
                 value = LongValue(10),
                 section = sectionC
             )

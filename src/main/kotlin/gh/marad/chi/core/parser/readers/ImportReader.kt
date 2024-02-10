@@ -9,8 +9,8 @@ import gh.marad.chi.core.parser.readers.CommonReader.readPackageName
 object ImportReader {
     fun read(source: ChiSource, ctx: ChiParser.Import_definitionContext): Import =
         Import(
-            moduleName = readModuleName(ctx.module_name()),
-            packageName = readPackageName(ctx.package_name()),
+            moduleName = readModuleName(ctx.moduleName()),
+            packageName = readPackageName(ctx.packageName()),
             packageAlias = readPackageAlias(ctx.package_import_alias()),
             entries = ctx.import_entry().map { readImportEntry(source, it) },
             section = getSection(source, ctx)

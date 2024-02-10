@@ -2,6 +2,7 @@ package gh.marad.chi.core.parser.readers
 
 import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.antlr.ChiParser
+import gh.marad.chi.core.antlr.ChiParser.*
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
@@ -9,34 +10,37 @@ import java.util.*
 
 internal object TypeReader {
 
-    fun readTypeRef(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.TypeContext): TypeRef {
-        return if (ctx.typeNameRef() != null) {
-            readTypeName(source, ctx.typeNameRef())
-        } else if (ctx.functionTypeRef() != null) {
-            readFunctionType(parser, source, ctx.functionTypeRef())
-        } else if (ctx.typeConstructorRef() != null) {
-            readGenericType(parser, source, ctx.typeConstructorRef())
-        } else {
-            throw CompilerMessage.from("Unknown type", getSection(source, ctx))
+    fun readTypeRef(parser: ParserVisitor, source: ChiSource, ctx: TypeContext): TypeRef {
+        return when (ctx) {
+            is TypeNameRefContext -> readTypeName(source, ctx.typeName())
+            is FunctionTypeRefContext -> readFunctionType(parser, source, ctx)
+            is RecordTypeContext -> TODO()
+            is SumTypeContext -> TODO()
+            is TypeConstructorRefContext -> readGenericType(parser, source, ctx)
+            else -> throw CompilerMessage.from("Unsupported kind of type definition: $ctx", getSection(source, ctx))
         }
     }
 
-    private fun readTypeName(source: ChiSource, ctx: ChiParser.TypeNameRefContext): TypeNameRef {
-        if (ctx.packageName != null) {
-            throw CompilerMessage.from(
-                "Resolving type from package is not supported.",
-                getSection(source, ctx))
+    private fun readTypeName(source: ChiSource, typeName: TypeNameContext): TypeNameRef {
+        val section = getSection(source, typeName)
+        return if (typeName.simpleName() != null) {
+            TypeNameRef(null, null, typeName.simpleName().name.text, section)
+        } else if (typeName.qualifiedName() != null) {
+            TypeNameRef(
+                moduleName = typeName.qualifiedName().moduleName().text,
+                packageName = typeName.qualifiedName().packageName().text,
+                typeName = typeName.qualifiedName().name.text,
+                section
+            )
+        } else {
+            throw CompilerMessage.from("Unsupported kind of type name: $typeName", section)
         }
-        return TypeNameRef(
-            typeName = ctx.name.text,
-            getSection(source, ctx)
-        )
     }
 
     private fun readFunctionType(
         parser: ParserVisitor,
         source: ChiSource,
-        ctx: ChiParser.FunctionTypeRefContext
+        ctx: FunctionTypeRefContext
     ): TypeRef {
         val argTypes = ctx.type().map { readTypeRef(parser, source, it) }
         val returnType = readTypeRef(parser, source, ctx.func_return_type().type())
@@ -46,9 +50,9 @@ internal object TypeReader {
     private fun readGenericType(
         parser: ParserVisitor,
         source: ChiSource,
-        ctx: ChiParser.TypeConstructorRefContext
+        ctx: TypeConstructorRefContext
     ): TypeRef {
-        val typeName = readTypeName(source, ctx.typeNameRef())
+        val typeName = readTypeName(source, ctx.typeName())
         val typeParameters = ctx.type().map { readTypeRef(parser, source, it) }
         return TypeConstructorRef(
             typeName, typeParameters, getSection(source, ctx)
@@ -60,7 +64,7 @@ sealed interface TypeRef {
     fun findTypeNames(): Set<String>
     val section: ChiSource.Section?
     companion object {
-        val unit = TypeNameRef("unit", null)
+        val unit = TypeNameRef(null, null, "unit", null)
     }
 }
 
@@ -69,6 +73,8 @@ data class TypeParameterRef(val name: String, override val section: ChiSource.Se
 
 }
 data class TypeNameRef(
+    val moduleName: String?,
+    val packageName: String?,
     val typeName: String,
     override val section: ChiSource.Section?
 ) : TypeRef {

@@ -94,7 +94,7 @@ class SimpleConversionsKtTest {
         val result = convertAst(
             ParseCast(
                 value = LongValue(10),
-                typeRef = TypeNameRef("string", sectionA),
+                typeRef = TypeNameRef(null, null, "string", sectionA),
                 section = sectionB
             )
         ).shouldBeTypeOf<Cast>()
