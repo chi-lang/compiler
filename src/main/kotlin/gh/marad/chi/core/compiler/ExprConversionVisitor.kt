@@ -370,6 +370,14 @@ class ExprConversionVisitor(
     override fun visitReturn(parseReturn: ParseReturn): Expression =
         Return(parseReturn.value?.accept(this), parseReturn.section)
 
+    override fun visitCreateRecord(parseCreateRecord: ParseCreateRecord): Expression =
+        CreateRecord(
+            parseCreateRecord.fields.map {
+                CreateRecord.Field(it.name, it.value.accept(this))
+            },
+            parseCreateRecord.section
+        )
+
     private fun <T> withFnSymbolTable(fnSymbolTable: FnSymbolTable, f: () -> T): T {
         val prevFnSymbolTable = currentFnSymbolTable
         currentFnSymbolTable = fnSymbolTable

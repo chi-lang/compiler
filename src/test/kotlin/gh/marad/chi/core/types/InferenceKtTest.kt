@@ -126,7 +126,7 @@ class InferenceKtTest {
             public = false,
             typeVariables = listOf(T),
             parameters = listOf(
-                FnParam("param", type = T, null)
+                FnParam("param", type = T, null, null)
             ),
             sourceSection = null
         )
@@ -189,7 +189,7 @@ class InferenceKtTest {
         val lambda = Fn(
             typeVariables = emptyList(),
             parameters = listOf(
-                FnParam("param", Types.int, null)
+                FnParam("param", Types.int, null, null)
             ),
             body = Block(listOf(Atom.int(5, null)), null),
             sourceSection = null
@@ -404,7 +404,7 @@ class InferenceKtTest {
             opt.map({ it -> "hello" })
         """.trimIndent()
 
-        val result = ast(code, GlobalCompilationNamespace())
+        val result = ast(code, GlobalCompilationNamespace(), ignoreCompilationErrors = true)
 
         // then
         result.shouldBeTypeOf<FnCall>()

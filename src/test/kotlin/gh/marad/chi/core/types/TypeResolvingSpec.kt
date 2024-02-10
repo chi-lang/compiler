@@ -21,7 +21,7 @@ class TypeResolvingSpec {
         typeTable.addType(type)
 
         // when
-        val result = Compiler.resolveType(typeTable, emptyList(), TypeNameRef("Type", null))
+        val result = Compiler.resolveType(typeTable, emptyList(), TypeNameRef(null, null, "Type", null))
 
         // then
         result shouldBe type
@@ -30,7 +30,7 @@ class TypeResolvingSpec {
 
     @Test
     fun `should resolve type variables`() {
-        Compiler.resolveType(TypeTable(), listOf("T"), TypeNameRef("T", null)) shouldBe TypeVariable("T")
+        Compiler.resolveType(TypeTable(), listOf("T"), TypeNameRef(null, null, "T", null)) shouldBe TypeVariable("T")
         Compiler.resolveType(TypeTable(), listOf(), TypeParameterRef("T", null)) shouldBe TypeVariable("T")
     }
 
@@ -48,8 +48,8 @@ class TypeResolvingSpec {
             VariantField("foo", T, true)
         ))
         var ref = TypeConstructorRef(
-            TypeNameRef("Type", null),
-            typeParameters = listOf(TypeNameRef("T", null)),
+            TypeNameRef(null, null, "Type", null),
+            typeParameters = listOf(TypeNameRef(null, null, "T", null)),
             null
         )
 
@@ -64,9 +64,9 @@ class TypeResolvingSpec {
     fun `should resolve function type`() {
         // given
         val ref = FunctionTypeRef(
-            argumentTypeRefs = listOf(TypeNameRef("int", null), TypeParameterRef("T", null)),
+            argumentTypeRefs = listOf(TypeNameRef(null, null, "int", null), TypeParameterRef("T", null)),
             typeParameters = listOf(TypeParameterRef("T", null)),
-            returnType = TypeNameRef("float", null),
+            returnType = TypeNameRef(null, null, "float", null),
             section = null
         )
 

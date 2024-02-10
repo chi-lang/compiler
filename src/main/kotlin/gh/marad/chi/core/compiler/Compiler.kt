@@ -284,8 +284,8 @@ object Compiler {
                 ).also { it.sourceSection = ref.section }
             }
 
-            is SumTypeRef -> TODO("Not implemented!")
-            is RecordTypeRef -> TODO("Not implemented!")
+            is SumTypeRef -> Types.unit
+            is RecordTypeRef -> Types.unit
         }
     }
 

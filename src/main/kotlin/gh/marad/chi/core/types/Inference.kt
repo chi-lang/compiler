@@ -29,6 +29,7 @@ internal fun inferTypes(ctx: InferenceContext, env: InferenceEnv, expr: Expressi
         }
 
         is CreateRecord -> {
+            expr.type = Types.unit
             InferenceResult(Types.unit, emptySet())
         }
 

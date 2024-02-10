@@ -37,4 +37,5 @@ interface ParseAstVisitor<T> {
     fun visitWeave(parseWeave: ParseWeave): T
     fun visitPlaceholder(parseWeavePlaceholder: ParseWeavePlaceholder): T
     fun visitReturn(parseReturn: ParseReturn): T
+    fun visitCreateRecord(parseCreateRecord: ParseCreateRecord): T
 }
