@@ -29,6 +29,11 @@ sealed  interface Type3 : TypeScheme {
         val int = Primitive(TypeId("std", "lang.types.int", "int"))
         val float = Primitive(TypeId("std", "lang.types.float", "float"))
         val string = Primitive(TypeId("std", "lang.types.string", "string"))
+
+        fun fn(vararg types: Type3) = Function(types.toList())
+        fun record(vararg fields: Pair<String, Type3>): Record = Record(null, fields.map { Record.Field(it.first, it.second) })
+        fun record(id: TypeId, vararg fields: Pair<String, Type3>): Record = Record(id, fields.map { Record.Field(it.first, it.second) })
+        fun array(elementType: Type3, level: Int) = Array(elementType, level)
     }
 }
 
@@ -39,13 +44,18 @@ data class TypeId(
     override fun toString(): String = "$moduleName::$packageName::$name"
 }
 
-data class Primitive(val id: TypeId) : Type3 {
+interface HasTypeId {
+    fun getTypeId(): TypeId?
+}
+
+data class Primitive(val id: TypeId) : Type3, HasTypeId {
     override val level: Int = 0
     override fun <T> accept(visitor: TypeVisitor<T>): T =
         visitor.visitPrimitive(this)
 
     override fun children(): List<Type3> = emptyList()
-    override fun toString(): String = id.toString()
+    override fun toString(): String = id.name
+    override fun getTypeId(): TypeId = id
 }
 
 data class Function(val types: List<Type3>) : Type3 {
@@ -56,7 +66,7 @@ data class Function(val types: List<Type3>) : Type3 {
     override fun toString(): String = "(" + types.joinToString(" -> ") + ")"
 }
 
-data class Record(val id: TypeId?, val fields: List<Field>) : Type3 {
+data class Record(val id: TypeId?, val fields: List<Field>) : Type3, HasTypeId {
     data class Field(val name: String, val type: Type3)
 
     override val level: Int get() = fields.maxOf { it.type.level }
@@ -75,9 +85,11 @@ data class Record(val id: TypeId?, val fields: List<Field>) : Type3 {
         sb.append('}')
         return sb.toString()
     }
+
+    override fun getTypeId(): TypeId? = id
 }
 
-data class Sum(val id: TypeId?, val lhs: Type3, val rhs: Type3, override val level: Int) : Type3 {
+data class Sum(val id: TypeId?, val lhs: Type3, val rhs: Type3, override val level: Int) : Type3, HasTypeId {
     override fun <T> accept(visitor: TypeVisitor<T>): T = visitor.visitSum(this)
     override fun children(): List<Type3> = listOf(lhs, rhs)
     override fun toString(): String = "$lhs | $rhs"
@@ -93,12 +105,15 @@ data class Sum(val id: TypeId?, val lhs: Type3, val rhs: Type3, override val lev
             }
         }
     }
+
+    override fun getTypeId(): TypeId? = id
 }
 
-data class Array(val elementType: Type3, override val level: Int) : Type3 {
+data class Array(val elementType: Type3, override val level: Int) : Type3, HasTypeId {
     override fun <T> accept(visitor: TypeVisitor<T>): T = visitor.visitArray(this)
     override fun children(): List<Type3> = listOf(elementType)
     override fun toString(): String = "array[$elementType]"
+    override fun getTypeId(): TypeId = TypeId("std", "lang.types.array", "array")
 }
 
 data class Variable(

@@ -334,10 +334,8 @@ object Compiler {
 
     fun refineMessages(messages: List<Message>): List<Message> =
         messages.map {
-            if (it is TypeMismatch && it.expected is FunctionType && it.actual !is FunctionType) {
+            if (it is TypeMismatch && it.expected is Function && it.actual !is Function) {
                 NotAFunction(it.codePoint)
-            } else if (it is TypeMismatch && it.expected is ProductType && it.expected.name == "array") {
-                TypeIsNotIndexable(it.actual, it.codePoint)
             }  else {
                 it
             }

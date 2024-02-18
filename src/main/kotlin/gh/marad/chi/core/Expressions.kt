@@ -12,7 +12,6 @@ import gh.marad.chi.core.types3.TypeId
 
 sealed interface Expression {
     val sourceSection: ChiSource.Section?
-    var type: Type?
     var newType: Type3?
     var used: Boolean
 
@@ -36,7 +35,7 @@ data class TypeAlias(
 )
 
 data class Atom(val value: String,
-                override var type: Type?,
+                var type: Type?,
                 override var newType: Type3?,
                 override val sourceSection: ChiSource.Section?
 ) : Expression {
@@ -54,12 +53,11 @@ data class Atom(val value: String,
     override fun accept(visitor: ExpressionVisitor) = visitor.visitAtom(this)
     override fun children(): List<Expression> = listOf()
 
-    override fun toString(): String = "Atom($value: $type)"
+    override fun toString(): String = "Atom($value: $newType)"
 }
 
 data class InterpolatedString(val parts: List<Expression>, override val sourceSection: ChiSource.Section?) :
     Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitInterpolatedString(this)
@@ -87,7 +85,7 @@ data class LocalSymbol(
 
 data class CreateRecord(val fields: List<Field>, override val sourceSection: ChiSource.Section?) : Expression {
     data class Field(val name: String, val value: Expression)
-    override var type: Type? = null
+
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitCreateRecord(this)
@@ -98,7 +96,7 @@ data class VariableAccess(
     val target: Target,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var type: Type? = null
+    var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitVariableAccess(this)
@@ -118,7 +116,7 @@ data class FieldAccess(
     val memberSection: ChiSource.Section?,
 ) : Expression {
     var target: DotTarget? = null
-    override var type: Type? = null
+    var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitFieldAccess(this)
@@ -132,7 +130,6 @@ data class FieldAssignment(
     val memberSection: ChiSource.Section?,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitFieldAssignment(this)
@@ -144,7 +141,6 @@ data class Assignment(
     val value: Expression,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitAssignment(this)
@@ -156,24 +152,23 @@ data class NameDeclaration(
     val name: String,
     val value: Expression,
     val mutable: Boolean,
-    val expectedType: Type?,
+    val expectedType: Type3?,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitNameDeclaration(this)
     override fun children(): List<Expression> = listOf(value)
 }
 
-data class FnParam(val name: String, var type: Type?, var newType: Type3?, val sourceSection: ChiSource.Section?)
+data class FnParam(val name: String, var type: Type3?, val sourceSection: ChiSource.Section?)
 data class Fn(
     val typeVariables: List<TypeVariable>,
     val parameters: List<FnParam>,
     val body: Block,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var type: Type? = null
+    var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitFn(this)
@@ -181,7 +176,7 @@ data class Fn(
 }
 
 data class Block(val body: List<Expression>, override val sourceSection: ChiSource.Section?) : Expression {
-    override var type: Type? = null
+    var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitBlock(this)
@@ -194,7 +189,7 @@ data class FnCall(
     val parameters: MutableList<Expression>,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var type: Type? = null
+    var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitFnCall(this)
@@ -207,7 +202,6 @@ data class IfElse(
     val elseBranch: Expression?,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitIfElse(this)
@@ -225,7 +219,6 @@ data class InfixOp(
     override val sourceSection: ChiSource.Section?
 ) :
     Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitInfixOp(this)
@@ -233,16 +226,14 @@ data class InfixOp(
 }
 
 data class PrefixOp(val op: String, val expr: Expression, override val sourceSection: ChiSource.Section?) : Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitPrefixOp(this)
     override fun children(): List<Expression> = listOf(expr)
 }
 
-data class Cast(val expression: Expression, val targetType: Type, override val sourceSection: ChiSource.Section?) :
+data class Cast(val expression: Expression, val targetType: Type3, override val sourceSection: ChiSource.Section?) :
     Expression {
-    override var type: Type? = targetType
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitCast(this)
@@ -251,7 +242,6 @@ data class Cast(val expression: Expression, val targetType: Type, override val s
 
 data class WhileLoop(val condition: Expression, val loop: Expression, override val sourceSection: ChiSource.Section?) :
     Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitWhileLoop(this)
@@ -259,7 +249,6 @@ data class WhileLoop(val condition: Expression, val loop: Expression, override v
 }
 
 data class Break(override val sourceSection: ChiSource.Section?) : Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitBreak(this)
@@ -267,7 +256,6 @@ data class Break(override val sourceSection: ChiSource.Section?) : Expression {
 }
 
 data class Continue(override val sourceSection: ChiSource.Section?) : Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitContinue(this)
@@ -279,7 +267,6 @@ data class IndexOperator(
     val index: Expression,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitIndexOperator(this)
@@ -292,7 +279,6 @@ data class IndexedAssignment(
     val value: Expression,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitIndexedAssignment(this)
@@ -301,7 +287,6 @@ data class IndexedAssignment(
 
 data class Is(val value: Expression, val typeOrVariant: String, override val sourceSection: ChiSource.Section?) :
     Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitIs(this)
@@ -318,7 +303,7 @@ data class EffectDefinition(
     val parameters: List<FnParam>,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    override var type: Type? = null
+    var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitEffectDefinition(this)
@@ -330,7 +315,6 @@ data class Handle(
     val cases: List<HandleCase>,
     override val sourceSection: ChiSource.Section?,
 ) : Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitHandle(this)
@@ -348,7 +332,6 @@ data class HandleCase(
 
 data class Return(val value: Expression?,
                   override val sourceSection: ChiSource.Section?) : Expression {
-    override var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitReturn(this)

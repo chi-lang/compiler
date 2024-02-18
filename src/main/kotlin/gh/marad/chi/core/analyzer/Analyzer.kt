@@ -3,6 +3,7 @@ package gh.marad.chi.core.analyzer
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeInferenceFailed
+import gh.marad.chi.core.types3.Type3
 
 enum class Level { ERROR }
 
@@ -40,7 +41,7 @@ data class SyntaxError(val offendingSymbol: Any?, val msg: String?, override val
         "Syntax error at $codePoint.${if (msg != null) "Error: $msg" else ""}"
 }
 
-data class TypeMismatch(val expected: Type, val actual: Type, override val codePoint: CodePoint?) :
+data class TypeMismatch(val expected: Type3, val actual: Type3, override val codePoint: CodePoint?) :
     Message {
     override val level = Level.ERROR
     override val message =

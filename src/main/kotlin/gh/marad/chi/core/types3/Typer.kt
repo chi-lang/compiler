@@ -1,25 +1,14 @@
 package gh.marad.chi.core.types3
 
 import gh.marad.chi.core.*
-import gh.marad.chi.core.Target
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 
 class TypingError(message: String) : RuntimeException(message)
 
 fun err(message: String): Nothing = throw TypingError(message)
 
 class Typer(
-    private val ns: GlobalCompilationNamespace,
-    private val ctx: InferenceContext = InferenceContext()
+    private val ctx: InferenceContext
 ) {
-    private var localSymbols: LocalSymbols? = LocalSymbols()
-    class LocalSymbols(val parent: LocalSymbols? = null) {
-        val symbols = mutableMapOf<String, TypeScheme>()
-        fun get(name: String): TypeScheme? = symbols[name] ?: parent?.get(name)
-        fun define(name: String, typeScheme: TypeScheme) {
-            symbols[name] = typeScheme
-        }
-    }
 
     fun typeTerms(terms: List<Expression>, constraints: MutableList<Constraint>, level: Int = 0): List<Type3> {
         return terms.map { typeTerm(it, level, constraints) }
@@ -31,22 +20,22 @@ class Typer(
                 term.newType!!
 
             is VariableAccess ->
-                getTargetType(term.target, level)
+                ctx.getTargetType(term.target, level)
 
             is CreateRecord ->
                 Record(null, term.fields.map { Record.Field(it.name, typeTerm(it.value, level, constraints)) })
 
             is Fn -> {
-                withNewLocalScope {
+                ctx.withNewLocalScope {
                     val returnType = ctx.freshVariable(level)
                     val params = term.parameters.map { fnParam ->
-                        val typeAnnotation = fnParam.newType
+                        val typeAnnotation = fnParam.type
                         if (typeAnnotation != null) {
                             fnParam.name to typeAnnotation
                         } else {
                             fnParam.name to ctx.freshVariable(level)
                         }.also {
-                            localSymbols?.define(it.first, it.second)
+                            ctx.defineLocalSymbol(it.first, it.second)
                         }
                     }
                     val bodyType = typeTerm(term.body, level, constraints)
@@ -65,25 +54,63 @@ class Typer(
             }
 
             is FnCall -> {
-                val fnType = typeTerm(term.function, level, constraints)
+                val definedFunctionType = typeTerm(term.function, level, constraints)
                 val result = ctx.freshVariable(level)
-                val expectedType = Function(
+
+                if (term.function is FieldAccess) {
+                    val dotOp = term.function as FieldAccess
+                    val target = dotOp.target!!
+                    term.function = when(target) {
+                        DotTarget.Field -> dotOp
+                        DotTarget.LocalFunction -> {
+                            term.parameters.add(0, dotOp.receiver)
+                            VariableAccess(LocalSymbol(dotOp.fieldName), dotOp.memberSection).also {
+                                it.newType = dotOp.newType
+                            }
+                        }
+                        is DotTarget.PackageFunction -> {
+                            term.parameters.add(0, dotOp.receiver)
+                            VariableAccess(PackageSymbol(
+                                target.moduleName, target.packageName, target.name
+                            ), dotOp.memberSection).also {
+                                it.newType = dotOp.newType
+                            }
+                        }
+                    }
+                }
+
+                val callType = Function(
                     term.parameters.map { typeTerm(it, level, constraints) } + result
                 )
-                constraints.add(Constraint(expectedType, fnType))
+
+                constraints.add(Constraint(definedFunctionType, callType))
                 result
             }
 
             is FieldAccess -> {
-                val result = ctx.freshVariable(level)
                 val receiverType = typeTerm(term.receiver, level, constraints)
-                val field = Record.Field(term.fieldName, result)
-                constraints.add(Constraint(Record(null, listOf(field)), receiverType))
-                result
+                val finalReceiverType = mapType(receiverType, unify(constraints))
+                if (finalReceiverType is Record && finalReceiverType.fields.any { it.name == term.fieldName }) {
+                    val result = ctx.freshVariable(level)
+                    term.target = DotTarget.Field
+                    constraints.add(Constraint(Type3.record(term.fieldName to result), receiverType))
+                    result
+                } else {
+                    val function = ctx.listLocalFunctionsForType(term.fieldName, finalReceiverType).singleOrNull()
+                        ?: ctx.listCurrentPackageFunctionsForType(term.fieldName, finalReceiverType).singleOrNull()
+                        ?: ctx.listTypesPackageFunctionsForType(term.fieldName, finalReceiverType).singleOrNull()
+                    if (function != null) {
+                        val (dotTarget, fnType) = function
+                        term.target = dotTarget
+                        fnType.instantiate(level, ctx::freshVariable)
+                    } else {
+                        err("Couldn't find function ${term.fieldName} for type $finalReceiverType")
+                    }
+                }
             }
 
             is NameDeclaration -> {
-                val expectedType = term.newType ?: ctx.freshVariable(level+1)
+                val expectedType = term.expectedType ?: ctx.freshVariable(level+1)
                 val valueType = typeTerm(term.value, level + 1, constraints)
                 constraints.add(Constraint(expectedType, valueType))
 
@@ -93,13 +120,13 @@ class Typer(
                 // we later instantiate and loose all the information about the original variables
                 val solution = unify(constraints)
                 val polymorphicType = PolyType(level, mapType(expectedType, solution))
-                localSymbols?.define(term.name, polymorphicType)
+                ctx.defineLocalSymbol(term.name, polymorphicType)
 
                 expectedType
             }
 
             is Assignment -> {
-                val variableType = getTargetType(term.target, level)
+                val variableType = ctx.getTargetType(term.target, level)
                 val valueType = typeTerm(term.value, level, constraints)
                 constraints.add(Constraint(variableType, valueType))
                 variableType
@@ -117,31 +144,110 @@ class Typer(
                 }
             }
 
-            else -> TODO("Unsupported expression: $term")
+            is InterpolatedString -> {
+                typeTerms(term.parts, constraints, level)
+                Type3.string
+            }
+
+            is Cast -> {
+                typeTerm(term.expression, level, constraints)
+                term.targetType
+            }
+
+            is Break -> Type3.unit
+            is Continue -> Type3.unit
+            is WhileLoop -> {
+                val conditionType = typeTerm(term.condition, level, constraints)
+                typeTerm(term.loop, level, constraints)
+                constraints.add(Constraint(Type3.bool, conditionType))
+                Type3.unit
+            }
+
+            is FieldAssignment -> {
+                val receiverType = typeTerm(term.receiver, level, constraints)
+                val valueType = typeTerm(term.value, level, constraints)
+                val expectedType = Type3.record(term.fieldName to valueType)
+
+                val result = ctx.freshVariable(level)
+                constraints.add(Constraint(valueType, result))
+                constraints.add(Constraint(expectedType, receiverType))
+                result
+            }
+
+            is EffectDefinition -> Type3.unit
+            is Handle -> {
+                val result = ctx.freshVariable(level)
+                val bodyType = typeTerm(term.body, level, constraints)
+                constraints.add(Constraint(result, bodyType))
+                term.cases.forEach { case ->
+                    val effectType = ctx.getTargetType(PackageSymbol(case.moduleName, case.packageName, case.effectName), level)
+                    if (effectType is Function) {
+                        ctx.withNewLocalScope {
+                            case.argumentNames.zip(effectType.types.dropLast(1)).forEach { (name, type) ->
+                                ctx.defineLocalSymbol(name, type)
+                            }
+                            val effectReturnType = effectType.types.last()
+                            ctx.defineLocalSymbol("resume", Function(listOf(effectReturnType, ctx.freshVariable(level))))
+                            val caseBodyType = typeTerm(case.body, level, constraints)
+                            constraints.add(Constraint(result, caseBodyType))
+                        }
+                    } else {
+                        err("Symbol ${case.effectName} has type $effectType but a function type was expected!")
+                    }
+                }
+                result
+            }
+
+            is IndexOperator -> {
+                val elementType = ctx.freshVariable(level)
+                val variableType = typeTerm(term.variable, level, constraints)
+                val indexType = typeTerm(term.index, level, constraints)
+                constraints.add(Constraint(Type3.array(elementType, level), variableType))
+                constraints.add(Constraint(Type3.int, indexType))
+                elementType
+            }
+
+            is IndexedAssignment -> {
+                val elementType = ctx.freshVariable(level)
+                val variableType = typeTerm(term.variable, level, constraints)
+                val valueType = typeTerm(term.value, level, constraints)
+                val indexType = typeTerm(term.index, level, constraints)
+                constraints.add(Constraint(Type3.array(elementType, level), variableType))
+                constraints.add(Constraint(Type3.int, indexType))
+                constraints.add(Constraint(elementType, valueType))
+                elementType
+            }
+
+            is InfixOp -> {
+                val result = ctx.freshVariable(level)
+                val lhsType = typeTerm(term.left, level, constraints)
+                val rhsType = typeTerm(term.right, level, constraints)
+                constraints.add(Constraint(result, lhsType))
+                constraints.add(Constraint(result, rhsType))
+                result
+            }
+
+            is Is -> {
+                typeTerm(term.value, level, constraints)
+                Type3.bool
+            }
+
+            is PrefixOp -> {
+                val valueType = typeTerm(term.expr, level, constraints)
+                constraints.add(Constraint(Type3.bool, valueType))
+                Type3.bool
+            }
+
+            is Return -> {
+                if (term.value != null) {
+                    typeTerm(term.value, level, constraints)
+                } else {
+                    Type3.unit
+                }
+            }
+
         }.also {
             term.newType = it
         }
 
-    private fun <T> withNewLocalScope(f: () -> T): T {
-        val prev = localSymbols
-        localSymbols = LocalSymbols(prev)
-        return f().also { localSymbols = prev }
-    }
-
-    private fun getTargetType(target: Target, level: Int): Type3 =
-        when(target) {
-            is LocalSymbol ->
-                localSymbols?.get(target.name)
-                    ?.instantiate(level, ctx::freshVariable)
-                    ?: err("Identifier ${target.name} not found!")
-
-            is PackageSymbol -> {
-                // FIXME replace 'localSymbols' with reading from a package
-                //       once a package supports new types
-//                ns.getSymbol(target)
-                localSymbols?.get(target.name)
-                    ?.instantiate(level, ctx::freshVariable)
-                    ?: err("Identifier ${target.name} not found!")
-            }
-        }
 }
