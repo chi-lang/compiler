@@ -6,7 +6,7 @@ import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.analyzer.NotAFunction
 import gh.marad.chi.core.analyzer.toCodePoint
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
-import gh.marad.chi.core.types3.Function
+import gh.marad.chi.core.types.Function
 
 class FnCallCheckingVisitor : DefaultExpressionVisitor {
     private var messages = mutableListOf<Message>()

@@ -1,4 +1,4 @@
-package gh.marad.chi.core.types3
+package gh.marad.chi.core.types
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.Target
@@ -51,12 +51,12 @@ class InferenceContext(
         return f().also { localSymbols = prev }
     }
 
-    fun listLocalFunctionsForType(name: String, type: Type3): List<Pair<DotTarget, TypeScheme>> {
+    fun listLocalFunctionsForType(name: String, type: Type): List<Pair<DotTarget, TypeScheme>> {
         return localSymbols.symbols
             .filter {
-                val symbolType: Type3 = when(val typeScheme = it.value) {
+                val symbolType: Type = when(val typeScheme = it.value) {
                     is PolyType -> typeScheme.body
-                    is Type3 -> typeScheme
+                    is Type -> typeScheme
                 }
                 it.key == name && symbolType is Function && symbolType.types.size >= 2 && (symbolType.types[0] == type || symbolType.types[0] is Variable)
             }
@@ -66,12 +66,12 @@ class InferenceContext(
             .toList()
     }
 
-    fun listCurrentPackageFunctionsForType(name: String, type: Type3): List<Pair<DotTarget, TypeScheme>> {
+    fun listCurrentPackageFunctionsForType(name: String, type: Type): List<Pair<DotTarget, TypeScheme>> {
         return packageSymbols.symbols
             .filter {
-                val symbolType: Type3 = when(val typeScheme = it.value) {
+                val symbolType: Type = when(val typeScheme = it.value) {
                     is PolyType -> typeScheme.body
-                    is Type3 -> typeScheme
+                    is Type -> typeScheme
                 }
                 it.key == name && symbolType is Function && symbolType.types.size >= 2 && (symbolType.types[0] == type || symbolType.types[0] is Variable)
             }
@@ -81,14 +81,14 @@ class InferenceContext(
             .toList()
     }
 
-    fun listTypesPackageFunctionsForType(name: String, type: Type3): List<Pair<DotTarget, TypeScheme>> {
+    fun listTypesPackageFunctionsForType(name: String, type: Type): List<Pair<DotTarget, TypeScheme>> {
         return if (type is HasTypeId) {
             type.getTypeId()
                 ?.let { id -> ns.getOrCreatePackage(id.moduleName, id.packageName).symbols.get(name) }
                 ?.let { symbol ->
-                    val symbolType: Type3 = when(val typeScheme = symbol.newType!!) {
+                    val symbolType: Type = when(val typeScheme = symbol.newType!!) {
                         is PolyType -> typeScheme.body
-                        is Type3 -> typeScheme
+                        is Type -> typeScheme
                     }
                     if (symbolType is Function && symbolType.types.size >= 2 && (symbolType.types[0] == type || symbolType.types[0] is Variable)) {
                         listOf(DotTarget.PackageFunction(symbol.moduleName, symbol.packageName, symbol.name) to symbol.newType)
@@ -102,7 +102,7 @@ class InferenceContext(
         }
     }
 
-    fun getTargetType(target: Target, level: Int): Type3 {
+    fun getTargetType(target: Target, level: Int): Type {
         fun getLocalSymbol(symbols: LocalSymbols, name: String) =
             symbols.get(name)
                 ?.instantiate(level, this::freshVariable)

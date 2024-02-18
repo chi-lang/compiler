@@ -10,9 +10,9 @@ import gh.marad.chi.core.namespace.TypeTable
 import gh.marad.chi.core.parseSource
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.*
-import gh.marad.chi.core.types3.*
-import gh.marad.chi.core.types3.Array
-import gh.marad.chi.core.types3.Function
+import gh.marad.chi.core.types.*
+import gh.marad.chi.core.types.Array
+import gh.marad.chi.core.types.Function
 
 object Compiler {
 
@@ -164,7 +164,7 @@ object Compiler {
         )
     }
 
-    fun resolveNewType(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef): Type3 {
+    fun resolveNewType(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef): Type {
         return when(ref) {
             is TypeParameterRef -> Variable(ref.name, 0) // FIXME: here level should probably be passed from above
             is TypeNameRef ->
@@ -172,12 +172,12 @@ object Compiler {
                     Variable(ref.typeName, 0)
                 } else {
                     when (ref.typeName) {
-                        "any" -> Type3.any
-                        "string" -> Type3.string
-                        "bool" -> Type3.bool
-                        "int" -> Type3.int
-                        "float" -> Type3.float
-                        "unit" -> Type3.unit
+                        "any" -> Type.any
+                        "string" -> Type.string
+                        "bool" -> Type.bool
+                        "int" -> Type.int
+                        "float" -> Type.float
+                        "unit" -> Type.unit
                         else ->
                             typeTable.getAlias(ref.typeName)?.newType
                                 ?: throw CompilerMessage.from("Type $ref not found", ref.section)

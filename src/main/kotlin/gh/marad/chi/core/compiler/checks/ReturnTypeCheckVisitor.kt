@@ -9,11 +9,11 @@ import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.analyzer.toCodePoint
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
-import gh.marad.chi.core.types3.Function
-import gh.marad.chi.core.types3.Type3
+import gh.marad.chi.core.types.Function
+import gh.marad.chi.core.types.Type
 
 class ReturnTypeCheckVisitor(val messages: MutableList<Message>) : DefaultExpressionVisitor {
-    private var expectedReturnType: Type3? = null
+    private var expectedReturnType: Type? = null
 
     fun check(exprs: List<Expression>) {
         exprs.forEach(this::visit)

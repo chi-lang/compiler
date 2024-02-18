@@ -4,7 +4,7 @@ import gh.marad.chi.core.Is
 import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseIs
 import gh.marad.chi.core.shouldBeAtom
-import gh.marad.chi.core.types3.Type3
+import gh.marad.chi.core.types.Type
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.jupiter.api.Test
@@ -22,7 +22,7 @@ class SimpleConversionsKtParseIsTest {
         ).shouldBeTypeOf<Is>()
 
         // then
-        result.value.shouldBeAtom("10", Type3.int)
+        result.value.shouldBeAtom("10", Type.int)
         result.typeOrVariant shouldBe "string"
     }
 }

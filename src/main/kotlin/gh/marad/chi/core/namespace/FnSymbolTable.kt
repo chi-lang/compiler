@@ -1,16 +1,16 @@
 package gh.marad.chi.core.namespace
 
-import gh.marad.chi.core.types3.Type3
+import gh.marad.chi.core.types.Type
 
 class FnSymbolTable(private val parent: FnSymbolTable? = null) {
 
     private val symbolMap = mutableMapOf<String, FnSymbol>()
 
-    fun addArgument(name: String, type: Type3?) {
+    fun addArgument(name: String, type: Type?) {
         symbolMap[name] = FnSymbol(name, SymbolKind.Argument, type, mutable = false)
     }
 
-    fun addLocal(name: String, type: Type3?, mutable: Boolean) {
+    fun addLocal(name: String, type: Type?, mutable: Boolean) {
         symbolMap[name] = FnSymbol(name, SymbolKind.Local, type, mutable)
     }
 
@@ -24,7 +24,7 @@ class FnSymbolTable(private val parent: FnSymbolTable? = null) {
 data class FnSymbol(
     val name: String,
     val kind: SymbolKind,
-    val type: Type3?,
+    val type: Type?,
     val mutable: Boolean
 )
 

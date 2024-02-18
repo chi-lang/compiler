@@ -3,9 +3,9 @@ package gh.marad.chi.core.expressionast.internal
 import gh.marad.chi.core.Fn
 import gh.marad.chi.core.NameDeclaration
 import gh.marad.chi.core.parser.readers.*
-import gh.marad.chi.core.types3.Function
-import gh.marad.chi.core.types3.Type3
-import gh.marad.chi.core.types3.Variable
+import gh.marad.chi.core.types.Function
+import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.Variable
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.should
@@ -47,7 +47,7 @@ class FunctionConversionsKtFuncWithNameTest {
 
         // then
         fn.shouldBeTypeOf<NameDeclaration>().should {
-            it.expectedType shouldBe Type3.fn(Type3.unit)
+            it.expectedType shouldBe Type.fn(Type.unit)
             it.value.shouldBeTypeOf<Fn>()
         }
     }

@@ -9,8 +9,8 @@ import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.parser.visitor.ParseAstVisitor
-import gh.marad.chi.core.types3.Function
-import gh.marad.chi.core.types3.Type3
+import gh.marad.chi.core.types.Function
+import gh.marad.chi.core.types.Type
 
 class ExprConversionVisitor(
     private val pkg: Package,
@@ -56,7 +56,7 @@ class ExprConversionVisitor(
         )
 
     override fun visitStringInterpolation(parseInterpolation: ParseInterpolation): Expression =
-        Cast(parseInterpolation.value.accept(this), targetType = Type3.string, parseInterpolation.section)
+        Cast(parseInterpolation.value.accept(this), targetType = Type.string, parseInterpolation.section)
 
 
     override fun visitInterpolatedStringText(stringText: StringText): Expression =
@@ -103,7 +103,7 @@ class ExprConversionVisitor(
 
         val returnType = parseFuncWithName.returnTypeRef
             ?.let { resolveNewType(typeTable, currentTypeSchemeVariables, it) }
-            ?: Type3.unit
+            ?: Type.unit
 
         val funcTypes = params.map { it.type!! } + returnType
 
@@ -378,7 +378,7 @@ class ExprConversionVisitor(
     private fun FnSymbol.toLocalSymbol() = LocalSymbol(name)
     private fun Symbol.toPackageSymbol() = PackageSymbol(moduleName, packageName, name)
 
-    private fun addLocalSymbol(name: String, isMutable: Boolean, isPublic: Boolean, newType: Type3? = null) {
+    private fun addLocalSymbol(name: String, isMutable: Boolean, isPublic: Boolean, newType: Type? = null) {
         val fnSymbolTable = currentFnSymbolTable
         if (fnSymbolTable != null) {
             // we are inside a function so we declare simple local

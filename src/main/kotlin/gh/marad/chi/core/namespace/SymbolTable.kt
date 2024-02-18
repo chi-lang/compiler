@@ -1,6 +1,6 @@
 package gh.marad.chi.core.namespace
 
-import gh.marad.chi.core.types3.TypeScheme
+import gh.marad.chi.core.types.TypeScheme
 
 class SymbolTable {
     private val symbolMap = mutableMapOf<String, Symbol>()

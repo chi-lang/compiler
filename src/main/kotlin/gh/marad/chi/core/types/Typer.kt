@@ -1,4 +1,4 @@
-package gh.marad.chi.core.types3
+package gh.marad.chi.core.types
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.analyzer.CompilerMessage
@@ -13,11 +13,11 @@ class Typer(
     private val ctx: InferenceContext
 ) {
 
-    fun typeTerms(terms: List<Expression>, constraints: MutableList<Constraint>, level: Int = 0): List<Type3> {
+    fun typeTerms(terms: List<Expression>, constraints: MutableList<Constraint>, level: Int = 0): List<Type> {
         return terms.map { typeTerm(it, level, constraints) }
     }
 
-    fun typeTerm(term: Expression, level: Int = 0, constraints: MutableList<Constraint>): Type3 =
+    fun typeTerm(term: Expression, level: Int = 0, constraints: MutableList<Constraint>): Type =
         when (term) {
             is Atom ->
                 term.newType!!
@@ -53,7 +53,7 @@ class Typer(
 
             is Block -> {
                 val types = term.body.map { typeTerm(it, level + 1, constraints) }
-                types.lastOrNull() ?: Type3.unit
+                types.lastOrNull() ?: Type.unit
             }
 
             is FnCall -> {
@@ -96,7 +96,7 @@ class Typer(
                 if (finalReceiverType is Record && finalReceiverType.fields.any { it.name == term.fieldName }) {
                     val result = ctx.freshVariable(level)
                     term.target = DotTarget.Field
-                    constraints.add(Constraint(Type3.record(term.fieldName to result), receiverType))
+                    constraints.add(Constraint(Type.record(term.fieldName to result), receiverType))
                     result
                 } else {
                     val function = ctx.listLocalFunctionsForType(term.fieldName, finalReceiverType).singleOrNull()
@@ -138,18 +138,18 @@ class Typer(
             is IfElse -> {
                 val conditionType = typeTerm(term.condition, level, constraints)
                 val thenBranchType = typeTerm(term.thenBranch, level, constraints)
-                constraints.add(Constraint(Type3.bool, conditionType))
+                constraints.add(Constraint(Type.bool, conditionType))
                 if (term.elseBranch != null) {
                     val elseBranchType = typeTerm(term.elseBranch, level, constraints)
                     Sum.create(thenBranchType, elseBranchType)
                 } else {
-                    Type3.unit
+                    Type.unit
                 }
             }
 
             is InterpolatedString -> {
                 typeTerms(term.parts, constraints, level)
-                Type3.string
+                Type.string
             }
 
             is Cast -> {
@@ -160,19 +160,19 @@ class Typer(
                 term.targetType
             }
 
-            is Break -> Type3.unit
-            is Continue -> Type3.unit
+            is Break -> Type.unit
+            is Continue -> Type.unit
             is WhileLoop -> {
                 val conditionType = typeTerm(term.condition, level, constraints)
                 typeTerm(term.loop, level, constraints)
-                constraints.add(Constraint(Type3.bool, conditionType))
-                Type3.unit
+                constraints.add(Constraint(Type.bool, conditionType))
+                Type.unit
             }
 
             is FieldAssignment -> {
                 val receiverType = typeTerm(term.receiver, level, constraints)
                 val valueType = typeTerm(term.value, level, constraints)
-                val expectedType = Type3.record(term.fieldName to valueType)
+                val expectedType = Type.record(term.fieldName to valueType)
 
                 val result = ctx.freshVariable(level)
                 constraints.add(Constraint(valueType, result))
@@ -180,7 +180,7 @@ class Typer(
                 result
             }
 
-            is EffectDefinition -> Type3.unit
+            is EffectDefinition -> Type.unit
             is Handle -> {
                 val result = ctx.freshVariable(level)
                 val bodyType = typeTerm(term.body, level, constraints)
@@ -208,8 +208,8 @@ class Typer(
                 val elementType = ctx.freshVariable(level)
                 val variableType = typeTerm(term.variable, level, constraints)
                 val indexType = typeTerm(term.index, level, constraints)
-                constraints.add(Constraint(variableType, Type3.array(elementType)))
-                constraints.add(Constraint(Type3.int, indexType))
+                constraints.add(Constraint(variableType, Type.array(elementType)))
+                constraints.add(Constraint(Type.int, indexType))
                 elementType
             }
 
@@ -219,8 +219,8 @@ class Typer(
                 val valueType = typeTerm(term.value, level, constraints)
                 val indexType = typeTerm(term.index, level, constraints)
                 constraints.add(Constraint(elementType, valueType))
-                constraints.add(Constraint(variableType, Type3.array(elementType)))
-                constraints.add(Constraint(Type3.int, indexType))
+                constraints.add(Constraint(variableType, Type.array(elementType)))
+                constraints.add(Constraint(Type.int, indexType))
                 elementType
             }
 
@@ -235,20 +235,20 @@ class Typer(
 
             is Is -> {
                 typeTerm(term.value, level, constraints)
-                Type3.bool
+                Type.bool
             }
 
             is PrefixOp -> {
                 val valueType = typeTerm(term.expr, level, constraints)
-                constraints.add(Constraint(Type3.bool, valueType))
-                Type3.bool
+                constraints.add(Constraint(Type.bool, valueType))
+                Type.bool
             }
 
             is Return -> {
                 if (term.value != null) {
                     typeTerm(term.value, level, constraints)
                 } else {
-                    Type3.unit
+                    Type.unit
                 }
             }
 

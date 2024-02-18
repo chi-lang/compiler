@@ -4,7 +4,6 @@ import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.core.analyzer.TypeIsNotIndexable
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.types3.Type3
 import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
@@ -15,7 +14,7 @@ import org.junit.jupiter.api.Test
 @Suppress("unused")
 class IndexOperatorSpec {
     val ns = GlobalCompilationNamespace().also {
-        it.addSymbolInDefaultPackage("arr", Type3.array(Type3.int))
+        it.addSymbolInDefaultPackage("arr", Type.array(Type.int))
     }
 
     @Test
@@ -32,8 +31,8 @@ class IndexOperatorSpec {
         result.should { msgs ->
             msgs shouldHaveSize 1
             msgs.first().shouldBeTypeOf<TypeMismatch>().should {
-                it.expected shouldBe Type3.int
-                it.actual shouldBe Type3.string
+                it.expected shouldBe Type.int
+                it.actual shouldBe Type.string
             }
         }
     }
@@ -52,8 +51,8 @@ class IndexOperatorSpec {
         result.should { msgs ->
             msgs shouldHaveSize 1
             msgs.first().shouldBeTypeOf<TypeMismatch>().should {
-                it.expected shouldBe Type3.int
-                it.actual shouldBe Type3.string
+                it.expected shouldBe Type.int
+                it.actual shouldBe Type.string
             }
         }
     }
@@ -71,7 +70,7 @@ class IndexOperatorSpec {
         result.should { msgs ->
             msgs shouldHaveSize 1
             msgs[0].shouldBeTypeOf<TypeIsNotIndexable>().should {
-                it.type shouldBe Type3.int
+                it.type shouldBe Type.int
             }
         }
     }
@@ -89,7 +88,7 @@ class IndexOperatorSpec {
         result.should { msgs ->
             msgs shouldHaveSize 1
             msgs[0].shouldBeTypeOf<TypeIsNotIndexable>().should {
-                it.type shouldBe Type3.int
+                it.type shouldBe Type.int
             }
         }
     }
@@ -107,8 +106,8 @@ class IndexOperatorSpec {
         result.should { msgs ->
             msgs shouldHaveSize 1
             msgs[0].shouldBeTypeOf<TypeMismatch>().should {
-                it.expected shouldBe Type3.int
-                it.actual shouldBe Type3.string
+                it.expected shouldBe Type.int
+                it.actual shouldBe Type.string
             }
         }
     }

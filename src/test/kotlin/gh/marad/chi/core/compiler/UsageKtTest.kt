@@ -5,8 +5,8 @@ import gh.marad.chi.addTypeDefinition
 import gh.marad.chi.ast
 import gh.marad.chi.core.*
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.types3.Type3
-import gh.marad.chi.core.types3.TypeId
+import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.TypeId
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -44,7 +44,7 @@ class UsageKtTest {
     fun `assignment should mark value as used`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbolInDefaultPackage("x", Type3.int, mutable = true)
+        ns.addSymbolInDefaultPackage("x", Type.int, mutable = true)
         val expr = ast("x = 5", ns).shouldBeTypeOf<Assignment>()
 
         // then
@@ -55,9 +55,9 @@ class UsageKtTest {
     fun `field assignment should mark value as read`() {
         // given
         val ns = GlobalCompilationNamespace()
-        val type = Type3.record(
+        val type = Type.record(
             TypeId("mod", "pkg", "Foo"),
-            "bar" to Type3.int
+            "bar" to Type.int
         )
         ns.addTypeDefinition(type)
         ns.addSymbolInDefaultPackage("foo", type)
@@ -71,7 +71,7 @@ class UsageKtTest {
     fun `function call should mark parameters as used`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbolInDefaultPackage("func", Type3.fn(Type3.int, Type3.bool, Type3.unit))
+        ns.addSymbolInDefaultPackage("func", Type.fn(Type.int, Type.bool, Type.unit))
         val expr = ast("func(5, true)", ns).shouldBeTypeOf<FnCall>()
 
         // then
@@ -82,7 +82,7 @@ class UsageKtTest {
     fun `index operator should mark index as used`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbolInDefaultPackage("x", Type3.array(Type3.int))
+        ns.addSymbolInDefaultPackage("x", Type.array(Type.int))
         val expr = ast("x[5]", ns).shouldBeTypeOf<IndexOperator>()
 
         // then
@@ -93,7 +93,7 @@ class UsageKtTest {
     fun `indexed assignment should mark index and value as used`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbolInDefaultPackage("x", Type3.array(Type3.int))
+        ns.addSymbolInDefaultPackage("x", Type.array(Type.int))
         val expr = ast("x[5] = 8", ns).shouldBeTypeOf<IndexedAssignment>()
 
         // then

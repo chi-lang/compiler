@@ -10,8 +10,8 @@ import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseFieldAccess
 import gh.marad.chi.core.parser.readers.ParseIndexOperator
 import gh.marad.chi.core.parser.readers.ParseVariableRead
-import gh.marad.chi.core.types3.Type3
-import gh.marad.chi.core.types3.TypeId
+import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.TypeId
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -40,7 +40,7 @@ class VariablesConversionsKtTest {
     fun `convert variable read from another package in the same module`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbol("foo", "bar", "variable", Type3.int, public = true)
+        ns.addSymbol("foo", "bar", "variable", Type.int, public = true)
 
         // when
         val result = ast("""
@@ -70,7 +70,7 @@ class VariablesConversionsKtTest {
         ).shouldBeTypeOf<IndexOperator>()
 
         result.variable.shouldBeVariable("variable")
-        result.index.shouldBeAtom("10", Type3.int)
+        result.index.shouldBeAtom("10", Type.int)
         result.sourceSection shouldBe testSection
     }
 
@@ -78,7 +78,7 @@ class VariablesConversionsKtTest {
     fun `should generate variable access through package name`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbol("foo", "bar", "variable", Type3.int, public = true)
+        ns.addSymbol("foo", "bar", "variable", Type.int, public = true)
 
         // when
         val result = ast("""
@@ -99,9 +99,9 @@ class VariablesConversionsKtTest {
     fun `should generate field access`() {
         // given
         val ns = GlobalCompilationNamespace()
-        val type = Type3.record(
+        val type = Type.record(
             TypeId("mod", "pkg", "A"),
-            "field" to Type3.int
+            "field" to Type.int
         )
         ns.addTypeDefinition(type)
         ns.addSymbolInDefaultPackage("object", type)
@@ -127,9 +127,9 @@ class VariablesConversionsKtTest {
     fun `should generate field access with type defined in other module`() {
         // given
         val ns = GlobalCompilationNamespace()
-        val type = Type3.record(
+        val type = Type.record(
             TypeId("mod", "pkg", "A"),
-            "field" to Type3.int
+            "field" to Type.int
         )
         ns.addTypeDefinition(type)
         ns.addSymbolInDefaultPackage("object", type)

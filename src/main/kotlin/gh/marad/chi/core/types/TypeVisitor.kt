@@ -1,4 +1,4 @@
-package gh.marad.chi.core.types3
+package gh.marad.chi.core.types
 
 interface TypeVisitor<T> {
     fun visitPrimitive(primitive: Primitive): T
@@ -9,24 +9,24 @@ interface TypeVisitor<T> {
     fun visitArray(array: Array): T
 }
 
-abstract class VariableMapper : TypeVisitor<Type3> {
-    override fun visitPrimitive(primitive: Primitive): Type3 = primitive
+abstract class VariableMapper : TypeVisitor<Type> {
+    override fun visitPrimitive(primitive: Primitive): Type = primitive
 
-    override fun visitFunction(function: Function): Type3 =
+    override fun visitFunction(function: Function): Type =
         Function(function.types.map { it.accept(this) })
 
-    override fun visitRecord(record: Record): Type3 =
+    override fun visitRecord(record: Record): Type =
         record.copy(fields = record.fields.map {
             it.copy(type = it.type.accept(this))
         })
 
-    override fun visitSum(sum: Sum): Type3 =
+    override fun visitSum(sum: Sum): Type =
         Sum.create(
             lhs = sum.lhs.accept(this),
             rhs = sum.rhs.accept(this)
         )
 
-    override fun visitArray(array: Array): Type3 =
+    override fun visitArray(array: Array): Type =
         array.copy(elementType = array.elementType.accept(this))
 }
 
@@ -36,7 +36,7 @@ class FreshenAboveVisitor(
     val freshVar: (Int) -> Variable
 ) : VariableMapper() {
     private val cache = mutableMapOf<Variable, Variable>()
-    override fun visitVariable(variable: Variable): Type3 =
+    override fun visitVariable(variable: Variable): Type =
          if (variable.level <= startingLevel) {
             variable // do not refresh vars from environment
         } else {

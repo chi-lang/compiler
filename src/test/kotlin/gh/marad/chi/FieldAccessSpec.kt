@@ -2,8 +2,8 @@ package gh.marad.chi
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.types3.Type3
-import gh.marad.chi.core.types3.TypeId
+import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.TypeId
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -15,9 +15,9 @@ class FieldAccessSpec {
         // given
         val ns = GlobalCompilationNamespace()
 
-        val type = Type3.record(TypeId("mod", "pkg", "Type"))
+        val type = Type.record(TypeId("mod", "pkg", "Type"))
         ns.addTypeDefinition(type)
-        ns.addSymbol("mod", "pkg", "bar", Type3.fn(type, Type3.int), public = true)
+        ns.addSymbol("mod", "pkg", "bar", Type.fn(type, Type.int), public = true)
         ns.addSymbolInDefaultPackage("foo", type)
 
         // when
@@ -30,7 +30,7 @@ class FieldAccessSpec {
 
         // then
         result.shouldBeTypeOf<FnCall>().should {
-            it.newType shouldBe Type3.int
+            it.newType shouldBe Type.int
             it.function.shouldBeTypeOf<VariableAccess>()
                 .target shouldBe PackageSymbol("mod", "pkg", "bar")
         }
@@ -49,7 +49,7 @@ class FieldAccessSpec {
 
         // then
         result.shouldBeTypeOf<FnCall>().should {
-            it.newType shouldBe Type3.float
+            it.newType shouldBe Type.float
             it.function.shouldBeTypeOf<VariableAccess>()
                 .target shouldBe LocalSymbol("bar")
         }
@@ -59,9 +59,9 @@ class FieldAccessSpec {
     fun `should work with multiple chained function calls`() {
         // given
         val ns = GlobalCompilationNamespace()
-        val type = Type3.record(TypeId("mod", "pkg", "Type"))
+        val type = Type.record(TypeId("mod", "pkg", "Type"))
         ns.addTypeDefinition(type)
-        ns.addSymbol("mod", "pkg", "bar", Type3.fn(type, Type3.int), public = true)
+        ns.addSymbol("mod", "pkg", "bar", Type.fn(type, Type.int), public = true)
         ns.addSymbolInDefaultPackage("foo", type)
 
         // when
@@ -75,12 +75,12 @@ class FieldAccessSpec {
 
         // then
         result.shouldBeTypeOf<FnCall>().should { bazCall ->
-            bazCall.newType shouldBe Type3.float
+            bazCall.newType shouldBe Type.float
             bazCall.function.shouldBeTypeOf<VariableAccess>()
                 .target shouldBe LocalSymbol("baz")
 
             bazCall.parameters[0].shouldBeTypeOf<FnCall>().should { barCall ->
-                barCall.newType shouldBe Type3.int
+                barCall.newType shouldBe Type.int
                 barCall.function.shouldBeTypeOf<VariableAccess>()
                     .target shouldBe PackageSymbol("mod", "pkg", "bar")
                 barCall.parameters[0].shouldBeTypeOf<VariableAccess>()
@@ -96,10 +96,10 @@ class FieldAccessSpec {
     fun `should prefer reading field value over any function`() {
         // given
         val ns = GlobalCompilationNamespace()
-        val type = Type3.record(TypeId("mod", "pkg", "Type"), "bar" to Type3.string)
+        val type = Type.record(TypeId("mod", "pkg", "Type"), "bar" to Type.string)
         ns.addTypeDefinition(type)
-        ns.addSymbol("mod", "pkg", "Type", Type3.fn(Type3.string, type), public = true)
-        ns.addSymbol("mod", "pkg", "bar", Type3.fn(type, Type3.int), public = true)
+        ns.addSymbol("mod", "pkg", "Type", Type.fn(Type.string, type), public = true)
+        ns.addSymbol("mod", "pkg", "bar", Type.fn(type, Type.int), public = true)
 
         // when
         val result = ast(
@@ -114,7 +114,7 @@ class FieldAccessSpec {
         // then
         result.shouldBeTypeOf<FieldAccess>().should {
             it.target shouldBe DotTarget.Field
-            it.newType shouldBe Type3.string
+            it.newType shouldBe Type.string
         }
     }
 
@@ -122,9 +122,9 @@ class FieldAccessSpec {
     fun `should prefer local function over function from receiver types package`() {
         // given
         val ns = GlobalCompilationNamespace()
-        val type = Type3.record(TypeId("mod", "pkg", "Type"))
+        val type = Type.record(TypeId("mod", "pkg", "Type"))
         ns.addTypeDefinition(type)
-        ns.addSymbol("mod", "pkg", "bar", Type3.fn(type, Type3.int), public = true)
+        ns.addSymbol("mod", "pkg", "bar", Type.fn(type, Type.int), public = true)
         ns.addSymbolInDefaultPackage("foo", type)
 
         // when
@@ -140,7 +140,7 @@ class FieldAccessSpec {
         // then
         result.shouldBeTypeOf<FieldAccess>().should {
             it.target shouldBe DotTarget.LocalFunction
-            it.newType shouldBe Type3.fn(type, Type3.float)
+            it.newType shouldBe Type.fn(type, Type.float)
         }
     }
 
@@ -148,7 +148,7 @@ class FieldAccessSpec {
     fun `should read function from aliased package`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbol("mod", "pack", "foo", Type3.int, public = true)
+        ns.addSymbol("mod", "pack", "foo", Type.int, public = true)
 
         // when
         val result = ast(

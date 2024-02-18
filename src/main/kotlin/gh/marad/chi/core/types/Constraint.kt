@@ -1,8 +1,8 @@
-package gh.marad.chi.core.types3
+package gh.marad.chi.core.types
 
 private const val debug = true
 
-data class Constraint(val expected: Type3, val actual: Type3) {
+data class Constraint(val expected: Type, val actual: Type) {
     private val from: StackTraceElement? = run {
         if (debug) {
             val ex = RuntimeException()

@@ -7,8 +7,6 @@ import gh.marad.chi.core.parser.readers.FunctionTypeRef
 import gh.marad.chi.core.parser.readers.TypeConstructorRef
 import gh.marad.chi.core.parser.readers.TypeNameRef
 import gh.marad.chi.core.parser.readers.TypeParameterRef
-import gh.marad.chi.core.types3.*
-import gh.marad.chi.core.types3.Function
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
@@ -17,7 +15,7 @@ class TypeResolvingSpec {
     @Test
     fun `should resolve simple type by name`() {
         // given
-        val type = Type3.record(TypeId("module", "package", "Type"), "hello" to Type3.int)
+        val type = Type.record(TypeId("module", "package", "Type"), "hello" to Type.int)
         val typeTable = TypeTable()
         typeTable.addTypeAlias(type)
 
@@ -39,7 +37,7 @@ class TypeResolvingSpec {
     fun `should resolve type constructor to polymorphic type`() {
         // given
         val T = Variable("T", 1)
-        val type = Type3.record(TypeId("m", "p", "Type"), "foo" to T)
+        val type = Type.record(TypeId("m", "p", "Type"), "foo" to T)
         val typeTable = TypeTable()
         typeTable.addTypeAlias(type)
         var ref = TypeConstructorRef(
@@ -71,7 +69,7 @@ class TypeResolvingSpec {
         // then
         val T = Variable("T", 0)
         result shouldBe Function(
-            types = listOf(Type3.int, T, Type3.float),
+            types = listOf(Type.int, T, Type.float),
         )
     }
 

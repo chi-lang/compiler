@@ -5,7 +5,7 @@ package gh.marad.chi.core.analyzer
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.compile
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.types3.Type3
+import gh.marad.chi.core.types.Type
 import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
@@ -34,7 +34,7 @@ class NameDeclarationTypeCheckingSpec {
     @Test
     fun `should return nothing for simple atom and variable read`() {
         val ns = GlobalCompilationNamespace()
-        ns.addSymbolInDefaultPackage("x", Type3.fn(Type3.unit))
+        ns.addSymbolInDefaultPackage("x", Type.fn(Type.unit))
         messages("5", ns).shouldBeEmpty()
         messages("x", ns).shouldBeEmpty()
     }
@@ -67,8 +67,8 @@ class FnTypeCheckingSpec {
         messages("fn foo(): int {}").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Type3.int
-                error.actual shouldBe Type3.unit
+                error.expected shouldBe Type.int
+                error.actual shouldBe Type.unit
             }
         }
     }
@@ -78,8 +78,8 @@ class FnTypeCheckingSpec {
         messages("fn foo(): int { {} }").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Type3.int
-                error.actual shouldBe Type3.fn(Type3.unit)
+                error.expected shouldBe Type.int
+                error.actual shouldBe Type.fn(Type.unit)
             }
         }
     }
@@ -95,8 +95,8 @@ class FnTypeCheckingSpec {
         ).should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Type3.int
-                error.actual shouldBe Type3.fn(Type3.unit)
+                error.expected shouldBe Type.int
+                error.actual shouldBe Type.fn(Type.unit)
             }
         }
     }
@@ -112,8 +112,8 @@ class FnTypeCheckingSpec {
         ).should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Type3.int
-                error.actual shouldBe Type3.string
+                error.expected shouldBe Type.int
+                error.actual shouldBe Type.string
             }
         }
     }
@@ -137,8 +137,8 @@ class IfElseTypeCheckingSpec {
         messages("val x: int = if(true) { 2 } else { {} }").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Type3.int
-                error.actual shouldBe Type3.union(null, Type3.int, Type3.fn(Type3.unit))
+                error.expected shouldBe Type.int
+                error.actual shouldBe Type.union(null, Type.int, Type.fn(Type.unit))
             }
         }
     }
@@ -148,8 +148,8 @@ class IfElseTypeCheckingSpec {
         messages("if (1) { 2 }").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Type3.bool
-                error.actual shouldBe Type3.int
+                error.expected shouldBe Type.bool
+                error.actual shouldBe Type.int
             }
         }
     }
@@ -162,8 +162,8 @@ class PrefixOpSpec {
         messages("!1").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Type3.bool
-                error.actual shouldBe Type3.int
+                error.expected shouldBe Type.bool
+                error.actual shouldBe Type.int
             }
         }
     }
@@ -176,8 +176,8 @@ class WhileLoopSpec {
         messages("while(1) {}").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Type3.bool
-                error.actual shouldBe Type3.int
+                error.expected shouldBe Type.bool
+                error.actual shouldBe Type.int
             }
         }
     }

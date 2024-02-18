@@ -4,7 +4,6 @@ package gh.marad.chi.core.types
 
 import gh.marad.chi.ast
 import gh.marad.chi.core.NameDeclaration
-import gh.marad.chi.core.types3.Type3
 import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.should
@@ -20,7 +19,7 @@ class AnyTypeSpec {
                 val x: any = 1
             """.trimIndent(), ignoreCompilationErrors = true
         ).shouldBeTypeOf<NameDeclaration>() should {
-            it.expectedType shouldBe Type3.any
+            it.expectedType shouldBe Type.any
         }
     }
 

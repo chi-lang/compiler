@@ -5,7 +5,7 @@ import gh.marad.chi.core.parser.readers.FormalArgument
 import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseLambda
 import gh.marad.chi.core.shouldBeAtom
-import gh.marad.chi.core.types3.Type3
+import gh.marad.chi.core.types.Type
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
@@ -28,7 +28,7 @@ class FunctionConversionsKtLambdaTest {
 
         // then
         fn.parameters.shouldBeEmpty()
-        fn.body.body[0].shouldBeAtom("10", Type3.int)
+        fn.body.body[0].shouldBeAtom("10", Type.int)
         fn.sourceSection shouldBe testSection
     }
 
@@ -46,7 +46,7 @@ class FunctionConversionsKtLambdaTest {
         fn.parameters should {
             it shouldHaveSize 1
             it[0].name shouldBe "name"
-            it[0].type shouldBe Type3.int
+            it[0].type shouldBe Type.int
             it[0].sourceSection shouldBe sectionB
         }
     }

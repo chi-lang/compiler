@@ -5,8 +5,8 @@ import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.MemberDoesNotExist
 import gh.marad.chi.core.compiler.Compiler
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.types3.Type3
-import gh.marad.chi.core.types3.TypeId
+import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.TypeId
 import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldHaveSize
@@ -29,7 +29,7 @@ class ObjectsSpec {
             msgs[0].shouldBeTypeOf<MemberDoesNotExist>().should {
                 it.level shouldBe Level.ERROR
                 it.member shouldBe "somethingElse"
-                it.type shouldBe Type3.record("i" to Type3.int)
+                it.type shouldBe Type.record("i" to Type.int)
             }
         }
     }
@@ -46,7 +46,7 @@ class ObjectsSpec {
 
         // then
         result.shouldBeTypeOf<FieldAccess>().should {
-            it.newType shouldBe Type3.int
+            it.newType shouldBe Type.int
         }
     }
 
@@ -64,12 +64,12 @@ class ObjectsSpec {
         ).program.typeAliases
 
         // then
-        val circle = Type3.record(TypeId("foo", "bar", "Circle"), "radius" to Type3.float)
-        val square = Type3.record(TypeId("foo", "bar", "Square"), "side" to Type3.float)
+        val circle = Type.record(TypeId("foo", "bar", "Circle"), "radius" to Type.float)
+        val square = Type.record(TypeId("foo", "bar", "Square"), "side" to Type.float)
         result.map { it.newType } shouldContainAll listOf(
             circle,
             square,
-            Type3.union(TypeId("foo", "bar", "Shape"), circle, square)
+            Type.union(TypeId("foo", "bar", "Shape"), circle, square)
         )
     }
 }

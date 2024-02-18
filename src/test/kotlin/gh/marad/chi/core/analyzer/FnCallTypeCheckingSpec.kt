@@ -3,10 +3,10 @@ package gh.marad.chi.core.analyzer
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.ast
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.types3.Array
-import gh.marad.chi.core.types3.Function
-import gh.marad.chi.core.types3.Type3
-import gh.marad.chi.core.types3.Variable
+import gh.marad.chi.core.types.Array
+import gh.marad.chi.core.types.Function
+import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.Variable
 import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
@@ -21,8 +21,8 @@ class FnCallTypeCheckingSpec {
     fun `should check that parameter argument types match`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbolInDefaultPackage("x", Type3.int)
-        ns.addSymbolInDefaultPackage("test", Type3.fn(Type3.int, Type3.fn(Type3.unit), Type3.int))
+        ns.addSymbolInDefaultPackage("x", Type.int)
+        ns.addSymbolInDefaultPackage("test", Type.fn(Type.int, Type.fn(Type.unit), Type.int))
 
         // expect
         messages("test(10, {})", ns).shouldBeEmpty()
@@ -40,7 +40,7 @@ class FnCallTypeCheckingSpec {
     fun `should check function arity`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbolInDefaultPackage("test", Type3.fn(Type3.int, Type3.fn(Type3.unit), Type3.int))
+        ns.addSymbolInDefaultPackage("test", Type.fn(Type.int, Type.fn(Type.unit), Type.int))
 
         // expect
         messages("test(1)", ns).should {
@@ -56,7 +56,7 @@ class FnCallTypeCheckingSpec {
     fun `should check that only functions are called`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbolInDefaultPackage("x", Type3.int)
+        ns.addSymbolInDefaultPackage("x", Type.int)
 
         // expect
         messages("x()", ns).should {
@@ -72,16 +72,16 @@ class FnCallTypeCheckingSpec {
         val T = Variable("T", 0)
         val R = Variable("R", 0)
         ns.addSymbolInDefaultPackage("map", Function(
-            listOf(Type3.array(T), Type3.fn(T, R), Type3.array(R)),
+            listOf(Type.array(T), Type.fn(T, R), Type.array(R)),
         ))
-        ns.addSymbolInDefaultPackage("operation", Type3.fn(Type3.int, Type3.string))
-        ns.addSymbolInDefaultPackage("arr", Type3.array(Type3.int))
+        ns.addSymbolInDefaultPackage("operation", Type.fn(Type.int, Type.string))
+        ns.addSymbolInDefaultPackage("arr", Type.array(Type.int))
 
         // when
         val result = ast("map(arr, operation)", ns)
 
         // then
-        result.newType shouldBe Array(Type3.string)
+        result.newType shouldBe Array(Type.string)
     }
 
     // This test is probably not necessary - along with providing types explicitly at all
@@ -140,8 +140,8 @@ class FnCallTypeCheckingSpec {
 
         ex shouldHaveSize 1
         ex.first().shouldBeTypeOf<TypeMismatch>().should {
-            it.expected shouldBe Type3.int
-            it.actual shouldBe Type3.string
+            it.expected shouldBe Type.int
+            it.actual shouldBe Type.string
         }
     }
 
@@ -155,8 +155,8 @@ class FnCallTypeCheckingSpec {
 
         result.shouldNotBeEmpty()
         result[0].shouldBeTypeOf<TypeMismatch>() should {
-            it.expected shouldBe Type3.string
-            it.actual shouldBe Type3.int
+            it.expected shouldBe Type.string
+            it.actual shouldBe Type.int
         }
     }
 

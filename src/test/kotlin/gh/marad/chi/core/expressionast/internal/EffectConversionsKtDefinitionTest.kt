@@ -5,8 +5,8 @@ import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parser.readers.ParseEffectDefinition
 import gh.marad.chi.core.parser.readers.TypeNameRef
 import gh.marad.chi.core.parser.readers.TypeParameterRef
-import gh.marad.chi.core.types3.Function
-import gh.marad.chi.core.types3.Variable
+import gh.marad.chi.core.types.Function
+import gh.marad.chi.core.types.Variable
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe

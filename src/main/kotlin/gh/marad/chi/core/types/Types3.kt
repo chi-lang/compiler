@@ -1,14 +1,14 @@
-package gh.marad.chi.core.types3
+package gh.marad.chi.core.types
 
 import java.util.*
 import kotlin.math.max
 
 sealed interface TypeScheme {
-    fun instantiate(level: Int, freshVar: (Int) -> Variable) : Type3
+    fun instantiate(level: Int, freshVar: (Int) -> Variable) : Type
 }
 
-data class PolyType(val level: Int, val body: Type3) : TypeScheme {
-    override fun instantiate(level: Int, freshVar: (Int) -> Variable): Type3 {
+data class PolyType(val level: Int, val body: Type) : TypeScheme {
+    override fun instantiate(level: Int, freshVar: (Int) -> Variable): Type {
         val visitor = FreshenAboveVisitor(
             startingLevel = this.level,
             targetLevel = level,
@@ -18,11 +18,11 @@ data class PolyType(val level: Int, val body: Type3) : TypeScheme {
     }
 }
 
-sealed  interface Type3 : TypeScheme {
+sealed  interface Type : TypeScheme {
     val level: Int
-    override fun instantiate(level: Int, freshVar: (Int) -> Variable): Type3 = this
+    override fun instantiate(level: Int, freshVar: (Int) -> Variable): Type = this
     fun <T> accept(visitor: TypeVisitor<T>): T
-    fun children(): List<Type3>
+    fun children(): List<Type>
 
     companion object {
         val any = Primitive(TypeId("std", "lang.types.any", "any"))
@@ -32,11 +32,11 @@ sealed  interface Type3 : TypeScheme {
         val float = Primitive(TypeId("std", "lang.types.float", "float"))
         val string = Primitive(TypeId("std", "lang.types.string", "string"))
 
-        fun fn(vararg types: Type3) = Function(types.toList())
-        fun record(vararg fields: Pair<String, Type3>): Record = Record(null, fields.map { Record.Field(it.first, it.second) })
-        fun record(id: TypeId, vararg fields: Pair<String, Type3>): Record = Record(id, fields.map { Record.Field(it.first, it.second) })
-        fun array(elementType: Type3) = Array(elementType)
-        fun union(id: TypeId?, vararg types: Type3): Sum =
+        fun fn(vararg types: Type) = Function(types.toList())
+        fun record(vararg fields: Pair<String, Type>): Record = Record(null, fields.map { Record.Field(it.first, it.second) })
+        fun record(id: TypeId, vararg fields: Pair<String, Type>): Record = Record(id, fields.map { Record.Field(it.first, it.second) })
+        fun array(elementType: Type) = Array(elementType)
+        fun union(id: TypeId?, vararg types: Type): Sum =
             types.reduceRight { lhs, rhs -> Sum.create(id, lhs, rhs) } as Sum
     }
 }
@@ -52,33 +52,33 @@ interface HasTypeId {
     fun getTypeId(): TypeId?
 }
 
-data class Primitive(val id: TypeId) : Type3, HasTypeId {
+data class Primitive(val id: TypeId) : Type, HasTypeId {
     override val level: Int = 0
     override fun <T> accept(visitor: TypeVisitor<T>): T =
         visitor.visitPrimitive(this)
 
-    override fun children(): List<Type3> = emptyList()
+    override fun children(): List<Type> = emptyList()
     override fun toString(): String = id.name
     override fun getTypeId(): TypeId = id
 }
 
-data class Function(val types: List<Type3>) : Type3 {
+data class Function(val types: List<Type>) : Type {
     override val level: Int get() = types.maxOf { it.level }
     override fun <T> accept(visitor: TypeVisitor<T>): T =
         visitor.visitFunction(this)
-    override fun children(): List<Type3> = types
+    override fun children(): List<Type> = types
     override fun toString(): String = "(" + types.joinToString(" -> ") + ")"
 }
 
-data class Record(val id: TypeId?, val fields: List<Field>) : Type3, HasTypeId {
-    data class Field(val name: String, val type: Type3)
+data class Record(val id: TypeId?, val fields: List<Field>) : Type, HasTypeId {
+    data class Field(val name: String, val type: Type)
 
     override val level: Int get() = fields.maxOf { it.type.level }
 
     override fun <T> accept(visitor: TypeVisitor<T>): T =
         visitor.visitRecord(this)
 
-    override fun children(): List<Type3> = fields.map { it.type }
+    override fun children(): List<Type> = fields.map { it.type }
     override fun toString(): String {
         val sb = StringBuilder()
         if (id != null) {
@@ -93,16 +93,16 @@ data class Record(val id: TypeId?, val fields: List<Field>) : Type3, HasTypeId {
     override fun getTypeId(): TypeId? = id
 }
 
-data class Sum(val id: TypeId?, val lhs: Type3, val rhs: Type3) : Type3, HasTypeId {
+data class Sum(val id: TypeId?, val lhs: Type, val rhs: Type) : Type, HasTypeId {
     override fun <T> accept(visitor: TypeVisitor<T>): T = visitor.visitSum(this)
-    override fun children(): List<Type3> = listOf(lhs, rhs)
+    override fun children(): List<Type> = listOf(lhs, rhs)
     override fun toString(): String = "$lhs | $rhs"
     override val level: Int = max(lhs.level, rhs.level)
 
     companion object {
-        fun create(lhs: Type3, rhs: Type3) = create(null, lhs, rhs)
+        fun create(lhs: Type, rhs: Type) = create(null, lhs, rhs)
 
-        fun create(id: TypeId?, lhs: Type3, rhs: Type3): Type3 {
+        fun create(id: TypeId?, lhs: Type, rhs: Type): Type {
             return if (lhs == rhs) {
                 lhs
             } else {
@@ -114,9 +114,9 @@ data class Sum(val id: TypeId?, val lhs: Type3, val rhs: Type3) : Type3, HasType
     override fun getTypeId(): TypeId? = id
 }
 
-data class Array(val elementType: Type3) : Type3, HasTypeId {
+data class Array(val elementType: Type) : Type, HasTypeId {
     override fun <T> accept(visitor: TypeVisitor<T>): T = visitor.visitArray(this)
-    override fun children(): List<Type3> = listOf(elementType)
+    override fun children(): List<Type> = listOf(elementType)
     override fun toString(): String = "array[$elementType]"
     override fun getTypeId(): TypeId = TypeId("std", "lang.types.array", "array")
     override val level: Int = elementType.level
@@ -125,10 +125,10 @@ data class Array(val elementType: Type3) : Type3, HasTypeId {
 data class Variable(
     val name: String,
     override val level: Int
-) : Type3 {
+) : Type {
     override fun <T> accept(visitor: TypeVisitor<T>): T =
         visitor.visitVariable(this)
-    override fun children(): List<Type3> = emptyList()
+    override fun children(): List<Type> = emptyList()
     override fun toString(): String = "'$name"
     override fun hashCode(): Int = Objects.hash(name, level)
     override fun equals(other: Any?): Boolean {
@@ -143,4 +143,3 @@ data class Variable(
         return true
     }
 }
-

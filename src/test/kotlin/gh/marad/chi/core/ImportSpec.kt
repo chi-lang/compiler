@@ -6,7 +6,7 @@ import gh.marad.chi.asts
 import gh.marad.chi.compile
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.PreludeImport
-import gh.marad.chi.core.types3.Type3
+import gh.marad.chi.core.types.Type
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -41,7 +41,7 @@ class ImportSpec {
     fun `importing function from package`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbol("std", "time", "millis", Type3.fn(Type3.int), public = true)
+        ns.addSymbol("std", "time", "millis", Type.fn(Type.int), public = true)
 
         // when
         val result = compile(
@@ -68,7 +68,7 @@ class ImportSpec {
     fun `import function with alias`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbol("std", "time", "millis", Type3.fn(Type3.int), public = true)
+        ns.addSymbol("std", "time", "millis", Type.fn(Type.int), public = true)
 
         // when
         val result = compile(
@@ -95,7 +95,7 @@ class ImportSpec {
     fun `whole package alias`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbol("std", "time", "millis", Type3.fn(Type3.int), public = true)
+        ns.addSymbol("std", "time", "millis", Type.fn(Type.int), public = true)
 
         // when
         val result = ast(
@@ -123,7 +123,7 @@ class ImportSpec {
     fun `import package and functions and alias everything`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbol("std", "time", "millis", Type3.fn(Type3.int), public = true)
+        ns.addSymbol("std", "time", "millis", Type.fn(Type.int), public = true)
 
         // when
         val result = asts(
@@ -154,12 +154,12 @@ class ImportSpec {
             PreludeImport("foo", "bar", "baz", null)
         )
         val ns = GlobalCompilationNamespace(prelude)
-        ns.addSymbol("foo", "bar", "baz", public = true, type = Type3.int)
+        ns.addSymbol("foo", "bar", "baz", public = true, type = Type.int)
 
         // when
         val result = ast("baz", ns)
 
         // then
-        result.newType shouldBe Type3.int
+        result.newType shouldBe Type.int
     }
 }

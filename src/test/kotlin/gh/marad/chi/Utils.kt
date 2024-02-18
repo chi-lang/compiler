@@ -8,8 +8,8 @@ import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.compiler.Compiler
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.Symbol
-import gh.marad.chi.core.types3.HasTypeId
-import gh.marad.chi.core.types3.Type3
+import gh.marad.chi.core.types.HasTypeId
+import gh.marad.chi.core.types.Type
 
 data class ErrorMessagesException(val errors: List<Message>) : AssertionError("Chi compilation errors")
 
@@ -52,7 +52,7 @@ fun ast(
     ignoreCompilationErrors: Boolean = false
 ): Expression = asts(code, ns, ignoreCompilationErrors).last()
 
-fun GlobalCompilationNamespace.addSymbolInDefaultPackage(name: String, type: Type3? = null, public: Boolean = false,
+fun GlobalCompilationNamespace.addSymbolInDefaultPackage(name: String, type: Type? = null, public: Boolean = false,
                                                          mutable: Boolean = false, @Suppress("UNUSED_PARAMETER") slot: Int = 0) {
     val pkg = getDefaultPackage()
     pkg.symbols.add(
@@ -66,7 +66,7 @@ fun GlobalCompilationNamespace.addSymbolInDefaultPackage(name: String, type: Typ
     )
 }
 
-fun GlobalCompilationNamespace.addSymbol(moduleName: String, packageName: String, name: String, type: Type3? = null,
+fun GlobalCompilationNamespace.addSymbol(moduleName: String, packageName: String, name: String, type: Type? = null,
                                          public: Boolean = false, mutable: Boolean = false, @Suppress("UNUSED_PARAMETER") slot: Int = 0) {
     val pkg = getOrCreatePackage(moduleName, packageName)
     pkg.symbols.add(
@@ -80,7 +80,7 @@ fun GlobalCompilationNamespace.addSymbol(moduleName: String, packageName: String
     )
 }
 
-fun GlobalCompilationNamespace.addTypeDefinition(type: Type3) {
+fun GlobalCompilationNamespace.addTypeDefinition(type: Type) {
     if (type is HasTypeId && type.getTypeId() != null) {
         val id = type.getTypeId()!!
         addTypeDefinition(TypeAlias(id, type))
