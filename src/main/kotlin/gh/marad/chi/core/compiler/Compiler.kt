@@ -4,9 +4,7 @@ import gh.marad.chi.core.Package
 import gh.marad.chi.core.Program
 import gh.marad.chi.core.TypeAlias
 import gh.marad.chi.core.analyzer.*
-import gh.marad.chi.core.compiler.checks.CheckNamesVisitor
-import gh.marad.chi.core.compiler.checks.ImmutabilityCheckVisitor
-import gh.marad.chi.core.compiler.checks.ReturnTypeCheckVisitor
+import gh.marad.chi.core.compiler.checks.*
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.TypeTable
 import gh.marad.chi.core.parseSource
@@ -148,7 +146,7 @@ object Compiler {
 
         // perform post construction updates and checks
         // ============================================
-        VisibilityCheckingVisitor(packageDefinition.moduleName, typeLookupTable, ns)
+        VisibilityCheckingVisitor(packageDefinition.moduleName, ns)
             .check(expressions, resultMessages)
         FnCallCheckingVisitor()
             .check(expressions, resultMessages)

@@ -168,7 +168,5 @@ class FnCallTypeCheckingSpec {
         """.trimIndent()
 
         val result = ast(code)
-
-//        result.shouldBeEmpty()
     }
 }

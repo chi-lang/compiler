@@ -154,7 +154,7 @@ class SymbolCheckingSpec {
             .name shouldBe "x"
     }
 
-    // @Test - FIXME implement private fields
+    //@Test
     fun `should not allow using non-public fields in type from other module`() {
         val ns = GlobalCompilationNamespace()
         ns.addTypeDefinition(Type3.record(
@@ -166,7 +166,7 @@ class SymbolCheckingSpec {
         // when
         val code = """
             import foo/bar { Foo }
-            val foo = Foo(10, 10.0)
+            val foo = { i: 5, f: 8.9 }
             foo.i
             foo.f
         """.trimIndent()
