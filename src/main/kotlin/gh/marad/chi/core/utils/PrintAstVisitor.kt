@@ -36,11 +36,11 @@ class PrintAstVisitor : ExpressionVisitor {
     override fun visit(expr: Expression) = expr.accept(this)
     override fun visitAtom(atom: Atom) = node(atom)
     override fun visitInterpolatedString(interpolatedString: InterpolatedString) = node(interpolatedString)
-    override fun visitVariableAccess(variableAccess: VariableAccess) = node(variableAccess)
-    override fun visitFieldAccess(fieldAccess: FieldAccess) = node(fieldAccess)
+    override fun visitVariableAccess(variableAccess: VariableAccess) = node(variableAccess, variableAccess.target.toString())
+    override fun visitFieldAccess(fieldAccess: FieldAccess) = node(fieldAccess, fieldAccess.fieldName)
     override fun visitFieldAssignment(fieldAssignment: FieldAssignment) = node(fieldAssignment)
     override fun visitAssignment(assignment: Assignment) = node(assignment)
-    override fun visitNameDeclaration(nameDeclaration: NameDeclaration) = node(nameDeclaration)
+    override fun visitNameDeclaration(nameDeclaration: NameDeclaration) = node(nameDeclaration, nameDeclaration.name)
     override fun visitFn(fn: Fn) = node(fn)
     override fun visitBlock(block: Block) = node(block)
     override fun visitFnCall(fnCall: FnCall) = node(fnCall)
@@ -70,16 +70,21 @@ class PrintAstVisitor : ExpressionVisitor {
         }
     }
 
-    private fun node(expr: Expression) {
-        node(expr) {
+    private fun node(expr: Expression, name: String? = null) {
+        node(expr, name) {
             expr.children().forEach { it.accept(this) }
         }
     }
 
-    private fun node(expr: Expression, f: () -> Unit = {}) {
+    private fun node(expr: Expression, name: String? = null, f: () -> Unit = {}) {
         sb.appendLine()
         sb.append(indent)
-        sb.append("(${expr.javaClass.simpleName} : ${expr.newType}")
+        sb.append("(${expr.javaClass.simpleName} ")
+        if (name != null) {
+            sb.append(name)
+            sb.append(' ')
+        }
+        sb.append(": ${expr.newType}")
         withIndent(f)
         sb.append(")")
     }
