@@ -4,7 +4,7 @@ import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.core.*
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parser.readers.*
-import gh.marad.chi.core.types.Types
+import gh.marad.chi.core.types3.Type3
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.jupiter.api.Test
@@ -14,7 +14,7 @@ class VariablesConversionsKtAssignmentTest {
     fun `generate assignment`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbolInDefaultPackage("variable", Types.int)
+        ns.addSymbolInDefaultPackage("variable", Type3.int)
 
         // when
         val result = convertAst(
@@ -29,7 +29,7 @@ class VariablesConversionsKtAssignmentTest {
         // then
         result.target.name shouldBe "variable"
         result.target.shouldBeTypeOf<PackageSymbol>()
-        result.value.shouldBeAtom("10", Types.int)
+        result.value.shouldBeAtom("10", Type3.int)
         result.sourceSection shouldBe testSection
     }
 
@@ -37,7 +37,7 @@ class VariablesConversionsKtAssignmentTest {
     fun `generate indexed assignment`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbolInDefaultPackage("variable", Types.int)
+        ns.addSymbolInDefaultPackage("variable", Type3.int)
 
         // when
         val result = convertAst(
@@ -52,8 +52,8 @@ class VariablesConversionsKtAssignmentTest {
 
         // then
         result.variable.shouldBeVariable("variable")
-        result.index.shouldBeAtom("10", Types.int)
-        result.value.shouldBeAtom("hello", Types.string)
+        result.index.shouldBeAtom("10", Type3.int)
+        result.value.shouldBeAtom("hello", Type3.string)
         result.sourceSection shouldBe testSection
     }
 
@@ -61,7 +61,7 @@ class VariablesConversionsKtAssignmentTest {
     fun `generate field assignment`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbolInDefaultPackage("object", Types.int)
+        ns.addSymbolInDefaultPackage("object", Type3.int)
 
         // when
         val result = convertAst(

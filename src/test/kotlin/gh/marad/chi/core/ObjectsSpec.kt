@@ -3,16 +3,12 @@ package gh.marad.chi.core
 import gh.marad.chi.ast
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.MemberDoesNotExist
-import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.compiler.Compiler
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.types.ProductType
-import gh.marad.chi.core.types.SimpleType
-import gh.marad.chi.core.types.SumType
-import gh.marad.chi.core.types.Types
+import gh.marad.chi.core.types3.Type3
+import gh.marad.chi.core.types3.TypeId
 import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldContainAll
-import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -25,8 +21,7 @@ class ObjectsSpec {
     fun `should find that member doesn't exist`() {
         messages(
             """
-                data Test = Foo(i: int)
-                val x = Foo(10)
+                val x = { i: 5 }
                 x.somethingElse
             """.trimIndent()
         ).should { msgs ->
@@ -34,25 +29,8 @@ class ObjectsSpec {
             msgs[0].shouldBeTypeOf<MemberDoesNotExist>().should {
                 it.level shouldBe Level.ERROR
                 it.member shouldBe "somethingElse"
-                it.type.toString() shouldBe "user::default::Foo"
+                it.type shouldBe Type3.record("i" to Type3.int)
             }
-        }
-    }
-
-    @Test
-    fun `check types for variant constructor invocation`() {
-        val msgs = messages(
-            """
-                data Foo = Foo(i: int)
-                Foo("hello")
-            """.trimIndent()
-        )
-
-        msgs shouldHaveSize 1
-        msgs[0].shouldBeTypeOf<TypeMismatch>() should {
-            it.level shouldBe Level.ERROR
-            it.expected shouldBe Types.int
-            it.actual shouldBe Types.string
         }
     }
 
@@ -61,51 +39,37 @@ class ObjectsSpec {
         // when
         val result = ast(
             """
-                data Foo = Foo(i: int)
-                val f = Foo(10)
+                val f = { i: 5 }
                 f.i
             """.trimIndent()
         )
 
         // then
         result.shouldBeTypeOf<FieldAccess>().should {
-            it.type shouldBe Types.int
+            it.newType shouldBe Type3.int
         }
     }
 
     @Test
-    fun `should define types`() {
+    fun `should define type aliases`() {
         // when
         val result = Compiler.compile(
             """
                 package foo/bar
-                data A = B(i: int) | C
+                type Circle = { radius: float }
+                type Square = { side: float }
+                type Shape = Circle | Square
             """.trimIndent(),
             GlobalCompilationNamespace()
-        ).program.definedTypes
+        ).program.typeAliases
 
         // then
-        result.map { it.type } shouldContainAll listOf(
-            SumType("foo", "bar", "A", emptyList(), listOf("B", "C"), emptyList()),
-            ProductType("foo", "bar", "B", listOf(Types.int), emptyList(), emptyList()),
-            SimpleType("foo", "bar", "C")
-        )
-    }
-
-    @Test
-    fun `simplified declaration should define only one type`() {
-        // when
-        val result = Compiler.compile(
-            """
-                package foo/bar
-                data A(i: int)
-            """.trimIndent(),
-            GlobalCompilationNamespace()
-        ).program.definedTypes
-
-        // then
-        result.map { it.type } shouldContainExactly listOf(
-            ProductType("foo", "bar", "A", listOf(Types.int), emptyList(), emptyList())
+        val circle = Type3.record(TypeId("foo", "bar", "Circle"), "radius" to Type3.float)
+        val square = Type3.record(TypeId("foo", "bar", "Square"), "side" to Type3.float)
+        result.map { it.newType } shouldContainAll listOf(
+            circle,
+            square,
+            Type3.union(TypeId("foo", "bar", "Shape"), circle, square)
         )
     }
 }

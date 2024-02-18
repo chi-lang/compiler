@@ -1,8 +1,6 @@
 package gh.marad.chi.core.analyzer
 
 import gh.marad.chi.core.parser.ChiSource
-import gh.marad.chi.core.types.Type
-import gh.marad.chi.core.types.TypeInferenceFailed
 import gh.marad.chi.core.types3.Type3
 
 enum class Level { ERROR }
@@ -75,7 +73,7 @@ data class CannotAccessInternalName(val name: String, override val codePoint: Co
         get() = "$name is not public and is not from this module"
 }
 
-data class TypeIsNotIndexable(val type: Type, override val codePoint: CodePoint?) : Message {
+data class TypeIsNotIndexable(val type: Type3, override val codePoint: CodePoint?) : Message {
     override val level: Level = Level.ERROR
     override val message: String = "Type '$type' is cannot be indexed"
 }
@@ -85,16 +83,10 @@ data class CannotChangeImmutableVariable(override val codePoint: CodePoint?) : M
     override val message: String = "Cannot change immutable variable"
 }
 
-data class MemberDoesNotExist(val type: Type, val member: String, override val codePoint: CodePoint?) :
+data class MemberDoesNotExist(val type: Type3, val member: String, override val codePoint: CodePoint?) :
     Message {
     override val level: Level = Level.ERROR
     override val message: String
         get() = "Type $type does not have field '$member', or I don't have enough information about the type variant"
 }
 
-data class TypeInferenceFailed(val cause: TypeInferenceFailed) : Message {
-    override val codePoint = cause.section?.toCodePoint()
-    override val level: Level = Level.ERROR
-    override val message: String
-        get() = cause.message!!
-}

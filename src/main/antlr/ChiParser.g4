@@ -60,7 +60,7 @@ traitFunctionDefinition : FN funcName=ID arguments=func_argument_definitions (CO
 // ====================================================================================================
 // Types
 // ====================================================================================================
-typealias : DEFTYPE name=ID generic_type_definitions? '=' type;
+typealias : TYPE name=ID generic_type_definitions? '=' type;
 
 type
     : typeName                                              #TypeNameRef

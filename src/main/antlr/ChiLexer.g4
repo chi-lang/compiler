@@ -25,7 +25,7 @@ HANDLE : 'handle';
 WITH : 'with';
 RETURN : 'return';
 TRAIT : 'trait';
-DEFTYPE : 'deftype';
+TYPE : 'type';
 
 ARROW : '->' ;
 COLON : ':' ;

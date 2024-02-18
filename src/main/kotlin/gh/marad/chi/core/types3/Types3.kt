@@ -1,6 +1,7 @@
 package gh.marad.chi.core.types3
 
 import java.util.*
+import kotlin.math.max
 
 sealed interface TypeScheme {
     fun instantiate(level: Int, freshVar: (Int) -> Variable) : Type3
@@ -24,6 +25,7 @@ sealed  interface Type3 : TypeScheme {
     fun children(): List<Type3>
 
     companion object {
+        val any = Primitive(TypeId("std", "lang.types.any", "any"))
         val unit = Primitive(TypeId("std", "lang.types.unit", "unit"))
         val bool = Primitive(TypeId("std", "lang.types.bool", "bool"))
         val int = Primitive(TypeId("std", "lang.types.int", "int"))
@@ -33,7 +35,9 @@ sealed  interface Type3 : TypeScheme {
         fun fn(vararg types: Type3) = Function(types.toList())
         fun record(vararg fields: Pair<String, Type3>): Record = Record(null, fields.map { Record.Field(it.first, it.second) })
         fun record(id: TypeId, vararg fields: Pair<String, Type3>): Record = Record(id, fields.map { Record.Field(it.first, it.second) })
-        fun array(elementType: Type3, level: Int) = Array(elementType, level)
+        fun array(elementType: Type3) = Array(elementType)
+        fun union(id: TypeId?, vararg types: Type3): Sum =
+            types.reduceRight { lhs, rhs -> Sum.create(id, lhs, rhs) } as Sum
     }
 }
 
@@ -89,19 +93,20 @@ data class Record(val id: TypeId?, val fields: List<Field>) : Type3, HasTypeId {
     override fun getTypeId(): TypeId? = id
 }
 
-data class Sum(val id: TypeId?, val lhs: Type3, val rhs: Type3, override val level: Int) : Type3, HasTypeId {
+data class Sum(val id: TypeId?, val lhs: Type3, val rhs: Type3) : Type3, HasTypeId {
     override fun <T> accept(visitor: TypeVisitor<T>): T = visitor.visitSum(this)
     override fun children(): List<Type3> = listOf(lhs, rhs)
     override fun toString(): String = "$lhs | $rhs"
+    override val level: Int = max(lhs.level, rhs.level)
 
     companion object {
-        fun create(lhs: Type3, rhs: Type3, level: Int) = create(null, lhs, rhs, level)
+        fun create(lhs: Type3, rhs: Type3) = create(null, lhs, rhs)
 
-        fun create(id: TypeId?, lhs: Type3, rhs: Type3, level: Int): Type3 {
+        fun create(id: TypeId?, lhs: Type3, rhs: Type3): Type3 {
             return if (lhs == rhs) {
                 lhs
             } else {
-                Sum(id, lhs, rhs, level)
+                Sum(id, lhs, rhs)
             }
         }
     }
@@ -109,11 +114,12 @@ data class Sum(val id: TypeId?, val lhs: Type3, val rhs: Type3, override val lev
     override fun getTypeId(): TypeId? = id
 }
 
-data class Array(val elementType: Type3, override val level: Int) : Type3, HasTypeId {
+data class Array(val elementType: Type3) : Type3, HasTypeId {
     override fun <T> accept(visitor: TypeVisitor<T>): T = visitor.visitArray(this)
     override fun children(): List<Type3> = listOf(elementType)
     override fun toString(): String = "array[$elementType]"
     override fun getTypeId(): TypeId = TypeId("std", "lang.types.array", "array")
+    override val level: Int = elementType.level
 }
 
 data class Variable(

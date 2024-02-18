@@ -1,12 +1,8 @@
 package gh.marad.chi.core
 
 import gh.marad.chi.core.expressionast.ExpressionVisitor
-import gh.marad.chi.core.namespace.TypeInfo
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.Import
-import gh.marad.chi.core.types.Type
-import gh.marad.chi.core.types.TypeVariable
-import gh.marad.chi.core.types.Types
 import gh.marad.chi.core.types3.Type3
 import gh.marad.chi.core.types3.TypeId
 
@@ -23,7 +19,6 @@ data class Program(
     val packageDefinition: Package,
     val imports: List<Import>,
     val typeAliases: List<TypeAlias>,
-    val definedTypes: List<TypeInfo>,
     val expressions: List<Expression>,
     val sourceSection: ChiSource.Section? = null)
 
@@ -35,19 +30,18 @@ data class TypeAlias(
 )
 
 data class Atom(val value: String,
-                var type: Type?,
                 override var newType: Type3?,
                 override val sourceSection: ChiSource.Section?
 ) : Expression {
     override var used: Boolean = false
     companion object {
-        fun unit(sourceSection: ChiSource.Section? = null) = Atom("()", Types.unit, Type3.unit, sourceSection)
-        fun int(value: Long, sourceSection: ChiSource.Section?) = Atom("$value", Types.int, Type3.int, sourceSection)
-        fun float(value: Float, sourceSection: ChiSource.Section?) = Atom("$value", Types.float, Type3.float, sourceSection)
+        fun unit(sourceSection: ChiSource.Section? = null) = Atom("()", Type3.unit, sourceSection)
+        fun int(value: Long, sourceSection: ChiSource.Section?) = Atom("$value", Type3.int, sourceSection)
+        fun float(value: Float, sourceSection: ChiSource.Section?) = Atom("$value", Type3.float, sourceSection)
         fun bool(b: Boolean, sourceSection: ChiSource.Section?) = if (b) t(sourceSection) else f(sourceSection)
-        fun t(sourceSection: ChiSource.Section?) = Atom("true", Types.bool, Type3.bool, sourceSection)
-        fun f(sourceSection: ChiSource.Section?) = Atom("false", Types.bool, Type3.bool, sourceSection)
-        fun string(value: String, sourceSection: ChiSource.Section?) = Atom(value, Types.string, Type3.string, sourceSection)
+        fun t(sourceSection: ChiSource.Section?) = Atom("true", Type3.bool, sourceSection)
+        fun f(sourceSection: ChiSource.Section?) = Atom("false", Type3.bool, sourceSection)
+        fun string(value: String, sourceSection: ChiSource.Section?) = Atom(value, Type3.string, sourceSection)
     }
 
     override fun accept(visitor: ExpressionVisitor) = visitor.visitAtom(this)
@@ -96,7 +90,6 @@ data class VariableAccess(
     val target: Target,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitVariableAccess(this)
@@ -116,7 +109,6 @@ data class FieldAccess(
     val memberSection: ChiSource.Section?,
 ) : Expression {
     var target: DotTarget? = null
-    var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitFieldAccess(this)
@@ -163,12 +155,10 @@ data class NameDeclaration(
 
 data class FnParam(val name: String, var type: Type3?, val sourceSection: ChiSource.Section?)
 data class Fn(
-    val typeVariables: List<TypeVariable>,
     val parameters: List<FnParam>,
     val body: Block,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitFn(this)
@@ -176,7 +166,6 @@ data class Fn(
 }
 
 data class Block(val body: List<Expression>, override val sourceSection: ChiSource.Section?) : Expression {
-    var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitBlock(this)
@@ -185,11 +174,9 @@ data class Block(val body: List<Expression>, override val sourceSection: ChiSour
 
 data class FnCall(
     var function: Expression,
-    val callTypeParameters: List<Type>,
     val parameters: MutableList<Expression>,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitFnCall(this)
@@ -298,12 +285,9 @@ data class EffectDefinition(
     val packageName: String,
     val name: String,
     val public: Boolean,
-//    val genericTypeParameters: List<GenericTypeParameter>,
-    val typeVariables: List<TypeVariable>,
     val parameters: List<FnParam>,
     override val sourceSection: ChiSource.Section?
 ) : Expression {
-    var type: Type? = null
     override var newType: Type3? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitEffectDefinition(this)

@@ -3,14 +3,12 @@ package gh.marad.chi.core.compiler
 import gh.marad.chi.core.*
 import gh.marad.chi.core.Target
 import gh.marad.chi.core.compiler.Compiler.resolveNewType
-import gh.marad.chi.core.compiler.Compiler.resolveType
 import gh.marad.chi.core.namespace.FnSymbol
 import gh.marad.chi.core.namespace.FnSymbolTable
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.parser.visitor.ParseAstVisitor
-import gh.marad.chi.core.types.TypeVariable
 import gh.marad.chi.core.types3.Function
 import gh.marad.chi.core.types3.Type3
 
@@ -77,7 +75,6 @@ class ExprConversionVisitor(
         }
 
         return Fn(
-            typeVariables = emptyList(),
             parameters = params,
             body = Block(body, parseLambda.section),
             sourceSection = parseLambda.section
@@ -97,7 +94,6 @@ class ExprConversionVisitor(
         }
 
         val function = Fn(
-            typeVariables = parseFuncWithName.typeParameters.map { TypeVariable(it.name) },
             parameters = params,
             body = withFnSymbolTable(fnSymbolTable) {
                 parseFuncWithName.body.accept(this) as Block
@@ -130,9 +126,6 @@ class ExprConversionVisitor(
     override fun visitFnCall(parseFnCall: ParseFnCall): Expression =
         FnCall(
             parseFnCall.function.accept(this),
-            parseFnCall.concreteTypeParameters.map {
-                resolveType(typeTable, currentTypeSchemeVariables, it)
-            },
             parseFnCall.arguments.map { it.accept(this) }.toMutableList(),
             parseFnCall.section
         )
@@ -228,7 +221,6 @@ class ExprConversionVisitor(
             packageName = pkg.packageName,
             name = parseEffectDefinition.name,
             public = parseEffectDefinition.public,
-            typeVariables = parseEffectDefinition.typeParameters.map { TypeVariable(it.name) },
             parameters = params,
             sourceSection = parseEffectDefinition.section
         ).also {
@@ -397,7 +389,6 @@ class ExprConversionVisitor(
                     moduleName = pkg.moduleName,
                     packageName = pkg.packageName,
                     name = name,
-                    type = null,
                     newType = newType,
                     isPublic, isMutable
                 )

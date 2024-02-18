@@ -3,9 +3,9 @@ package gh.marad.chi.core.expressionast.internal
 import gh.marad.chi.core.Fn
 import gh.marad.chi.core.NameDeclaration
 import gh.marad.chi.core.parser.readers.*
-import gh.marad.chi.core.types.FunctionType
-import gh.marad.chi.core.types.TypeVariable
-import gh.marad.chi.core.types.Types
+import gh.marad.chi.core.types3.Function
+import gh.marad.chi.core.types3.Type3
+import gh.marad.chi.core.types3.Variable
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.should
@@ -47,7 +47,7 @@ class FunctionConversionsKtFuncWithNameTest {
 
         // then
         fn.shouldBeTypeOf<NameDeclaration>().should {
-            it.expectedType shouldBe Types.fn(Types.unit)
+            it.expectedType shouldBe Type3.fn(Type3.unit)
             it.value.shouldBeTypeOf<Fn>()
         }
     }
@@ -64,11 +64,11 @@ class FunctionConversionsKtFuncWithNameTest {
         val fn = convertAst(funcWithName)
 
         // then
-        val T = TypeVariable("T")
+        val T = Variable("T", 0)
         fn.shouldBeTypeOf<NameDeclaration>().should {
             it.value.shouldBeTypeOf<Fn>()
-            it.expectedType shouldBe FunctionType(
-                    listOf(T), listOf(T)
+            it.expectedType shouldBe Function(
+                    listOf(T)
             )
         }
 
@@ -95,7 +95,7 @@ class FunctionConversionsKtFuncWithNameTest {
         fn.shouldBeTypeOf<NameDeclaration>().value
             .shouldBeTypeOf<Fn>().should {
                 it.body.body.first().shouldBeTypeOf<NameDeclaration>()
-                    .expectedType shouldBe TypeVariable("T")
+                    .expectedType shouldBe Variable("T", 0)
             }
     }
 
@@ -113,7 +113,7 @@ class FunctionConversionsKtFuncWithNameTest {
             .shouldBeTypeOf<Fn>()
 
         // then
-        fn.parameters.first().type shouldBe TypeVariable("T")
+        fn.parameters.first().type shouldBe Variable("T", 0)
     }
 
 

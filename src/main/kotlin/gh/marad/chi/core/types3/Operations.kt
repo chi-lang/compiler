@@ -3,7 +3,9 @@ package gh.marad.chi.core.types3
 import gh.marad.chi.core.Expression
 
 fun replaceTypes(expr: Expression, solutions: List<Pair<Variable, Type3>>) {
-    expr.newType = mapType(expr.newType!!, solutions)
+    if (expr.newType != null) {
+        expr.newType = mapType(expr.newType!!, solutions)
+    }
     expr.children().forEach { replaceTypes(it, solutions) }
 }
 

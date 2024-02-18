@@ -6,7 +6,7 @@ import gh.marad.chi.core.parser.readers.ParseNameDeclaration
 import gh.marad.chi.core.parser.readers.Symbol
 import gh.marad.chi.core.parser.readers.TypeNameRef
 import gh.marad.chi.core.shouldBeAtom
-import gh.marad.chi.core.types.Types
+import gh.marad.chi.core.types3.Type3
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
@@ -30,8 +30,8 @@ class VariablesConversionsKtNameDeclarationTest {
         result.public.shouldBeTrue()
         result.mutable.shouldBeFalse()
         result.name shouldBe "variable"
-        result.value.shouldBeAtom("10", Types.int)
-        result.expectedType shouldBe Types.int
+        result.value.shouldBeAtom("10", Type3.int)
+        result.expectedType shouldBe Type3.int
         result.sourceSection shouldBe sectionC
     }
 }

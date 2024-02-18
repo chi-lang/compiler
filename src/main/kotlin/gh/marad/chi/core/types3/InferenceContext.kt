@@ -34,6 +34,17 @@ class InferenceContext(
         localSymbols.define(name, typeScheme)
     }
 
+    fun updateSymbolType(target: Target, typeScheme: TypeScheme) {
+        when(target) {
+            is LocalSymbol -> localSymbols.define(target.name, typeScheme)
+            is PackageSymbol -> {
+                if (target.moduleName == pkg.moduleName && target.packageName == pkg.packageName) {
+                    packageSymbols.define(target.name, typeScheme)
+                }
+            }
+        }
+    }
+
     fun <T> withNewLocalScope(f: () -> T): T {
         val prev = localSymbols
         localSymbols = LocalSymbols(prev)
@@ -80,7 +91,7 @@ class InferenceContext(
                         is Type3 -> typeScheme
                     }
                     if (symbolType is Function && symbolType.types.size >= 2 && (symbolType.types[0] == type || symbolType.types[0] is Variable)) {
-                        listOf(DotTarget.PackageFunction(symbol.packageName, symbol.packageName, symbol.name) to symbol.newType)
+                        listOf(DotTarget.PackageFunction(symbol.moduleName, symbol.packageName, symbol.name) to symbol.newType)
                     } else {
                         emptyList()
                     }

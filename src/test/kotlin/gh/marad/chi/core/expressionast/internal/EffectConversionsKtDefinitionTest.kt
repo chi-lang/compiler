@@ -5,8 +5,8 @@ import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parser.readers.ParseEffectDefinition
 import gh.marad.chi.core.parser.readers.TypeNameRef
 import gh.marad.chi.core.parser.readers.TypeParameterRef
-import gh.marad.chi.core.types.FunctionType
-import gh.marad.chi.core.types.TypeVariable
+import gh.marad.chi.core.types3.Function
+import gh.marad.chi.core.types3.Variable
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -48,7 +48,7 @@ class EffectConversionsKtDefinitionTest {
         result.parameters shouldHaveSize 1
         result.parameters.first() should {
             it.name shouldBe "t"
-            it.type shouldBe TypeVariable("T")
+            it.type shouldBe Variable("T", 0)
         }
     }
 
@@ -66,10 +66,9 @@ class EffectConversionsKtDefinitionTest {
             .shouldBeTypeOf<EffectDefinition>()
 
         // then
-        val T = TypeVariable("T")
-        result.type shouldBe FunctionType(
+        val T = Variable("T", 0)
+        result.newType shouldBe Function(
             listOf(T),
-            listOf(T)
         )
     }
 

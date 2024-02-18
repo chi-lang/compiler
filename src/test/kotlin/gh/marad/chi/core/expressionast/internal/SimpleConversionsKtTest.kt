@@ -2,7 +2,7 @@ package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.parser.readers.*
-import gh.marad.chi.core.types.Types
+import gh.marad.chi.core.types3.Type3
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -12,11 +12,11 @@ import org.junit.jupiter.api.Test
 class SimpleConversionsKtTest {
     @Test
     fun `generating simple atoms`() {
-        convertAst(LongValue(10, testSection)).shouldBeAtom("10", Types.int, testSection)
-        convertAst(FloatValue(0.5f, testSection)).shouldBeAtom("0.5", Types.float, testSection)
-        convertAst(BoolValue(true, testSection)).shouldBeAtom("true", Types.bool, testSection)
-        convertAst(BoolValue(false, testSection)).shouldBeAtom("false", Types.bool, testSection)
-        convertAst(StringValue("test", testSection)).shouldBeAtom("test", Types.string, testSection)
+        convertAst(LongValue(10, testSection)).shouldBeAtom("10", Type3.int, testSection)
+        convertAst(FloatValue(0.5f, testSection)).shouldBeAtom("0.5", Type3.float, testSection)
+        convertAst(BoolValue(true, testSection)).shouldBeAtom("true", Type3.bool, testSection)
+        convertAst(BoolValue(false, testSection)).shouldBeAtom("false", Type3.bool, testSection)
+        convertAst(StringValue("test", testSection)).shouldBeAtom("test", Type3.string, testSection)
     }
 
     @Test
@@ -35,10 +35,10 @@ class SimpleConversionsKtTest {
         // then
         result.shouldBeTypeOf<InterpolatedString>() should {
             it.parts shouldHaveSize 2
-            it.parts[0].shouldBeAtom("test", Types.string)
+            it.parts[0].shouldBeAtom("test", Type3.string)
             it.parts[1].shouldBeTypeOf<Cast>().should {
-                it.expression.shouldBeAtom("10", Types.int)
-                it.targetType shouldBe Types.string
+                it.expression.shouldBeAtom("10", Type3.int)
+                it.targetType shouldBe Type3.string
             }
         }
     }
@@ -46,7 +46,7 @@ class SimpleConversionsKtTest {
     @Test
     fun `string text in interpolation should be converted to simple string atom`() {
         convertAst(StringText("test", testSection))
-            .shouldBeAtom("test", Types.string, testSection)
+            .shouldBeAtom("test", Type3.string, testSection)
     }
 
     @Test
@@ -54,8 +54,8 @@ class SimpleConversionsKtTest {
         convertAst(
             ParseInterpolation(LongValue(10), testSection)
         ).shouldBeTypeOf<Cast>() should {
-            it.targetType shouldBe Types.string
-            it.expression.shouldBeAtom("10", Types.int)
+            it.targetType shouldBe Type3.string
+            it.expression.shouldBeAtom("10", Type3.int)
         }
     }
 
@@ -64,7 +64,7 @@ class SimpleConversionsKtTest {
         convertAst(ParseBlock(listOf(LongValue(10)), testSection))
             .shouldBeTypeOf<Block>().should {
                 it.body shouldHaveSize 1
-                it.body[0].shouldBeAtom("10", Types.int)
+                it.body[0].shouldBeAtom("10", Type3.int)
                 it.sourceSection shouldBe testSection
             }
     }
@@ -83,8 +83,8 @@ class SimpleConversionsKtTest {
 
         // then
         result.op shouldBe "generic operation"
-        result.left.shouldBeAtom("hello", Types.string)
-        result.right.shouldBeAtom("20", Types.int)
+        result.left.shouldBeAtom("hello", Type3.string)
+        result.right.shouldBeAtom("20", Type3.int)
         result.sourceSection shouldBe testSection
     }
 
@@ -100,8 +100,8 @@ class SimpleConversionsKtTest {
         ).shouldBeTypeOf<Cast>()
 
         // then
-        result.expression.shouldBeAtom("10", Types.int)
-        result.targetType shouldBe Types.string
+        result.expression.shouldBeAtom("10", Type3.int)
+        result.targetType shouldBe Type3.string
         result.sourceSection shouldBe sectionB
     }
 
@@ -111,7 +111,7 @@ class SimpleConversionsKtTest {
             .shouldBeTypeOf<PrefixOp>()
             .should {
                 it.op shouldBe "!"
-                it.expr.shouldBeAtom("true", Types.bool)
+                it.expr.shouldBeAtom("true", Type3.bool)
                 it.sourceSection shouldBe testSection
             }
     }

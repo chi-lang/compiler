@@ -4,7 +4,6 @@ import gh.marad.chi.core.Package
 import gh.marad.chi.core.TypeAlias
 import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.parser.readers.Import
-import gh.marad.chi.core.types.SumType
 
 class CompileTables(currentPackage: Package, val ns: GlobalCompilationNamespace) {
     val packageTable = PackageTable()
@@ -38,11 +37,6 @@ class CompileTables(currentPackage: Package, val ns: GlobalCompilationNamespace)
             .types.add(alias)
     }
 
-    fun defineType(info: TypeInfo) {
-        localTypeTable.add(info)
-        ns.getOrCreatePackage(info.moduleName, info.packageName).types.add(info)
-    }
-
     fun addImports(imports: List<Import>) {
         imports.forEach(this::addImport)
     }
@@ -60,17 +54,8 @@ class CompileTables(currentPackage: Package, val ns: GlobalCompilationNamespace)
                 // import it to local symbol table
                 localSymbolTable.add(importedName, symbol)
             }
-            importPkg.types.get(entry.name)?.let { typeInfo ->
-                // if symbol was not found - try the sum type
-                localTypeTable.add(importedName, typeInfo)
-                if (typeInfo.type is SumType) {
-                    typeInfo.type.subtypes.map { subtypeName ->
-                        // if sum type was found then import type's constructors into local symbol table
-                        importPkg.symbols.get(subtypeName)?.let(localSymbolTable::add)
-                        // as well as add all the types to local type table
-                        importPkg.types.get(subtypeName)?.let(localTypeTable::add)
-                    }
-                }
+            importPkg.types.getAlias(entry.name)?.let { typeAlias ->
+                localTypeTable.add(importedName, typeAlias)
             }
         }
     }

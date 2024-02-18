@@ -5,7 +5,7 @@ package gh.marad.chi.core.analyzer
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.compile
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.types.Types
+import gh.marad.chi.core.types3.Type3
 import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
@@ -34,7 +34,7 @@ class NameDeclarationTypeCheckingSpec {
     @Test
     fun `should return nothing for simple atom and variable read`() {
         val ns = GlobalCompilationNamespace()
-        ns.addSymbolInDefaultPackage("x", Types.fn(Types.unit))
+        ns.addSymbolInDefaultPackage("x", Type3.fn(Type3.unit))
         messages("5", ns).shouldBeEmpty()
         messages("x", ns).shouldBeEmpty()
     }
@@ -67,8 +67,8 @@ class FnTypeCheckingSpec {
         messages("fn foo(): int {}").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Types.int
-                error.actual shouldBe Types.unit
+                error.expected shouldBe Type3.int
+                error.actual shouldBe Type3.unit
             }
         }
     }
@@ -78,8 +78,8 @@ class FnTypeCheckingSpec {
         messages("fn foo(): int { {} }").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Types.int
-                error.actual shouldBe Types.fn(Types.unit)
+                error.expected shouldBe Type3.int
+                error.actual shouldBe Type3.fn(Type3.unit)
             }
         }
     }
@@ -95,8 +95,8 @@ class FnTypeCheckingSpec {
         ).should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Types.int
-                error.actual shouldBe Types.fn(Types.unit)
+                error.expected shouldBe Type3.int
+                error.actual shouldBe Type3.fn(Type3.unit)
             }
         }
     }
@@ -112,8 +112,8 @@ class FnTypeCheckingSpec {
         ).should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Types.int
-                error.actual shouldBe Types.string
+                error.expected shouldBe Type3.int
+                error.actual shouldBe Type3.string
             }
         }
     }
@@ -123,7 +123,6 @@ class FnTypeCheckingSpec {
         messages("""
             fn foo() {
                 return
-                5
             }
         """.trimIndent()
         ).shouldHaveSize(0)
@@ -138,8 +137,8 @@ class IfElseTypeCheckingSpec {
         messages("val x: int = if(true) { 2 } else { {} }").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Types.int
-                error.actual shouldBe Types.any
+                error.expected shouldBe Type3.int
+                error.actual shouldBe Type3.union(null, Type3.int, Type3.fn(Type3.unit))
             }
         }
     }
@@ -149,8 +148,8 @@ class IfElseTypeCheckingSpec {
         messages("if (1) { 2 }").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Types.bool
-                error.actual shouldBe Types.int
+                error.expected shouldBe Type3.bool
+                error.actual shouldBe Type3.int
             }
         }
     }
@@ -163,8 +162,8 @@ class PrefixOpSpec {
         messages("!1").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Types.bool
-                error.actual shouldBe Types.int
+                error.expected shouldBe Type3.bool
+                error.actual shouldBe Type3.int
             }
         }
     }
@@ -177,8 +176,8 @@ class WhileLoopSpec {
         messages("while(1) {}").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
-                error.expected shouldBe Types.bool
-                error.actual shouldBe Types.int
+                error.expected shouldBe Type3.bool
+                error.actual shouldBe Type3.int
             }
         }
     }
@@ -194,8 +193,9 @@ class CastSpec {
     fun `cast should update name type in scope`() {
         // given
         val code = """
-            data AB = A(a: int) | B(b: float)
-            val a = A(10)
+            type A = { a: int }
+            type B = { b: float }
+            val a = { a: 5 }
             a as B
             a.b
         """.trimIndent()
@@ -209,8 +209,9 @@ class IsExprSpec {
     @Test
     fun `is expr should cooperate with if providing a scope`() {
         val code = """
-            data AB = A(a: int) | B(b: float)
-            val a = A(10)
+            type A = { a: int }
+            type B = { b: float }
+            val a = { a: 5 }
             if (a is B) {
                 a as B
                 a.b
@@ -227,13 +228,14 @@ class IsExprSpec {
         val namespace = GlobalCompilationNamespace()
         val defCode = """
             package foo/bar
-            data AB = pub A(a: int) | B(pub b: float)
+            type A = { a: int }
+            type B = { b: float }
         """.trimIndent()
         compile(defCode, namespace)
 
         val code = """
-            import foo/bar { AB }
-            val a = A(10)
+            import foo/bar { A, B }
+            val a = { a: 5 }
             if (a is B) {
                 a as B
                 a.b
@@ -247,9 +249,9 @@ class IsExprSpec {
         val namespace = GlobalCompilationNamespace()
         val defCode = """
             package mymod/mypkg
-            fn foo() { 0 }
+            fn foo() { return }
             val bar = 0
-            pub fn baz() { 0 }
+            pub fn baz() { return }
             pub val faz = 0
         """.trimIndent()
         compile(defCode, namespace)

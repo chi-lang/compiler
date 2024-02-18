@@ -1,5 +1,10 @@
 package gh.marad.chi.core.types3
 
+import gh.marad.chi.core.analyzer.CompilerMessage
+import gh.marad.chi.core.analyzer.FunctionArityError
+import gh.marad.chi.core.analyzer.NotAFunction
+import gh.marad.chi.core.analyzer.TypeMismatch
+
 fun unify(constraints: List<Constraint>): List<Pair<Variable, Type3>> {
     var queue = ArrayDeque(constraints.sortedBy { it.expected !is Variable })
     val solutions = mutableListOf<Pair<Variable, Type3>>()
@@ -8,6 +13,7 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type3>> {
         val (expected, actual) = queue.removeFirst()
         when {
             expected == actual -> {}
+            expected == Type3.any -> {}
             expected is Variable -> {
                 solutions.add(expected to actual)
                 val replacer = VariableReplacer(expected, actual)
@@ -28,9 +34,16 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type3>> {
 
             expected is Function && actual is Function -> {
                 if (expected.types.size != actual.types.size) {
-                    err("Functions have different arity! Expected $expected, actual: $actual")
+                    throw CompilerMessage(FunctionArityError(expected.types.size - 1, actual.types.size - 1, null)) // FIXME codepoint
                 }
-                expected.types.zip(actual.types).forEach {(expectedParam, actualParam) ->
+
+                val lastIndex = expected.types.size - 1
+                expected.types.zip(actual.types).forEachIndexed { index, (expectedParam, actualParam) ->
+                    if (index == lastIndex && expectedParam == Type3.unit && actualParam !is Variable) {
+                        // we can accept any function returning something if we expect 'unit'
+                        // because we are not going to use the result anyway
+                        return@forEachIndexed
+                    }
                     queue.addFirst(Constraint(expectedParam, actualParam))
                 }
             }
@@ -68,7 +81,12 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type3>> {
                 }
             }
 
-            else -> err("Type mismatch. Expected: $expected, actual: $actual")
+            expected is Function && actual !is Function -> {
+                throw CompilerMessage(NotAFunction(null)) // fixme code point
+            }
+
+            else -> //err("Type mismatch. Expected: $expected, actual: $actual")
+                throw CompilerMessage(TypeMismatch(expected, actual, null)) // fixme code point
         }
     }
 

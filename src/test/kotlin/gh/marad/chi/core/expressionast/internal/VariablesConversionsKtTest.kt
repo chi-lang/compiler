@@ -1,17 +1,17 @@
 package gh.marad.chi.core.expressionast.internal
 
-import gh.marad.chi.addProductTypeInDefaultNamespace
 import gh.marad.chi.addSymbol
 import gh.marad.chi.addSymbolInDefaultPackage
+import gh.marad.chi.addTypeDefinition
 import gh.marad.chi.ast
 import gh.marad.chi.core.*
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.VariantField
 import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseFieldAccess
 import gh.marad.chi.core.parser.readers.ParseIndexOperator
 import gh.marad.chi.core.parser.readers.ParseVariableRead
-import gh.marad.chi.core.types.Types
+import gh.marad.chi.core.types3.Type3
+import gh.marad.chi.core.types3.TypeId
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -40,7 +40,7 @@ class VariablesConversionsKtTest {
     fun `convert variable read from another package in the same module`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbol("foo", "bar", "variable", Types.int, public = true)
+        ns.addSymbol("foo", "bar", "variable", Type3.int, public = true)
 
         // when
         val result = ast("""
@@ -70,7 +70,7 @@ class VariablesConversionsKtTest {
         ).shouldBeTypeOf<IndexOperator>()
 
         result.variable.shouldBeVariable("variable")
-        result.index.shouldBeAtom("10", Types.int)
+        result.index.shouldBeAtom("10", Type3.int)
         result.sourceSection shouldBe testSection
     }
 
@@ -78,7 +78,7 @@ class VariablesConversionsKtTest {
     fun `should generate variable access through package name`() {
         // given
         val ns = GlobalCompilationNamespace()
-        ns.addSymbol("foo", "bar", "variable", Types.int, public = true)
+        ns.addSymbol("foo", "bar", "variable", Type3.int, public = true)
 
         // when
         val result = ast("""
@@ -99,7 +99,11 @@ class VariablesConversionsKtTest {
     fun `should generate field access`() {
         // given
         val ns = GlobalCompilationNamespace()
-        val type = ns.addProductTypeInDefaultNamespace("A", listOf(VariantField("field", Types.int, true)))
+        val type = Type3.record(
+            TypeId("mod", "pkg", "A"),
+            "field" to Type3.int
+        )
+        ns.addTypeDefinition(type)
         ns.addSymbolInDefaultPackage("object", type)
 
         // when
@@ -123,7 +127,11 @@ class VariablesConversionsKtTest {
     fun `should generate field access with type defined in other module`() {
         // given
         val ns = GlobalCompilationNamespace()
-        val type = ns.addProductTypeInDefaultNamespace("A", listOf(VariantField("field", Types.int, true)))
+        val type = Type3.record(
+            TypeId("mod", "pkg", "A"),
+            "field" to Type3.int
+        )
+        ns.addTypeDefinition(type)
         ns.addSymbolInDefaultPackage("object", type)
 
         // when

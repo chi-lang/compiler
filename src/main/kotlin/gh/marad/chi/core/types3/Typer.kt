@@ -1,6 +1,9 @@
 package gh.marad.chi.core.types3
 
 import gh.marad.chi.core.*
+import gh.marad.chi.core.analyzer.CompilerMessage
+import gh.marad.chi.core.analyzer.MemberDoesNotExist
+import gh.marad.chi.core.analyzer.toCodePoint
 
 class TypingError(message: String) : RuntimeException(message)
 
@@ -104,7 +107,7 @@ class Typer(
                         term.target = dotTarget
                         fnType.instantiate(level, ctx::freshVariable)
                     } else {
-                        err("Couldn't find function ${term.fieldName} for type $finalReceiverType")
+                        throw CompilerMessage(MemberDoesNotExist(finalReceiverType, term.fieldName, term.memberSection.toCodePoint()))
                     }
                 }
             }
@@ -138,7 +141,7 @@ class Typer(
                 constraints.add(Constraint(Type3.bool, conditionType))
                 if (term.elseBranch != null) {
                     val elseBranchType = typeTerm(term.elseBranch, level, constraints)
-                    Sum.create(thenBranchType, elseBranchType, level)
+                    Sum.create(thenBranchType, elseBranchType)
                 } else {
                     Type3.unit
                 }
@@ -151,6 +154,9 @@ class Typer(
 
             is Cast -> {
                 typeTerm(term.expression, level, constraints)
+                if (term.expression is VariableAccess) {
+                    ctx.updateSymbolType(term.expression.target, term.targetType)
+                }
                 term.targetType
             }
 
@@ -202,7 +208,7 @@ class Typer(
                 val elementType = ctx.freshVariable(level)
                 val variableType = typeTerm(term.variable, level, constraints)
                 val indexType = typeTerm(term.index, level, constraints)
-                constraints.add(Constraint(Type3.array(elementType, level), variableType))
+                constraints.add(Constraint(variableType, Type3.array(elementType)))
                 constraints.add(Constraint(Type3.int, indexType))
                 elementType
             }
@@ -212,9 +218,9 @@ class Typer(
                 val variableType = typeTerm(term.variable, level, constraints)
                 val valueType = typeTerm(term.value, level, constraints)
                 val indexType = typeTerm(term.index, level, constraints)
-                constraints.add(Constraint(Type3.array(elementType, level), variableType))
-                constraints.add(Constraint(Type3.int, indexType))
                 constraints.add(Constraint(elementType, valueType))
+                constraints.add(Constraint(variableType, Type3.array(elementType)))
+                constraints.add(Constraint(Type3.int, indexType))
                 elementType
             }
 

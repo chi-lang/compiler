@@ -2,19 +2,14 @@ package gh.marad.chi
 
 import gh.marad.chi.core.Expression
 import gh.marad.chi.core.Program
+import gh.marad.chi.core.TypeAlias
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.compiler.Compiler
-import gh.marad.chi.core.expressionast.internal.defaultModule
-import gh.marad.chi.core.expressionast.internal.defaultPackage
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.Symbol
-import gh.marad.chi.core.namespace.TypeInfo
-import gh.marad.chi.core.namespace.VariantField
-import gh.marad.chi.core.types.FunctionType
-import gh.marad.chi.core.types.ProductType
-import gh.marad.chi.core.types.Type
-import gh.marad.chi.core.types.Types
+import gh.marad.chi.core.types3.HasTypeId
+import gh.marad.chi.core.types3.Type3
 
 data class ErrorMessagesException(val errors: List<Message>) : AssertionError("Chi compilation errors")
 
@@ -57,7 +52,7 @@ fun ast(
     ignoreCompilationErrors: Boolean = false
 ): Expression = asts(code, ns, ignoreCompilationErrors).last()
 
-fun GlobalCompilationNamespace.addSymbolInDefaultPackage(name: String, type: Type? = null, public: Boolean = false,
+fun GlobalCompilationNamespace.addSymbolInDefaultPackage(name: String, type: Type3? = null, public: Boolean = false,
                                                          mutable: Boolean = false, @Suppress("UNUSED_PARAMETER") slot: Int = 0) {
     val pkg = getDefaultPackage()
     pkg.symbols.add(
@@ -71,7 +66,7 @@ fun GlobalCompilationNamespace.addSymbolInDefaultPackage(name: String, type: Typ
     )
 }
 
-fun GlobalCompilationNamespace.addSymbol(moduleName: String, packageName: String, name: String, type: Type? = null,
+fun GlobalCompilationNamespace.addSymbol(moduleName: String, packageName: String, name: String, type: Type3? = null,
                                          public: Boolean = false, mutable: Boolean = false, @Suppress("UNUSED_PARAMETER") slot: Int = 0) {
     val pkg = getOrCreatePackage(moduleName, packageName)
     pkg.symbols.add(
@@ -85,36 +80,17 @@ fun GlobalCompilationNamespace.addSymbol(moduleName: String, packageName: String
     )
 }
 
-fun GlobalCompilationNamespace.addProductTypeInDefaultNamespace(name: String, fields: List<VariantField>, public: Boolean = true, supertype: Type = Types.any) =
-    addProductType(defaultModule.name, defaultPackage.name, name, fields, public, supertype)
+fun GlobalCompilationNamespace.addTypeDefinition(type: Type3) {
+    if (type is HasTypeId && type.getTypeId() != null) {
+        val id = type.getTypeId()!!
+        addTypeDefinition(TypeAlias(id, type))
+    } else {
+        throw RuntimeException("Type $type doesn't have an ID")
+    }
+}
 
-fun GlobalCompilationNamespace.addProductType(
-    moduleName: String,
-    packageName: String,
-    typeName: String,
-    fields: List<VariantField>,
-    public: Boolean = true,
-    supertype: Type = Types.any
-): ProductType {
-    val type = ProductType(
-        moduleName, packageName, typeName,
-        types = fields.map { it.type },
-        typeParams = emptyList(),
-        typeSchemeVariables = emptyList())
-    val constructorType = FunctionType(
-        types = fields.map { it.type } + type,
-        typeSchemeVariables = emptyList()
-    )
-    val typeInfo = TypeInfo(
-        moduleName, packageName, typeName,
-        type,
-        supertype,
-        isPublic = public,
-        fields = fields
-    )
-
-    addSymbol(moduleName, packageName, typeName, constructorType, public = public)
-    val pkg = getOrCreatePackage(moduleName, packageName)
-    pkg.types.add(typeInfo)
-    return type
+fun GlobalCompilationNamespace.addTypeDefinition(alias: TypeAlias) {
+    val id = alias.typeId
+    val pkg = getOrCreatePackage(id.moduleName, id.packageName)
+    pkg.types.add(alias)
 }

@@ -1,13 +1,14 @@
 package gh.marad.chi.core.types
 
+import gh.marad.chi.core.TypeAlias
 import gh.marad.chi.core.compiler.Compiler
-import gh.marad.chi.core.namespace.TypeInfo
 import gh.marad.chi.core.namespace.TypeTable
-import gh.marad.chi.core.namespace.VariantField
 import gh.marad.chi.core.parser.readers.FunctionTypeRef
 import gh.marad.chi.core.parser.readers.TypeConstructorRef
 import gh.marad.chi.core.parser.readers.TypeNameRef
 import gh.marad.chi.core.parser.readers.TypeParameterRef
+import gh.marad.chi.core.types3.*
+import gh.marad.chi.core.types3.Function
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 
@@ -16,12 +17,12 @@ class TypeResolvingSpec {
     @Test
     fun `should resolve simple type by name`() {
         // given
-        val type = SimpleType("m", "p", "Type")
+        val type = Type3.record(TypeId("module", "package", "Type"), "hello" to Type3.int)
         val typeTable = TypeTable()
-        typeTable.addType(type)
+        typeTable.addTypeAlias(type)
 
         // when
-        val result = Compiler.resolveType(typeTable, emptyList(), TypeNameRef(null, null, "Type", null))
+        val result = Compiler.resolveNewType(typeTable, emptyList(), TypeNameRef(null, null, "Type", null))
 
         // then
         result shouldBe type
@@ -30,23 +31,17 @@ class TypeResolvingSpec {
 
     @Test
     fun `should resolve type variables`() {
-        Compiler.resolveType(TypeTable(), listOf("T"), TypeNameRef(null, null, "T", null)) shouldBe TypeVariable("T")
-        Compiler.resolveType(TypeTable(), listOf(), TypeParameterRef("T", null)) shouldBe TypeVariable("T")
+        Compiler.resolveNewType(TypeTable(), listOf("T"), TypeNameRef(null, null, "T", null)) shouldBe Variable("T", 0)
+        Compiler.resolveNewType(TypeTable(), listOf(), TypeParameterRef("T", null)) shouldBe Variable("T", 0)
     }
 
     @Test
     fun `should resolve type constructor to polymorphic type`() {
         // given
-        val T = TypeVariable("T")
-        val type = ProductType("m", "p", "Type",
-            types = listOf(T),
-            typeParams = listOf(),
-            typeSchemeVariables = listOf(T)
-        )
+        val T = Variable("T", 1)
+        val type = Type3.record(TypeId("m", "p", "Type"), "foo" to T)
         val typeTable = TypeTable()
-        typeTable.addType(type, fields = listOf(
-            VariantField("foo", T, true)
-        ))
+        typeTable.addTypeAlias(type)
         var ref = TypeConstructorRef(
             TypeNameRef(null, null, "Type", null),
             typeParameters = listOf(TypeNameRef(null, null, "T", null)),
@@ -54,7 +49,7 @@ class TypeResolvingSpec {
         )
 
         // when
-        var result = Compiler.resolveType(typeTable, listOf("T"), ref)
+        var result = Compiler.resolveNewType(typeTable, listOf("T"), ref)
 
         // then
         result shouldBe type
@@ -71,23 +66,16 @@ class TypeResolvingSpec {
         )
 
         // when
-        val result = Compiler.resolveType(TypeTable(), emptyList(), ref)
+        val result = Compiler.resolveNewType(TypeTable(), emptyList(), ref)
 
         // then
-        val T = TypeVariable("T")
-        result shouldBe FunctionType(
-            types = listOf(Types.int, T, Types.float),
-            typeSchemeVariables = listOf(T),
+        val T = Variable("T", 0)
+        result shouldBe Function(
+            types = listOf(Type3.int, T, Type3.float),
         )
     }
 
-
-
-
-
-    fun TypeTable.addType(type: SimpleType, isPublic: Boolean = true) =
-        add(TypeInfo(type.moduleName, type.packageName, type.name, type, Types.any, isPublic, emptyList()))
-
-    fun TypeTable.addType(type: ProductType, isPublic: Boolean = true, fields: List<VariantField>) =
-        add(TypeInfo(type.moduleName, type.packageName, type.name, type, Types.any, isPublic, fields))
+    fun TypeTable.addTypeAlias(type: Record) {
+        add(TypeAlias(type.id!!, type))
+    }
 }
