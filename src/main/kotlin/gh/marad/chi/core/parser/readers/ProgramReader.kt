@@ -9,9 +9,13 @@ internal object ProgramReader {
     fun read(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.ProgramContext): ParseProgram {
         val split = ctx.expression().groupBy { isFunctionDeclaration(it) }
 
+
         return ParseProgram(
             packageDefinition = ctx.package_definition()?.let { PackageReader.read(source, it) },
             imports = ctx.import_definition().map { ImportReader.read(source, it) },
+            typeAliases = ctx.`typealias`().map {
+                TypeAliasReader.read(parser, source, it)
+            },
             typeDefinitions = ctx.variantTypeDefinition().map {
                 VariantTypeDefinitionReader.read(parser, source, it)
             },
@@ -29,6 +33,7 @@ internal object ProgramReader {
 data class ParseProgram(
     val packageDefinition: PackageDefinition?,
     val imports: List<Import>,
+    val typeAliases: List<ParseTypeAlias>,
     val typeDefinitions: List<ParseVariantTypeDefinition>,
     val functions: List<ParseAst>,
     val topLevelCode: List<ParseAst>,

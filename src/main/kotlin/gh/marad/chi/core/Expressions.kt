@@ -8,6 +8,7 @@ import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeVariable
 import gh.marad.chi.core.types.Types
 import gh.marad.chi.core.types3.Type3
+import gh.marad.chi.core.types3.TypeId
 
 sealed interface Expression {
     val sourceSection: ChiSource.Section?
@@ -22,11 +23,17 @@ sealed interface Expression {
 data class Program(
     val packageDefinition: Package,
     val imports: List<Import>,
+    val typeAliases: List<TypeAlias>,
     val definedTypes: List<TypeInfo>,
     val expressions: List<Expression>,
     val sourceSection: ChiSource.Section? = null)
 
 data class Package(val moduleName: String, val packageName: String)
+
+data class TypeAlias(
+    val typeId: TypeId,
+    val newType: Type3
+)
 
 data class Atom(val value: String,
                 override var type: Type?,

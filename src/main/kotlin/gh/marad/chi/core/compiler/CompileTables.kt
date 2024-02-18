@@ -1,6 +1,7 @@
 package gh.marad.chi.core.compiler
 
 import gh.marad.chi.core.Package
+import gh.marad.chi.core.TypeAlias
 import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.parser.readers.Import
 import gh.marad.chi.core.types.SumType
@@ -29,6 +30,12 @@ class CompileTables(currentPackage: Package, val ns: GlobalCompilationNamespace)
             ns.getOrCreatePackage(symbol.moduleName, symbol.packageName)
                 .symbols.remove(symbol.name)
         }
+    }
+
+    fun defineTypeAlias(alias: TypeAlias) {
+        localTypeTable.add(alias)
+        ns.getOrCreatePackage(alias.typeId.moduleName, alias.typeId.packageName)
+            .types.add(alias)
     }
 
     fun defineType(info: TypeInfo) {

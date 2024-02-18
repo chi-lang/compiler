@@ -2,7 +2,7 @@ parser grammar ChiParser;
 
 options { tokenVocab=ChiLexer; }
 
-program : (package_definition ws)? (ws import_definition)* ws (typealias | expression | variantTypeDefinition | traitDefinition)? (newline (expression | variantTypeDefinition))* ws EOF ;
+program : (package_definition ws)? (ws import_definition)* ws (typealias | expression | variantTypeDefinition | traitDefinition)? (newline (typealias | expression | variantTypeDefinition))* ws EOF ;
 
 newline : NEWLINE+;
 

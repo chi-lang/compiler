@@ -9,20 +9,20 @@ import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.analyzer.toCodePoint
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
-import gh.marad.chi.core.types.FunctionType
-import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types3.Function
+import gh.marad.chi.core.types3.Type3
 
 class ReturnTypeCheckVisitor(val messages: MutableList<Message>) : DefaultExpressionVisitor {
-    private var expectedReturnType: Type? = null
+    private var expectedReturnType: Type3? = null
 
     fun check(exprs: List<Expression>) {
         exprs.forEach(this::visit)
     }
 
     override fun visitNameDeclaration(nameDeclaration: NameDeclaration) {
-        val t = nameDeclaration.type!!
+        val t = nameDeclaration.newType!!
         val prevExpectedReturnType = expectedReturnType
-        if (t is FunctionType) {
+        if (t is Function) {
             expectedReturnType = t.types.last()
         }
 
@@ -31,9 +31,9 @@ class ReturnTypeCheckVisitor(val messages: MutableList<Message>) : DefaultExpres
     }
 
     override fun visitFn(fn: Fn) {
-        val t = fn.type!!
+        val t = fn.newType!!
         val prevReturnType = expectedReturnType
-        t as FunctionType
+        t as Function
         expectedReturnType = t.types.last()
         super.visitFn(fn)
         expectedReturnType = prevReturnType
@@ -45,8 +45,8 @@ class ReturnTypeCheckVisitor(val messages: MutableList<Message>) : DefaultExpres
             messages.add(ErrorMessage("Return used outside of function body.", arg.sourceSection.toCodePoint()))
         }
 
-        if (expRet != null && arg.type!! != expRet) {
-            messages.add(TypeMismatch(expRet, arg.type!!, arg.sourceSection.toCodePoint()))
+        if (expRet != null && arg.newType!! != expRet) {
+            messages.add(TypeMismatch(expRet, arg.newType!!, arg.sourceSection.toCodePoint()))
         }
     }
 

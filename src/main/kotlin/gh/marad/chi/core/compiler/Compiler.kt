@@ -1,14 +1,21 @@
 package gh.marad.chi.core.compiler
 
-import gh.marad.chi.core.*
+import gh.marad.chi.core.Package
+import gh.marad.chi.core.Program
+import gh.marad.chi.core.TypeAlias
 import gh.marad.chi.core.analyzer.*
-import gh.marad.chi.core.compiler.checks.*
+import gh.marad.chi.core.compiler.checks.CheckNamesVisitor
+import gh.marad.chi.core.compiler.checks.ImmutabilityCheckVisitor
+import gh.marad.chi.core.compiler.checks.VisibilityCheckingVisitor
 import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.namespace.Symbol
+import gh.marad.chi.core.parseSource
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.types.*
-import gh.marad.chi.core.types.TypeInferenceFailed
+import gh.marad.chi.core.types3.*
+import gh.marad.chi.core.types3.Constraint
+import gh.marad.chi.core.types3.Function
 
 object Compiler {
 
@@ -23,7 +30,7 @@ object Compiler {
             try { parseSource(source) }
             catch (ex: CompilerMessage) {
                 Pair(
-                    ParseProgram(null, emptyList(), emptyList(), emptyList(), emptyList(), null),
+                    ParseProgram(null, emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), null),
                     listOf(ex.msg)
                 )
             }
@@ -69,6 +76,23 @@ object Compiler {
             Import(it.moduleName, it.packageName, null, listOf(Import.Entry(it.name, it.alias, null)), null)
         })
         tables.addImports(parsedProgram.imports)
+
+        val definedTypeAliases = parsedProgram.typeAliases.map { typeAliasDef ->
+            val typeSchemeVariables = typeAliasDef.typeParameters.map { it.name }
+            val id = TypeId(packageDefinition.moduleName, packageDefinition.packageName, typeAliasDef.name)
+            TypeAlias(
+                id,
+                resolveNewType(tables.localTypeTable, typeSchemeVariables, typeAliasDef.type).let {
+                    when(it) {
+                        is Record -> it.copy(id = id)
+                        is Sum -> it.copy(id = id)
+                        else -> it
+                    }
+                }
+            ).also {
+                tables.defineTypeAlias(it)
+            }
+        }
 
         val definedTypes = mutableListOf<TypeInfo>()
 
@@ -136,6 +160,7 @@ object Compiler {
                     packageName = packageDefinition.packageName,
                     name = ctor.name,
                     type = constructorOrSymbolType,
+                    newType = Primitive(TypeId("", "", "TODO!")),
                     public = ctor.public,
                     mutable = false
                 )
@@ -166,7 +191,7 @@ object Compiler {
         if (resultMessages.isNotEmpty()) {
             return CompilationResult(
                 refineMessages(resultMessages),
-                Program(packageDefinition, parsedProgram.imports, definedTypes, emptyList(), parsedProgram.section),
+                Program(packageDefinition, parsedProgram.imports, definedTypeAliases, definedTypes, emptyList(), parsedProgram.section),
             )
         }
 
@@ -194,40 +219,19 @@ object Compiler {
 //        val inferenceContext = InferenceContext(ns, typeLookupTable)
 //        val env = InferenceEnv(packageDefinition, tables, ns)
 
-        try {
-            // TODO: functions should probably inferred independently from code and eachother
-            //   inferring types across the whole code can lead to too specific types in some places
-//            inferAndFillTypes(inferenceContext, env, Block(expressions, parsedProgram.section))
-            val packageInferenceContext = InferenceContext(ns, typeLookupTable)
-            val packageEnv = InferenceEnv(packageDefinition, tables, ns)
-            val pkg = ns.getOrCreatePackage(packageDefinition)
-
-            for (function in functions) {
-                val inferenceContext = InferenceContext(ns, typeLookupTable)
-                val env = InferenceEnv(packageDefinition, tables, ns)
-                inferAndFillTypes(inferenceContext, env, function)
-
-                if (function is NameDeclaration) {
-                    packageEnv.setType(function.name, function.type!!)
-                    pkg.symbols.get(function.name)?.copy(type = function.type!!)
-                        ?.let { pkg.symbols.add(it) }
-                } else if (function is EffectDefinition) {
-                    packageEnv.setType(function.name, function.type!!)
-                    pkg.symbols.get(function.name)?.copy(type = function.type!!)
-                        ?.let { pkg.symbols.add(it) }
-                }
-            }
-            inferAndFillTypes(packageInferenceContext, packageEnv, Block(code, null))
-        } catch (ex: TypeInferenceFailed) {
-            resultMessages.add(gh.marad.chi.core.analyzer.TypeInferenceFailed(ex))
-        } catch (ex: CompilerMessage) {
-            resultMessages.add(ex.msg)
+        val typer = Typer(gh.marad.chi.core.types3.InferenceContext(packageDefinition, ns))
+        val constraints = mutableListOf<Constraint>()
+        expressions.forEach {
+            typer.typeTerm(it, 0, constraints)
         }
+        val solutions = unify(constraints)
+        expressions.forEach { replaceTypes(it, solutions) }
+
 
         if (resultMessages.isNotEmpty()) {
             return CompilationResult(
                 refineMessages(resultMessages),
-                Program(packageDefinition, parsedProgram.imports, definedTypes, expressions, parsedProgram.section),
+                Program(packageDefinition, parsedProgram.imports, definedTypeAliases, definedTypes, expressions, parsedProgram.section),
             )
         }
 
@@ -247,8 +251,47 @@ object Compiler {
 
         return CompilationResult(
             refineMessages(resultMessages),
-            Program(packageDefinition, parsedProgram.imports, definedTypes, expressions, parsedProgram.section),
+            Program(packageDefinition, parsedProgram.imports, definedTypeAliases, definedTypes, expressions, parsedProgram.section),
         )
+    }
+
+    fun resolveNewType(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef): Type3 {
+        return when(ref) {
+            is TypeParameterRef -> Variable(ref.name, 0) // FIXME: here level should probably be passed from above
+            is TypeNameRef ->
+                if (ref.typeName in typeSchemeVariables) {
+                    Variable(ref.typeName, 0)
+                } else {
+                    when (ref.typeName) {
+                        "string" -> Type3.string
+                        "bool" -> Type3.bool
+                        "int" -> Type3.int
+                        "float" -> Type3.float
+                        "unit" -> Type3.unit
+                        else ->
+                            typeTable.getAlias(ref.typeName)?.newType
+                                ?: throw CompilerMessage.from("Type $ref not found", ref.section)
+                    }
+                }
+            is TypeConstructorRef -> TODO("I'm not sure if this is going to work the old way")
+            is FunctionTypeRef -> {
+                val returnType = resolveNewType(typeTable, typeSchemeVariables, ref.returnType)
+                val params = ref.argumentTypeRefs.map { resolveNewType(typeTable, typeSchemeVariables, it) }
+                Function(params + listOf(returnType))
+            }
+            is SumTypeRef ->
+                Sum(
+                    id = null,
+                    lhs = resolveNewType(typeTable, typeSchemeVariables, ref.lhs),
+                    rhs = resolveNewType(typeTable, typeSchemeVariables, ref.rhs),
+                    level = 0
+                )
+            is RecordTypeRef ->
+                Record(
+                    id = null,
+                    fields = ref.fields.map { Record.Field(it.name, resolveNewType(typeTable, typeSchemeVariables, it.typeRef)) }
+                )
+        }
     }
 
     fun resolveType(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef): Type {

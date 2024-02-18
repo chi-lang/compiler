@@ -2,12 +2,11 @@ package gh.marad.chi.core.compiler.checks
 
 import gh.marad.chi.core.Expression
 import gh.marad.chi.core.FnCall
-import gh.marad.chi.core.analyzer.FunctionArityError
 import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.analyzer.NotAFunction
 import gh.marad.chi.core.analyzer.toCodePoint
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
-import gh.marad.chi.core.types.FunctionType
+import gh.marad.chi.core.types3.Function
 
 class FnCallCheckingVisitor : DefaultExpressionVisitor {
     private var messages = mutableListOf<Message>()
@@ -17,14 +16,8 @@ class FnCallCheckingVisitor : DefaultExpressionVisitor {
     }
 
     override fun visitFnCall(fnCall: FnCall) {
-        val t = fnCall.function.type!!
-        if (t is FunctionType) {
-            val expectedCount = t.types.size - 1
-            val actualCount = fnCall.parameters.size
-            if (expectedCount != actualCount) {
-                messages.add(FunctionArityError(expectedCount, actualCount, fnCall.sourceSection.toCodePoint()))
-            }
-        } else {
+        val t = fnCall.function.newType!!
+        if (t !is Function) {
             messages.add(NotAFunction(fnCall.function.sourceSection.toCodePoint()))
         }
         super.visitFnCall(fnCall)
