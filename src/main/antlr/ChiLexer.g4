@@ -26,6 +26,7 @@ WITH : 'with';
 RETURN : 'return';
 TRAIT : 'trait';
 TYPE : 'type';
+UNIT : 'unit';
 
 ARROW : '->' ;
 COLON : ':' ;

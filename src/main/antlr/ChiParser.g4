@@ -118,6 +118,7 @@ expression
     | NUMBER # NumberExpr
     | bool # BoolExpr
     | ID # IdExpr
+    | UNIT # UnitValue
     | PLACEHOLDER # PlaceholderExpr
     | BREAK # BreakExpr
     | CONTINUE # ContinueExpr

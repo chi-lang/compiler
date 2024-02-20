@@ -7,6 +7,9 @@ open class DefaultParseAstVisitor : ParseAstVisitor<Unit> {
         node.accept(this)
     }
 
+    override fun visitUnit(unitValue: UnitValue) =
+        unitValue.children().forEach { it.accept(this) }
+
     override fun visitLong(longValue: LongValue) =
         longValue.children().forEach { it.accept(this) }
 

@@ -20,6 +20,7 @@ internal object AtomReader {
             ChiLexer.FALSE -> BoolValue(false, section)
             ChiLexer.ID -> VariableReader.readVariable(source, node)
             ChiLexer.PLACEHOLDER -> ParseWeavePlaceholder(section)
+            ChiLexer.UNIT -> UnitValue(section)
             else -> throw CompilerMessage.from(
                 "Unsupported terminal type ${node.symbol.type}: '${node.symbol.text}'",
                 getSection(source, node.symbol))
@@ -98,6 +99,12 @@ internal object AtomReader {
             }
         }
     }
+}
+
+data class UnitValue(override val section: ChiSource.Section?) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitUnit(this)
+
+    override fun children(): List<ParseAst> = emptyList()
 }
 
 data class LongValue(val value: Long, override val section: ChiSource.Section? = null) : ParseAst {

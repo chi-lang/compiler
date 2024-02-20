@@ -41,6 +41,8 @@ class ExprConversionVisitor(
 
     override fun visit(node: ParseAst): Expression = node.accept(this)
 
+    override fun visitUnit(unitValue: UnitValue): Expression = Atom.unit(unitValue.section)
+
     override fun visitLong(longValue: LongValue): Expression = Atom.int(longValue.value, longValue.section)
 
     override fun visitFloat(floatValue: FloatValue): Expression = Atom.float(floatValue.value, floatValue.section)
