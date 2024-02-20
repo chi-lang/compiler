@@ -18,8 +18,18 @@ sealed interface Message {
     val codePoint: CodePoint?
 }
 
-data class ErrorMessage(override val message: String, override val codePoint: CodePoint?) : Message {
+data class ErrorMessage(val msg: String, override val codePoint: CodePoint?) : Message {
     override val level: Level = Level.ERROR
+    override val message: String
+        get() = run {
+            val sb = StringBuilder()
+            sb.append(msg)
+            if (codePoint != null) {
+                sb.append(" at ")
+                sb.append(codePoint)
+            }
+            sb.toString()
+        }
 }
 
 data class InvalidModuleName(val moduleName: String, override val codePoint: CodePoint?) : Message {

@@ -3,6 +3,7 @@ package gh.marad.chi.core.expressionast.internal
 import gh.marad.chi.core.Is
 import gh.marad.chi.core.parser.readers.LongValue
 import gh.marad.chi.core.parser.readers.ParseIs
+import gh.marad.chi.core.parser.readers.TypeNameRef
 import gh.marad.chi.core.shouldBeAtom
 import gh.marad.chi.core.types.Type
 import io.kotest.matchers.shouldBe
@@ -16,13 +17,13 @@ class SimpleConversionsKtParseIsTest {
         val result = convertAst(
             ParseIs(
                 value = LongValue(10),
-                typeName = "string",
+                typeRef = TypeNameRef("", "", "string", null),
                 section = testSection
             )
         ).shouldBeTypeOf<Is>()
 
         // then
         result.value.shouldBeAtom("10", Type.int)
-        result.typeOrVariant shouldBe "string"
+        result.checkedType shouldBe Type.string
     }
 }

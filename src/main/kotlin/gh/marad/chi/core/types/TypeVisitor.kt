@@ -7,6 +7,7 @@ interface TypeVisitor<T> {
     fun visitSum(sum: Sum): T
     fun visitVariable(variable: Variable): T
     fun visitArray(array: Array): T
+    fun visitRecursive(recursive: Recursive): T
 }
 
 abstract class VariableMapper : TypeVisitor<Type> {
@@ -28,6 +29,9 @@ abstract class VariableMapper : TypeVisitor<Type> {
 
     override fun visitArray(array: Array): Type =
         array.copy(elementType = array.elementType.accept(this))
+
+    override fun visitRecursive(recursive: Recursive): Type =
+        recursive.copy(type = recursive.type.accept(this))
 }
 
 class FreshenAboveVisitor(

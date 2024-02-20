@@ -2,7 +2,7 @@ package gh.marad.chi.core.compiler
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.Target
-import gh.marad.chi.core.compiler.Compiler.resolveNewType
+import gh.marad.chi.core.compiler.Compiler.resolveType
 import gh.marad.chi.core.namespace.FnSymbol
 import gh.marad.chi.core.namespace.FnSymbolTable
 import gh.marad.chi.core.namespace.Symbol
@@ -65,7 +65,7 @@ class ExprConversionVisitor(
     override fun visitLambda(parseLambda: ParseLambda): Expression {
         val fnSymbolTable = FnSymbolTable()
         val params = parseLambda.formalArguments.map {
-            val type = it.typeRef?.let { resolveNewType(typeTable, currentTypeSchemeVariables, it) }
+            val type = it.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it) }
             fnSymbolTable.addArgument(it.name, type)
             FnParam(it.name, type, it.section)
         }
@@ -88,7 +88,7 @@ class ExprConversionVisitor(
         currentTypeSchemeVariables = parseFuncWithName.typeParameters.map { it.name }
 
         val params = parseFuncWithName.formalArguments.map {
-            val type = resolveNewType(typeTable, currentTypeSchemeVariables, it.typeRef!!)
+            val type = resolveType(typeTable, currentTypeSchemeVariables, it.typeRef!!)
             fnSymbolTable.addArgument(it.name, type)
             FnParam(it.name, type, it.section)
         }
@@ -102,7 +102,7 @@ class ExprConversionVisitor(
         )
 
         val returnType = parseFuncWithName.returnTypeRef
-            ?.let { resolveNewType(typeTable, currentTypeSchemeVariables, it) }
+            ?.let { resolveType(typeTable, currentTypeSchemeVariables, it) }
             ?: Type.unit
 
         val funcTypes = params.map { it.type!! } + returnType
@@ -165,7 +165,7 @@ class ExprConversionVisitor(
             name = parseNameDeclaration.symbol.name,
             value = parseNameDeclaration.value.accept(this),
             sourceSection = parseNameDeclaration.section,
-            expectedType = parseNameDeclaration.typeRef?.let { resolveNewType(typeTable, currentTypeSchemeVariables, it) },
+            expectedType = parseNameDeclaration.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it) },
         ).also {
             addLocalSymbol(it.name, it.mutable, it.public)
         }
@@ -204,14 +204,14 @@ class ExprConversionVisitor(
         val params = parseEffectDefinition.formalArguments.map {
             FnParam(
                 it.name,
-                resolveNewType(typeTable, currentTypeSchemeVariables, it.typeRef!!),
+                resolveType(typeTable, currentTypeSchemeVariables, it.typeRef!!),
                 it.section
             )
         }
 
 
 
-        val types = params.map { it.type!! } + resolveNewType(typeTable, currentTypeSchemeVariables, parseEffectDefinition.returnTypeRef)
+        val types = params.map { it.type!! } + resolveType(typeTable, currentTypeSchemeVariables, parseEffectDefinition.returnTypeRef)
         val type = Function(types)
 
         currentTypeSchemeVariables = prevTypeSchemeVariables
@@ -272,7 +272,7 @@ class ExprConversionVisitor(
         )
 
     override fun visitCast(parseCast: ParseCast): Expression {
-        val targetType = resolveNewType(typeTable, currentTypeSchemeVariables, parseCast.typeRef)
+        val targetType = resolveType(typeTable, currentTypeSchemeVariables, parseCast.typeRef)
         return Cast(parseCast.value.accept(this), targetType, parseCast.section)
     }
 
@@ -280,7 +280,7 @@ class ExprConversionVisitor(
         parseGroup.value.accept(this)
 
     override fun visitIs(parseIs: ParseIs): Expression =
-        Is(parseIs.value.accept(this), parseIs.typeName, parseIs.section)
+        Is(parseIs.value.accept(this), resolveType(typeTable, currentTypeSchemeVariables, parseIs.typeRef), parseIs.section)
 
     override fun visitIfElse(parseIfElse: ParseIfElse): Expression =
         IfElse(

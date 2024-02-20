@@ -36,7 +36,7 @@ fun compile(
     return program
 }
 
-fun asts(code: String, ns: GlobalCompilationNamespace, ignoreCompilationErrors: Boolean = false): List<Expression> {
+fun asts(code: String, ns: GlobalCompilationNamespace = GlobalCompilationNamespace(), ignoreCompilationErrors: Boolean = false): List<Expression> {
     return compile(code, ns, ignoreCompilationErrors).expressions
 }
 

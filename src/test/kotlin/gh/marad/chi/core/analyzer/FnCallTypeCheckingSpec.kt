@@ -2,6 +2,7 @@ package gh.marad.chi.core.analyzer
 
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.ast
+import gh.marad.chi.asts
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.types.Array
 import gh.marad.chi.core.types.Function
@@ -10,7 +11,6 @@ import gh.marad.chi.core.types.Variable
 import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -122,42 +122,60 @@ class FnCallTypeCheckingSpec {
 //        result.newType shouldBe Type3.array(Type3.int)
 //    }
 
-    //@Test FIXME
-    fun `constructing recurring generic data type should work`() {
-        ast(
+    @Test
+    fun `constructing recurring data type should work`() {
+        val result = asts(
             """
-                type List[T] = { head: T, tail: List[T] | int }
+                type List = { head: int, tail: List } | int
+                
+                fn foo(bar: List) {}
+                foo({ head: 5, tail: { head: 6, tail: 7 } })
+                foo({ head: 7, tail: 0 })
             """.trimIndent()
         )
+
+//        printAst(result)
     }
 
-    // @Test
-    fun `should compare type parameters in product types`() {
-        val ex = messages("""
-            data List[T] = Node(head: T, tail: List[T]) | Nil
-            Node(5, Nil) == Node("hello", Nil)
-        """.trimIndent())
-
-        ex shouldHaveSize 1
-        ex.first().shouldBeTypeOf<TypeMismatch>().should {
-            it.expected shouldBe Type.int
-            it.actual shouldBe Type.string
-        }
+    @Test
+    fun `constructing recurring type with type parameters should work`() {
+        val result = asts(
+            """
+                type List[T] = { head: T, tail: List[T] } | T
+                
+                fn foo(bar: List) {}
+                foo({ head: 5, tail: { head: 6, tail: 7 }})
+                foo({ head: "hello", tail: "string" })
+            """.trimIndent()
+        )
+//        printAst(result)
     }
 
+    @Test
+    fun `count test`() {
+        val result = asts(
+            """
+                type List[T] = { head: T, tail: List[T] } | T
+                
+                fn count[T](list: List[T]): int {
+                   var c = 0
+                   var current: List[T] = list
+                   while true {
+                      if current is T {
+                         c = c + 1
+                         break
+                      } else {
+                         c = c + 1
+                         val tmp = current as { tail: List[T] }
+                         current = tmp.tail
+                         break
+                      }
+                   }
+                   c
+                }
+            """.trimIndent()
+        )
 
-//    @Test
-    fun `typechecking should work for generic parameter types in type constructors`() {
-        val result = messages("""
-            data List[T] = Node(head: T, tail: List[T]) | Nil
-            Node(10, Node("string", Nil))
-        """.trimIndent())
-
-        result.shouldNotBeEmpty()
-        result[0].shouldBeTypeOf<TypeMismatch>() should {
-            it.expected shouldBe Type.string
-            it.actual shouldBe Type.int
-        }
     }
 
     @Test

@@ -19,6 +19,9 @@ class VariableReplacer(private val toReplace: Variable, private val substitution
     override fun visitArray(array: Array): Type =
         array.copy(elementType = replace(array.elementType))
 
+    override fun visitRecursive(recursive: Recursive): Type =
+        recursive.copy(type = replace(recursive.type))
+
     override fun visitVariable(variable: Variable): Type =
         if (variable == toReplace) {
             substitution

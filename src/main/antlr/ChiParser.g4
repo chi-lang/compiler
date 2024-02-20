@@ -85,7 +85,7 @@ expression
     | '{' ws ID ws ':' ws expression ws (','? | (',' ws ID ':' ws expression ws)* ','?) ws '}' # CreateRecord
     | effectDefinition # EffectDef
     | handleExpression # HandleExpr
-    | expression IS variantName=ID  # IsExpr
+    | expression IS type  # IsExpr
     | 'while' expression block # WhileLoopExpr
     | whenExpression # WhenExpr
     | '(' expression ')' # GroupExpr

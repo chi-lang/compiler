@@ -272,7 +272,7 @@ data class IndexedAssignment(
     override fun children(): List<Expression> = listOf(variable, index, value)
 }
 
-data class Is(val value: Expression, val typeOrVariant: String, override val sourceSection: ChiSource.Section?) :
+data class Is(val value: Expression, val checkedType: Type, override val sourceSection: ChiSource.Section?) :
     Expression {
     override var newType: Type? = null
     override var used: Boolean = false

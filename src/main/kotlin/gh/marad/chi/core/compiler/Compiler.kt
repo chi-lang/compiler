@@ -79,13 +79,7 @@ object Compiler {
             val id = TypeId(packageDefinition.moduleName, packageDefinition.packageName, typeAliasDef.name)
             TypeAlias(
                 id,
-                resolveNewType(tables.localTypeTable, typeSchemeVariables, typeAliasDef.type).let {
-                    when(it) {
-                        is Record -> it.copy(id = id)
-                        is Sum -> it.copy(id = id)
-                        else -> it
-                    }
-                }
+                resolveTypeAndWrapRecursive(tables.localTypeTable, typeSchemeVariables, typeAliasDef.type, id)
             ).also {
                 tables.defineTypeAlias(it)
             }
@@ -123,18 +117,16 @@ object Compiler {
         // infer types
         // ===========
         val typer = Typer(InferenceContext(packageDefinition, ns))
-        val constraints = mutableListOf<Constraint>()
         expressions.forEach {
             try {
+                val constraints = mutableListOf<Constraint>()
                 typer.typeTerm(it, 0, constraints)
+                val solutions = unify(constraints)
+                replaceTypes(it, solutions)
             } catch (ex: CompilerMessage) {
                 resultMessages.add(ex.msg)
             }
         }
-        try {
-            val solutions = unify(constraints)
-            expressions.forEach { replaceTypes(it, solutions) }
-        } catch (ex: CompilerMessage) { resultMessages.add(ex.msg) }
 
 
         if (resultMessages.isNotEmpty()) {
@@ -164,11 +156,43 @@ object Compiler {
         )
     }
 
-    fun resolveNewType(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef): Type {
+    private fun createRecursiveVariable(id: TypeId) = Variable(id.toString(), -1)
+    private fun resolveTypeAndWrapRecursive(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef, id: TypeId): Type {
+        val variable = createRecursiveVariable(id)
+        val type = resolveType(typeTable, typeSchemeVariables, ref, id).let {
+            when(it) {
+                is Record -> it.copy(id = id)
+                is Sum -> it.copy(id = id)
+                else -> it
+            }
+        }
+
+        val typeContainsVariable = object : TypeVisitor<Boolean> {
+            override fun visitVariable(v: Variable): Boolean = v == variable
+            override fun visitPrimitive(primitive: Primitive): Boolean = false
+            override fun visitFunction(function: Function): Boolean = function.children().any { it.accept(this) }
+            override fun visitRecord(record: Record): Boolean = record.children().any { it.accept(this) }
+            override fun visitSum(sum: Sum): Boolean = sum.children().any { it.accept(this) }
+            override fun visitArray(array: Array): Boolean = array.children().any { it.accept(this) }
+            override fun visitRecursive(recursive: Recursive): Boolean = recursive.type.accept(this)
+        }
+
+        return if (type.accept(typeContainsVariable)) {
+            Recursive(variable, type)
+        } else {
+            type
+        }
+    }
+
+    fun resolveType(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef, currentlyReadTypeId: TypeId? = null, createdVars: MutableList<String> = mutableListOf()): Type {
         return when(ref) {
-            is TypeParameterRef -> Variable(ref.name, 0) // FIXME: here level should probably be passed from above
+            is TypeParameterRef -> { // FIXME: here level should probably be passed from above
+                createdVars.add(ref.name)
+                Variable(ref.name, 0)
+            }
             is TypeNameRef ->
                 if (ref.typeName in typeSchemeVariables) {
+                    createdVars.add(ref.typeName)
                     Variable(ref.typeName, 0)
                 } else {
                     when (ref.typeName) {
@@ -178,30 +202,53 @@ object Compiler {
                         "int" -> Type.int
                         "float" -> Type.float
                         "unit" -> Type.unit
-                        else ->
-                            typeTable.getAlias(ref.typeName)?.newType
-                                ?: throw CompilerMessage.from("Type $ref not found", ref.section)
+                        else -> {
+                            if (currentlyReadTypeId != null && ref.typeName == currentlyReadTypeId.name) {
+                                createRecursiveVariable(currentlyReadTypeId).also {
+                                    createdVars.add(it.name)
+                                }
+                            } else {
+                                typeTable.getAlias(ref.typeName)?.newType
+                                    ?: throw CompilerMessage.from("Type $ref not found", ref.section)
+                            }
+                        }
                     }
                 }
             is TypeConstructorRef -> {
-                resolveNewType(typeTable, typeSchemeVariables, ref.baseType)
+                val base = resolveType(typeTable, typeSchemeVariables, ref.baseType, currentlyReadTypeId)
+                if (base is Variable && currentlyReadTypeId != null && base.name == createRecursiveVariable(currentlyReadTypeId).name) {
+                    return base
+                }
+                val params = ref.typeParameters.map { resolveType(typeTable, typeSchemeVariables, it) }
+                val typeParamNames = base.typeParams()
+                if (params.isNotEmpty() && params.size != typeParamNames.size) {
+                    throw CompilerMessage.from("Provided type parameters count (${params.size}) is different then expected (${typeParamNames.size})", ref.section)
+                }
+                val replacements = typeParamNames.map { Variable(it, 0) }.zip(params)
+                mapType(base, replacements)
             }
             is FunctionTypeRef -> {
-                val returnType = resolveNewType(typeTable, typeSchemeVariables, ref.returnType)
-                val params = ref.argumentTypeRefs.map { resolveNewType(typeTable, typeSchemeVariables, it) }
-                Function(params + listOf(returnType))
+                val createdVars = mutableListOf<String>()
+                val returnType = resolveType(typeTable, typeSchemeVariables, ref.returnType, currentlyReadTypeId, createdVars)
+                val params = ref.argumentTypeRefs.map { resolveType(typeTable, typeSchemeVariables, it, currentlyReadTypeId, createdVars) }
+                Function(params + listOf(returnType), createdVars.filter { it in typeSchemeVariables })
             }
-            is SumTypeRef ->
-                Sum.create(
-                    id = null,
-                    lhs = resolveNewType(typeTable, typeSchemeVariables, ref.lhs),
-                    rhs = resolveNewType(typeTable, typeSchemeVariables, ref.rhs),
-                )
-            is RecordTypeRef ->
-                Record(
-                    id = null,
-                    fields = ref.fields.map { Record.Field(it.name, resolveNewType(typeTable, typeSchemeVariables, it.typeRef)) }
-                )
+            is SumTypeRef -> {
+                val createdVars = mutableListOf<String>()
+                val lhs = resolveType(typeTable, typeSchemeVariables, ref.lhs, currentlyReadTypeId, createdVars)
+                val rhs = resolveType(typeTable, typeSchemeVariables, ref.rhs, currentlyReadTypeId, createdVars)
+                Sum.create(id = null, lhs, rhs, createdVars.filter { it in typeSchemeVariables })
+            }
+            is RecordTypeRef -> {
+                val createdVars = mutableListOf<String>()
+                val fields = ref.fields.map {
+                    Record.Field(
+                        it.name,
+                        resolveType(typeTable, typeSchemeVariables, it.typeRef, currentlyReadTypeId)
+                    )
+                }
+                Record(id = null, fields, createdVars.filter { it in typeSchemeVariables })
+            }
         }
     }
 

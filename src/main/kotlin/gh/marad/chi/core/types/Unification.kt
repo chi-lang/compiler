@@ -14,6 +14,12 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
         when {
             expected == actual -> {}
             expected == Type.any -> {}
+            expected is Recursive -> {
+                queue.addFirst(Constraint(expected.unfold(), actual))
+            }
+            actual is Recursive -> {
+                queue.addFirst(Constraint(expected, actual.unfold()))
+            }
             expected is Variable -> {
                 solutions.add(expected to actual)
                 val replacer = VariableReplacer(expected, actual)
@@ -77,6 +83,8 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
                     //        says the first type of the sum type does not match the actual
                     //        I think that Constraint should somehow accumulate the knowledge
                     //        that it comes from sum type comparison for better error message
+                    queue.addFirst(Constraint(expected.lhs, actual))
+                } catch (ex: CompilerMessage) {
                     queue.addFirst(Constraint(expected.lhs, actual))
                 }
             }

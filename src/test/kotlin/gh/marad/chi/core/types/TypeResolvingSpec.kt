@@ -20,7 +20,7 @@ class TypeResolvingSpec {
         typeTable.addTypeAlias(type)
 
         // when
-        val result = Compiler.resolveNewType(typeTable, emptyList(), TypeNameRef(null, null, "Type", null))
+        val result = Compiler.resolveType(typeTable, emptyList(), TypeNameRef(null, null, "Type", null))
 
         // then
         result shouldBe type
@@ -29,16 +29,16 @@ class TypeResolvingSpec {
 
     @Test
     fun `should resolve type variables`() {
-        Compiler.resolveNewType(TypeTable(), listOf("T"), TypeNameRef(null, null, "T", null)) shouldBe Variable("T", 0)
-        Compiler.resolveNewType(TypeTable(), listOf(), TypeParameterRef("T", null)) shouldBe Variable("T", 0)
+        Compiler.resolveType(TypeTable(), listOf("T"), TypeNameRef(null, null, "T", null)) shouldBe Variable("T", 0)
+        Compiler.resolveType(TypeTable(), listOf(), TypeParameterRef("T", null)) shouldBe Variable("T", 0)
     }
 
     @Test
     fun `should resolve type constructor to polymorphic type`() {
         // given
-        val T = Variable("T", 1)
-        val type = Type.record(TypeId("m", "p", "Type"), "foo" to T)
         val typeTable = TypeTable()
+        val T = Variable("T", 1)
+        val type = Type.record(TypeId("m", "p", "Type"), "foo" to T).copy(typeParams = listOf("T"))
         typeTable.addTypeAlias(type)
         var ref = TypeConstructorRef(
             TypeNameRef(null, null, "Type", null),
@@ -47,7 +47,7 @@ class TypeResolvingSpec {
         )
 
         // when
-        var result = Compiler.resolveNewType(typeTable, listOf("T"), ref)
+        var result = Compiler.resolveType(typeTable, listOf("T"), ref)
 
         // then
         result shouldBe type
@@ -64,7 +64,7 @@ class TypeResolvingSpec {
         )
 
         // when
-        val result = Compiler.resolveNewType(TypeTable(), emptyList(), ref)
+        val result = Compiler.resolveType(TypeTable(), emptyList(), ref)
 
         // then
         val T = Variable("T", 0)

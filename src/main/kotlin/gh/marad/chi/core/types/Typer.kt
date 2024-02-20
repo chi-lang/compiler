@@ -154,7 +154,7 @@ class Typer(
 
             is Cast -> {
                 typeTerm(term.expression, level, constraints)
-                if (term.expression is VariableAccess) {
+                if (!term.used && term.expression is VariableAccess) {
                     ctx.updateSymbolType(term.expression.target, term.targetType)
                 }
                 term.targetType
