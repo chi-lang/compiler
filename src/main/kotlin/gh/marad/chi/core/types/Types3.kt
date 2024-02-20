@@ -170,15 +170,3 @@ data class Recursive(
 
     fun unfold(): Type = mapType(type, listOf(variable to this))
 }
-
-fun main() {
-    // TODO dodać budowanie tego typu w resolveNewType
-    // TODO dodać dekomponowanie tego typu w unifikacji
-    // TODO dodać porównanie Recursive z innym Recursive (żeby nie wpadły w nieskończoną pętle)
-    val variable = Variable("X", -1)
-    val record = Type.record("i" to Type.int, "self" to variable)
-    val rec = Recursive(variable, record)
-
-    println(rec)
-    println(rec.unfold())
-}

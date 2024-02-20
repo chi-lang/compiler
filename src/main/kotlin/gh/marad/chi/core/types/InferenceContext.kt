@@ -111,8 +111,6 @@ class InferenceContext(
         return when (target) {
             is LocalSymbol -> getLocalSymbol(localSymbols, target.name)
             is PackageSymbol -> {
-                // FIXME replace 'localSymbols' with reading from a package
-                //       once a package supports new types
                 if (target.moduleName == pkg.moduleName &&
                     target.packageName == pkg.packageName) {
                     // we are trying to lookup symbol from current package so we need to use local package symbols
