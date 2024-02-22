@@ -180,7 +180,10 @@ class Typer(
                 result
             }
 
-            is EffectDefinition -> Type.unit // FIXME!!
+            is EffectDefinition -> {
+                term.type!!
+            }
+
             is Handle -> {
                 val result = ctx.freshVariable(level)
                 val bodyType = typeTerm(term.body, level, constraints)
