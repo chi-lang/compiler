@@ -21,7 +21,7 @@ class ReadingVariablesSpec {
 
         // then
         result.shouldBeTypeOf<VariableAccess>() should {
-            it.newType shouldBe Type.int
+            it.type shouldBe Type.int
             it.target.shouldBeTypeOf<PackageSymbol>().should { symbol ->
                 symbol.moduleName shouldBe CompilationDefaults.defaultModule
                 symbol.packageName shouldBe CompilationDefaults.defaultPacakge
@@ -48,7 +48,7 @@ class ReadingVariablesSpec {
         result.shouldBeTypeOf<NameDeclaration>()
             .value.shouldBeTypeOf<Fn>()
             .body.body.first().shouldBeTypeOf<VariableAccess>().should {
-                it.newType shouldBe Type.int
+                it.type shouldBe Type.int
                 it.target.shouldBeTypeOf<PackageSymbol>() should { symbol ->
                     symbol.moduleName shouldBe CompilationDefaults.defaultModule
                     symbol.packageName shouldBe CompilationDefaults.defaultPacakge

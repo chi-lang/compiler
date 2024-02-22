@@ -24,7 +24,7 @@ class InferenceContext(
 
     init {
         ns.getOrCreatePackage(pkg).symbols.forEach { name, symbol ->
-            symbol.newType?.let {
+            symbol.type?.let {
                 packageSymbols.define(name, it)
             }
         }
@@ -86,12 +86,12 @@ class InferenceContext(
             type.getTypeId()
                 ?.let { id -> ns.getOrCreatePackage(id.moduleName, id.packageName).symbols.get(name) }
                 ?.let { symbol ->
-                    val symbolType: Type = when(val typeScheme = symbol.newType!!) {
+                    val symbolType: Type = when(val typeScheme = symbol.type!!) {
                         is PolyType -> typeScheme.body
                         is Type -> typeScheme
                     }
                     if (symbolType is Function && symbolType.types.size >= 2 && (symbolType.types[0] == type || symbolType.types[0] is Variable)) {
-                        listOf(DotTarget.PackageFunction(symbol.moduleName, symbol.packageName, symbol.name) to symbol.newType)
+                        listOf(DotTarget.PackageFunction(symbol.moduleName, symbol.packageName, symbol.name) to symbol.type)
                     } else {
                         emptyList()
                     }
@@ -118,7 +118,7 @@ class InferenceContext(
                 } else {
                     // for other packages we just search the target package
                     val symbol = ns.getSymbol(target) ?: err("Identifier ${target.name} not found!")
-                    symbol.newType?.instantiate(level, this::freshVariable)
+                    symbol.type?.instantiate(level, this::freshVariable)
                         ?: err("Type not found for identifier ${target.name}")
                 }
             }

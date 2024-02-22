@@ -67,7 +67,7 @@ class EffectConversionsKtDefinitionTest {
 
         // then
         val T = Variable("T", 0)
-        result.newType shouldBe Function(
+        result.type shouldBe Function(
             listOf(T),
         )
     }

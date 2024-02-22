@@ -20,7 +20,7 @@ class ParserSpec {
             .should {
                 it.function.shouldBeTypeOf<Fn>().should { fn ->
                     fn.parameters shouldBe emptyList()
-                    fn.newType shouldBe Type.fn(Type.int)
+                    fn.type shouldBe Type.fn(Type.int)
                     fn.body.shouldBeBlock { block ->
                         block.body[0].shouldBeAtom("1", Type.int)
                     }

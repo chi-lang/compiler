@@ -86,7 +86,7 @@ class PrintAstVisitor : ExpressionVisitor {
             sb.append(name)
             sb.append(' ')
         }
-        sb.append(": ${expr.newType}")
+        sb.append(": ${expr.type}")
         withIndent(f)
         sb.append(")")
     }

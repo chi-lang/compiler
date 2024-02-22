@@ -34,7 +34,7 @@ data class Symbol(
     val moduleName: String,
     val packageName: String,
     val name: String,
-    val newType: TypeScheme?,
+    val type: TypeScheme?,
     val public: Boolean,
     val mutable: Boolean
 ) {

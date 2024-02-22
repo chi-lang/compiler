@@ -10,7 +10,7 @@ fun Expression.shouldBeAtom(value: String, type: Type, sourceSection: ChiSource.
     shouldBeTypeOf<Atom>().also {
         should {
             it.value shouldBe value
-            it.newType shouldBe type
+            it.type shouldBe type
             if (sourceSection != null) {
                 it.sourceSection shouldBe sourceSection
             }

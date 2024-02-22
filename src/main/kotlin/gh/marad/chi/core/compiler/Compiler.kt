@@ -208,7 +208,7 @@ object Compiler {
                                     createdVars.add(it.name)
                                 }
                             } else {
-                                typeTable.getAlias(ref.typeName)?.newType
+                                typeTable.getAlias(ref.typeName)?.type
                                     ?: throw CompilerMessage.from("Type $ref not found", ref.section)
                             }
                         }

@@ -16,7 +16,7 @@ class FnCallCheckingVisitor : DefaultExpressionVisitor {
     }
 
     override fun visitFnCall(fnCall: FnCall) {
-        val t = fnCall.function.newType!!
+        val t = fnCall.function.type!!
         if (t !is Function) {
             messages.add(NotAFunction(fnCall.function.sourceSection.toCodePoint()))
         }

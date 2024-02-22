@@ -30,7 +30,7 @@ class FieldAccessSpec {
 
         // then
         result.shouldBeTypeOf<FnCall>().should {
-            it.newType shouldBe Type.int
+            it.type shouldBe Type.int
             it.function.shouldBeTypeOf<VariableAccess>()
                 .target shouldBe PackageSymbol("mod", "pkg", "bar")
         }
@@ -49,7 +49,7 @@ class FieldAccessSpec {
 
         // then
         result.shouldBeTypeOf<FnCall>().should {
-            it.newType shouldBe Type.float
+            it.type shouldBe Type.float
             it.function.shouldBeTypeOf<VariableAccess>()
                 .target shouldBe LocalSymbol("bar")
         }
@@ -75,12 +75,12 @@ class FieldAccessSpec {
 
         // then
         result.shouldBeTypeOf<FnCall>().should { bazCall ->
-            bazCall.newType shouldBe Type.float
+            bazCall.type shouldBe Type.float
             bazCall.function.shouldBeTypeOf<VariableAccess>()
                 .target shouldBe LocalSymbol("baz")
 
             bazCall.parameters[0].shouldBeTypeOf<FnCall>().should { barCall ->
-                barCall.newType shouldBe Type.int
+                barCall.type shouldBe Type.int
                 barCall.function.shouldBeTypeOf<VariableAccess>()
                     .target shouldBe PackageSymbol("mod", "pkg", "bar")
                 barCall.parameters[0].shouldBeTypeOf<VariableAccess>()
@@ -114,7 +114,7 @@ class FieldAccessSpec {
         // then
         result.shouldBeTypeOf<FieldAccess>().should {
             it.target shouldBe DotTarget.Field
-            it.newType shouldBe Type.string
+            it.type shouldBe Type.string
         }
     }
 
@@ -140,7 +140,7 @@ class FieldAccessSpec {
         // then
         result.shouldBeTypeOf<FieldAccess>().should {
             it.target shouldBe DotTarget.LocalFunction
-            it.newType shouldBe Type.fn(type, Type.float)
+            it.type shouldBe Type.fn(type, Type.float)
         }
     }
 

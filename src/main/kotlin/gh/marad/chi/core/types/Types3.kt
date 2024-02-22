@@ -26,18 +26,18 @@ sealed  interface Type : TypeScheme {
     fun typeParams(): List<String>
 
     companion object {
-        val any = Primitive(TypeId("std", "lang.types.any", "any"))
-        val unit = Primitive(TypeId("std", "lang.types.unit", "unit"))
-        val bool = Primitive(TypeId("std", "lang.types.bool", "bool"))
-        val int = Primitive(TypeId("std", "lang.types.int", "int"))
-        val float = Primitive(TypeId("std", "lang.types.float", "float"))
-        val string = Primitive(TypeId("std", "lang.types.string", "string"))
+        @JvmStatic val any = Primitive(TypeId("std", "lang.types.any", "any"))
+        @JvmStatic val unit = Primitive(TypeId("std", "lang.types.unit", "unit"))
+        @JvmStatic val bool = Primitive(TypeId("std", "lang.types.bool", "bool"))
+        @JvmStatic val int = Primitive(TypeId("std", "lang.types.int", "int"))
+        @JvmStatic val float = Primitive(TypeId("std", "lang.types.float", "float"))
+        @JvmStatic val string = Primitive(TypeId("std", "lang.types.string", "string"))
 
-        fun fn(vararg types: Type) = Function(types.toList())
-        fun record(vararg fields: Pair<String, Type>): Record = Record(null, fields.map { Record.Field(it.first, it.second) })
-        fun record(id: TypeId, vararg fields: Pair<String, Type>): Record = Record(id, fields.map { Record.Field(it.first, it.second) })
-        fun array(elementType: Type) = Array(elementType)
-        fun union(id: TypeId?, vararg types: Type): Sum =
+        @JvmStatic fun fn(vararg types: Type) = Function(types.toList())
+        @JvmStatic fun record(vararg fields: Pair<String, Type>): Record = Record(null, fields.map { Record.Field(it.first, it.second) })
+        @JvmStatic fun record(id: TypeId, vararg fields: Pair<String, Type>): Record = Record(id, fields.map { Record.Field(it.first, it.second) })
+        @JvmStatic fun array(elementType: Type) = Array(elementType)
+        @JvmStatic fun union(id: TypeId?, vararg types: Type): Sum =
             types.reduceRight { lhs, rhs -> Sum.create(id, lhs, rhs) } as Sum
     }
 }

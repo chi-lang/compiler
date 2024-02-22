@@ -46,7 +46,7 @@ class ObjectsSpec {
 
         // then
         result.shouldBeTypeOf<FieldAccess>().should {
-            it.newType shouldBe Type.int
+            it.type shouldBe Type.int
         }
     }
 
@@ -66,7 +66,7 @@ class ObjectsSpec {
         // then
         val circle = Type.record(TypeId("foo", "bar", "Circle"), "radius" to Type.float)
         val square = Type.record(TypeId("foo", "bar", "Square"), "side" to Type.float)
-        result.map { it.newType } shouldContainAll listOf(
+        result.map { it.type } shouldContainAll listOf(
             circle,
             square,
             Type.union(TypeId("foo", "bar", "Shape"), circle, square)

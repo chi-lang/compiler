@@ -20,7 +20,7 @@ class Typer(
     fun typeTerm(term: Expression, level: Int = 0, constraints: MutableList<Constraint>): Type =
         when (term) {
             is Atom ->
-                term.newType!!
+                term.type!!
 
             is VariableAccess ->
                 ctx.getTargetType(term.target, level)
@@ -68,7 +68,7 @@ class Typer(
                         DotTarget.LocalFunction -> {
                             term.parameters.add(0, dotOp.receiver)
                             VariableAccess(LocalSymbol(dotOp.fieldName), dotOp.memberSection).also {
-                                it.newType = dotOp.newType
+                                it.type = dotOp.type
                             }
                         }
                         is DotTarget.PackageFunction -> {
@@ -76,7 +76,7 @@ class Typer(
                             VariableAccess(PackageSymbol(
                                 target.moduleName, target.packageName, target.name
                             ), dotOp.memberSection).also {
-                                it.newType = dotOp.newType
+                                it.type = dotOp.type
                             }
                         }
                     }
@@ -180,7 +180,7 @@ class Typer(
                 result
             }
 
-            is EffectDefinition -> Type.unit
+            is EffectDefinition -> Type.unit // FIXME!!
             is Handle -> {
                 val result = ctx.freshVariable(level)
                 val bodyType = typeTerm(term.body, level, constraints)
@@ -253,7 +253,7 @@ class Typer(
             }
 
         }.also {
-            term.newType = it
+            term.type = it
         }
 
 }

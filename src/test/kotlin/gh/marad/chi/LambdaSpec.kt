@@ -24,7 +24,7 @@ class LambdaSpec {
         result.shouldBeTypeOf<FnCall>()
             .parameters.first().shouldBeTypeOf<Fn>()
             .should { fn ->
-                fn.body.newType shouldBe Type.int
+                fn.body.type shouldBe Type.int
             }
     }
 }

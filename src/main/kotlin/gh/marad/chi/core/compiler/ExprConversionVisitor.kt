@@ -226,7 +226,7 @@ class ExprConversionVisitor(
             parameters = params,
             sourceSection = parseEffectDefinition.section
         ).also {
-            it.newType = type
+            it.type = type
             addLocalSymbol(it.name, isMutable = false, it.public, type)
         }
     }
@@ -380,7 +380,7 @@ class ExprConversionVisitor(
     private fun FnSymbol.toLocalSymbol() = LocalSymbol(name)
     private fun Symbol.toPackageSymbol() = PackageSymbol(moduleName, packageName, name)
 
-    private fun addLocalSymbol(name: String, isMutable: Boolean, isPublic: Boolean, newType: Type? = null) {
+    private fun addLocalSymbol(name: String, isMutable: Boolean, isPublic: Boolean, type: Type? = null) {
         val fnSymbolTable = currentFnSymbolTable
         if (fnSymbolTable != null) {
             // we are inside a function so we declare simple local
@@ -391,7 +391,7 @@ class ExprConversionVisitor(
                     moduleName = pkg.moduleName,
                     packageName = pkg.packageName,
                     name = name,
-                    newType = newType,
+                    type = type,
                     isPublic, isMutable
                 )
             )
