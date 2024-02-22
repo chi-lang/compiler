@@ -68,6 +68,7 @@ type
     | '{' recordField (',' recordField)* '}'                #RecordType
     | type '|' type                                         #SumType
     | typeName '[' type (',' type)* ']'                     #TypeConstructorRef
+    | UNIT                                                  #UnitTypeRef
     ;
 
 typeName: simpleName | qualifiedName;

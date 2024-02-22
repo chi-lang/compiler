@@ -16,6 +16,7 @@ internal object TypeReader {
             is RecordTypeContext -> readRecordType(parser, source, ctx)
             is SumTypeContext -> readSumType(parser, source, ctx)
             is TypeConstructorRefContext -> readGenericType(parser, source, ctx)
+            is UnitTypeRefContext -> TypeRef.unit
             else -> throw CompilerMessage.from("Unsupported kind of type definition: $ctx", getSection(source, ctx))
         }
     }
