@@ -86,6 +86,13 @@ data class CreateRecord(val fields: List<Field>, override val sourceSection: Chi
     override fun children(): List<Expression> = fields.map { it.value }
 }
 
+data class CreateArray(val values: List<Expression>, override val sourceSection: ChiSource.Section?) : Expression {
+    override var type: Type? = null
+    override var used: Boolean = false
+    override fun accept(visitor: ExpressionVisitor) = visitor.visitCreateArray(this)
+    override fun children(): List<Expression> = values
+}
+
 data class VariableAccess(
     val target: Target,
     override val sourceSection: ChiSource.Section?

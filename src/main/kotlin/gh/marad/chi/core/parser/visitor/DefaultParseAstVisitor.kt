@@ -111,4 +111,7 @@ open class DefaultParseAstVisitor : ParseAstVisitor<Unit> {
 
     override fun visitCreateRecord(parseCreateRecord: ParseCreateRecord) =
         parseCreateRecord.children().forEach { it.accept(this) }
+
+    override fun visitCreateArray(parseCreateArray: ParseCreateArray) =
+        parseCreateArray.children().forEach { it.accept(this) }
 }

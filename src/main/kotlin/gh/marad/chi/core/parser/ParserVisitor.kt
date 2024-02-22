@@ -100,4 +100,7 @@ internal class ParserVisitor(private val source: ChiSource) : ChiParserBaseVisit
 
     override fun visitCreateRecord(ctx: ChiParser.CreateRecordContext): ParseAst =
         RecordReader.read(this, source, ctx)
+
+    override fun visitCreateArray(ctx: ChiParser.CreateArrayContext): ParseAst =
+        ArrayReader.read(this, source, ctx)
 }

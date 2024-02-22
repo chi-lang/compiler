@@ -364,6 +364,12 @@ class ExprConversionVisitor(
             parseCreateRecord.section
         )
 
+    override fun visitCreateArray(parseCreateArray: ParseCreateArray): Expression =
+        CreateArray(
+            parseCreateArray.values.map { it.accept(this) },
+            parseCreateArray.section
+        )
+
     private fun <T> withFnSymbolTable(fnSymbolTable: FnSymbolTable, f: () -> T): T {
         val prevFnSymbolTable = currentFnSymbolTable
         currentFnSymbolTable = fnSymbolTable

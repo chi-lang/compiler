@@ -28,6 +28,14 @@ class Typer(
             is CreateRecord ->
                 Record(null, term.fields.map { Record.Field(it.name, typeTerm(it.value, level, constraints)) })
 
+            is CreateArray -> {
+                val elementType = ctx.freshVariable(level)
+                typeTerms(term.values, constraints, level).forEach {
+                    constraints.add(Constraint(elementType, it))
+                }
+                Array(elementType)
+            }
+
             is Fn -> {
                 ctx.withNewLocalScope {
                     val returnType = ctx.freshVariable(level)

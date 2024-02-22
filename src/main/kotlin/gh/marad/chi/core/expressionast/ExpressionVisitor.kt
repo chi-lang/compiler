@@ -28,4 +28,5 @@ interface ExpressionVisitor {
     fun visitHandle(handle: Handle)
     fun visitReturn(arg: Return)
     fun visitCreateRecord(createRecord: CreateRecord)
+    fun visitCreateArray(createArray: CreateArray)
 }

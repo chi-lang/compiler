@@ -59,6 +59,7 @@ class PrintAstVisitor : ExpressionVisitor {
     override fun visitHandle(handle: Handle) = node(handle)
     override fun visitReturn(arg: Return) = node(arg)
     override fun visitCreateRecord(createRecord: CreateRecord) = node(createRecord)
+    override fun visitCreateArray(createArray: CreateArray) = node(createArray)
 
     override fun visitEffectDefinition(effectDefinition: EffectDefinition) {
         node(effectDefinition) {

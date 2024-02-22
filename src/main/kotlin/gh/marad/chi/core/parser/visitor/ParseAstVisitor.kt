@@ -39,4 +39,5 @@ interface ParseAstVisitor<T> {
     fun visitReturn(parseReturn: ParseReturn): T
     fun visitCreateRecord(parseCreateRecord: ParseCreateRecord): T
     fun visitUnit(unitValue: UnitValue): T
+    fun visitCreateArray(parseCreateArray: ParseCreateArray): T
 }

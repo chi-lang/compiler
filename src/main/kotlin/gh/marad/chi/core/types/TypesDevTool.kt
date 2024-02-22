@@ -6,23 +6,7 @@ import gh.marad.chi.core.utils.printAst
 
 fun main() {
     val code = """
-        type Circle = { radius: int }
-        type Square = { sideLength: int }
-        type Shape = Circle | Square
-        
-        fn area(s: Shape): int {
-            if s is Circle {
-                val c = s as Circle
-                c.radius * c.radius * 3
-            } else if s is Square {
-                val sq = s as Square
-                sq.sideLength * sq.sideLength
-            } else {
-                0
-            }
-        }
-        
-        area({ radius: 8 })
+        [1, 2, 5]
     """.trimIndent()
 
     val ns = GlobalCompilationNamespace()

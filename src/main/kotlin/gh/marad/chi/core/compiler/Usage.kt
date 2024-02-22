@@ -20,6 +20,13 @@ class UsageMarker : ExpressionVisitor {
         visitChildren(createRecord)
     }
 
+    override fun visitCreateArray(createArray: CreateArray) {
+        if (createArray.used) {
+            createArray.values.forEach { it.used = true }
+        }
+        visitChildren(createArray)
+    }
+
     override fun visitNameDeclaration(nameDeclaration: NameDeclaration) {
         nameDeclaration.value.used = true
         visitChildren(nameDeclaration)
