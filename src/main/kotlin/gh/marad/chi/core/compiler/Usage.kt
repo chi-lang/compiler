@@ -8,10 +8,6 @@ fun markUsed(terms: List<Expression>) {
     terms.forEach { marker.visit(it) }
 }
 
-fun markUsed(term: Expression) {
-    UsageMarker().visit(term)
-}
-
 class UsageMarker : ExpressionVisitor {
     override fun visitCreateRecord(createRecord: CreateRecord) {
         if (createRecord.used) {

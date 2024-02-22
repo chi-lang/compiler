@@ -168,7 +168,7 @@ object Compiler {
         }
 
         val typeContainsVariable = object : TypeVisitor<Boolean> {
-            override fun visitVariable(v: Variable): Boolean = v == variable
+            override fun visitVariable(@Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE") v: Variable): Boolean = v == variable
             override fun visitPrimitive(primitive: Primitive): Boolean = false
             override fun visitFunction(function: Function): Boolean = function.children().any { it.accept(this) }
             override fun visitRecord(record: Record): Boolean = record.children().any { it.accept(this) }
@@ -184,6 +184,7 @@ object Compiler {
         }
     }
 
+    @Suppress("NAME_SHADOWING")
     fun resolveType(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef, currentlyReadTypeId: TypeId? = null, createdVars: MutableList<String> = mutableListOf()): Type {
         return when(ref) {
             is TypeParameterRef -> { // FIXME: here level should probably be passed from above

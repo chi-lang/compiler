@@ -6,7 +6,22 @@ import gh.marad.chi.core.utils.printAst
 
 fun main() {
     val code = """
-        [1, 2, 5]
+        fn floor(input: string): int {
+            val points = [1, 2, 3]
+            val open = 40
+            val close = 41
+            var i = 0
+            var fl = 0
+            while i < 5 {
+                if points[i] == open {
+                    fl += 1
+                } else {
+                    fl -= 1
+                }
+                i += 1
+            }
+            fl
+        }
     """.trimIndent()
 
     val ns = GlobalCompilationNamespace()

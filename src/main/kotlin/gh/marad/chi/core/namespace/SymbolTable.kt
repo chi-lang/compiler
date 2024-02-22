@@ -37,7 +37,5 @@ data class Symbol(
     val type: TypeScheme?,
     val public: Boolean,
     val mutable: Boolean
-) {
-    fun qualifiedName() = "$moduleName::$packageName::$name"
-}
+)
 

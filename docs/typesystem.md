@@ -33,7 +33,7 @@ based. Oversimplifying it - two values are the same if their name the same type.
 itself. So records with the same fields would have the
 same structural type. Take look at this Kotlin code:
 
-```kotlin
+```
 data class Person(val name: String)
 data class PersonWithAddress(val name: String, val address: String)
 

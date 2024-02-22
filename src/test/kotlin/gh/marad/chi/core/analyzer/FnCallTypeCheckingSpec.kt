@@ -124,7 +124,7 @@ class FnCallTypeCheckingSpec {
 
     @Test
     fun `constructing recurring data type should work`() {
-        val result = asts(
+        asts(
             """
                 type List = { head: int, tail: List } | int
                 
@@ -133,13 +133,11 @@ class FnCallTypeCheckingSpec {
                 foo({ head: 7, tail: 0 })
             """.trimIndent()
         )
-
-//        printAst(result)
     }
 
     @Test
     fun `constructing recurring type with type parameters should work`() {
-        val result = asts(
+         asts(
             """
                 type List[T] = { head: T, tail: List[T] } | T
                 
@@ -148,12 +146,11 @@ class FnCallTypeCheckingSpec {
                 foo({ head: "hello", tail: "string" })
             """.trimIndent()
         )
-//        printAst(result)
     }
 
     @Test
     fun `count test`() {
-        val result = asts(
+        asts(
             """
                 type List[T] = { head: T, tail: List[T] } | T
                 
@@ -175,7 +172,6 @@ class FnCallTypeCheckingSpec {
                 }
             """.trimIndent()
         )
-
     }
 
     @Test
@@ -185,6 +181,6 @@ class FnCallTypeCheckingSpec {
             forEach({ it: string -> it })
         """.trimIndent()
 
-        val result = ast(code)
+        ast(code)
     }
 }
