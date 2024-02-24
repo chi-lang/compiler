@@ -10,6 +10,7 @@ import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.types.HasTypeId
 import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.TypeScheme
 
 data class ErrorMessagesException(val errors: List<Message>) : AssertionError("Chi compilation errors")
 
@@ -52,7 +53,7 @@ fun ast(
     ignoreCompilationErrors: Boolean = false
 ): Expression = asts(code, ns, ignoreCompilationErrors).last()
 
-fun GlobalCompilationNamespace.addSymbolInDefaultPackage(name: String, type: Type? = null, public: Boolean = false,
+fun GlobalCompilationNamespace.addSymbolInDefaultPackage(name: String, type: TypeScheme? = null, public: Boolean = false,
                                                          mutable: Boolean = false, @Suppress("UNUSED_PARAMETER") slot: Int = 0) {
     val pkg = getDefaultPackage()
     pkg.symbols.add(
@@ -66,7 +67,7 @@ fun GlobalCompilationNamespace.addSymbolInDefaultPackage(name: String, type: Typ
     )
 }
 
-fun GlobalCompilationNamespace.addSymbol(moduleName: String, packageName: String, name: String, type: Type? = null,
+fun GlobalCompilationNamespace.addSymbol(moduleName: String, packageName: String, name: String, type: TypeScheme? = null,
                                          public: Boolean = false, mutable: Boolean = false, @Suppress("UNUSED_PARAMETER") slot: Int = 0) {
     val pkg = getOrCreatePackage(moduleName, packageName)
     pkg.symbols.add(

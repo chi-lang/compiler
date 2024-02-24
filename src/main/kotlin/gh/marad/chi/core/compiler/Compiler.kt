@@ -186,15 +186,16 @@ object Compiler {
 
     @Suppress("NAME_SHADOWING")
     fun resolveType(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef, currentlyReadTypeId: TypeId? = null, createdVars: MutableList<String> = mutableListOf()): Type {
+        val level = 1 // this should probably come from the environment
         return when(ref) {
             is TypeParameterRef -> { // FIXME: here level should probably be passed from above
                 createdVars.add(ref.name)
-                Variable(ref.name, 0)
+                Variable(ref.name, level)
             }
             is TypeNameRef ->
                 if (ref.typeName in typeSchemeVariables) {
                     createdVars.add(ref.typeName)
-                    Variable(ref.typeName, 0)
+                    Variable(ref.typeName, level)
                 } else {
                     when (ref.typeName) {
                         "any" -> Type.any
@@ -232,7 +233,7 @@ object Compiler {
                 if (params.isNotEmpty() && params.size != typeParamNames.size) {
                     throw CompilerMessage.from("Provided type parameters count (${params.size}) is different then expected (${typeParamNames.size})", ref.section)
                 }
-                val replacements = typeParamNames.map { Variable(it, 0) }.zip(params)
+                val replacements = typeParamNames.map { Variable(it, level) }.zip(params)
                 mapType(base, replacements)
             }
             is FunctionTypeRef -> {
