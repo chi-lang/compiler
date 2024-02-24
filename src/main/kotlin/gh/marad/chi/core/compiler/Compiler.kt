@@ -216,6 +216,13 @@ object Compiler {
                     }
                 }
             is TypeConstructorRef -> {
+                if (ref.baseType is TypeNameRef && ref.baseType.typeName == "array") {
+                    if (ref.typeParameters.size != 1) {
+                        throw CompilerMessage.from("Array type must have exactly one type parameter!", ref.section)
+                    }
+                    val elementType = resolveType(typeTable, typeSchemeVariables, ref.typeParameters.first(), currentlyReadTypeId)
+                    return Type.array(elementType)
+                }
                 val base = resolveType(typeTable, typeSchemeVariables, ref.baseType, currentlyReadTypeId)
                 if (base is Variable && currentlyReadTypeId != null && base.name == createRecursiveVariable(currentlyReadTypeId).name) {
                     return base
