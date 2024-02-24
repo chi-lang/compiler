@@ -97,6 +97,6 @@ data class MemberDoesNotExist(val type: Type, val member: String, override val c
     Message {
     override val level: Level = Level.ERROR
     override val message: String
-        get() = "Type $type does not have field '$member', or I don't have enough information about the type variant"
+        get() = "Type $type does not have field '$member'. If this should be a function call then consider adding explicit type."
 }
 
