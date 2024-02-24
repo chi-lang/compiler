@@ -84,7 +84,7 @@ qualifierSeparator: ':' ':';
 expression
     : expression AS type # Cast
     | '{' ws ID ws ':' ws expression ws (','? | (',' ws ID ':' ws expression ws)* ','?) ws '}' # CreateRecord
-    | '[' ws expression ws (',' ws expression ws)* ']' # CreateArray
+    | '[' ws expression? ws (',' ws expression ws)* ']' # CreateArray
     | effectDefinition # EffectDef
     | handleExpression # HandleExpr
     | expression IS type  # IsExpr
