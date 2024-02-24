@@ -2,6 +2,7 @@ package gh.marad.chi.core.types
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.Target
+import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 
 class InferenceContext(
@@ -73,7 +74,15 @@ class InferenceContext(
                     is PolyType -> typeScheme.body
                     is Type -> typeScheme
                 }
-                it.key == name && symbolType is Function && symbolType.types.size >= 2 && (symbolType.types[0] == type || symbolType.types[0] is Variable)
+                it.key == name && symbolType is Function && symbolType.types.size >= 2 //&& (symbolType.types[0] == type || symbolType.types[0] is Variable)
+                        && run {
+                            try {
+                                unify(listOf(Constraint(symbolType.types.first(), type)))
+                                true
+                            } catch (ex: CompilerMessage) {
+                                false
+                            }
+                }
             }
             .map {
                 DotTarget.PackageFunction(pkg.moduleName, pkg.packageName, name) to it.value
@@ -84,14 +93,27 @@ class InferenceContext(
     fun listTypesPackageFunctionsForType(name: String, type: Type): List<Pair<DotTarget, TypeScheme>> {
         return if (type is HasTypeId) {
             type.getTypeId()
-                ?.let { id -> ns.getOrCreatePackage(id.moduleName, id.packageName).symbols.get(name) }
+                ?.let {
+                    id -> ns.getOrCreatePackage(id.moduleName, id.packageName).symbols.get(name)
+                }
                 ?.let { symbol ->
                     val symbolType: Type = when(val typeScheme = symbol.type!!) {
                         is PolyType -> typeScheme.body
                         is Type -> typeScheme
                     }
-                    if (symbolType is Function && symbolType.types.size >= 2 && (symbolType.types[0] == type || symbolType.types[0] is Variable)) {
-                        listOf(DotTarget.PackageFunction(symbol.moduleName, symbol.packageName, symbol.name) to symbol.type)
+                    if (symbolType is Function && symbolType.types.size >= 2) {
+                        try {
+                            unify(listOf(Constraint(symbolType.types.first(), type)))
+                            listOf(
+                                DotTarget.PackageFunction(
+                                    symbol.moduleName,
+                                    symbol.packageName,
+                                    symbol.name
+                                ) to symbol.type
+                            )
+                        } catch (ex: CompilerMessage) {
+                            emptyList()
+                        }
                     } else {
                         emptyList()
                     }
