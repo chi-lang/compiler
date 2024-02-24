@@ -4,6 +4,7 @@ import gh.marad.chi.core.*
 import gh.marad.chi.core.Target
 import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.parser.ChiSource
 
 class InferenceContext(
     val pkg: Package,
@@ -49,7 +50,11 @@ class InferenceContext(
     fun <T> withNewLocalScope(f: () -> T): T {
         val prev = localSymbols
         localSymbols = LocalSymbols(prev)
-        return f().also { localSymbols = prev }
+        try {
+            return f()
+        } finally {
+            localSymbols = prev
+        }
     }
 
     fun listLocalFunctionsForType(name: String, type: Type): List<Pair<DotTarget, TypeScheme>> {
@@ -77,7 +82,7 @@ class InferenceContext(
                 it.key == name && symbolType is Function && symbolType.types.size >= 2 //&& (symbolType.types[0] == type || symbolType.types[0] is Variable)
                         && run {
                             try {
-                                unify(listOf(Constraint(symbolType.types.first(), type)))
+                                unify(listOf(Constraint(symbolType.types.first(), type, null)))
                                 true
                             } catch (ex: CompilerMessage) {
                                 false
@@ -103,7 +108,7 @@ class InferenceContext(
                     }
                     if (symbolType is Function && symbolType.types.size >= 2) {
                         try {
-                            unify(listOf(Constraint(symbolType.types.first(), type)))
+                            unify(listOf(Constraint(symbolType.types.first(), type, null)))
                             listOf(
                                 DotTarget.PackageFunction(
                                     symbol.moduleName,
@@ -124,11 +129,11 @@ class InferenceContext(
         }
     }
 
-    fun getTargetType(target: Target, level: Int): Type {
+    fun getTargetType(target: Target, level: Int, sourceSection: ChiSource.Section?): Type {
         fun getLocalSymbol(symbols: LocalSymbols, name: String) =
             symbols.get(name)
                 ?.instantiate(level, this::freshVariable)
-                ?: err("Identifier ${target.name} not found!")
+                ?: err("Identifier ${target.name} not found!", sourceSection)
 
         return when (target) {
             is LocalSymbol -> getLocalSymbol(localSymbols, target.name)
@@ -139,9 +144,9 @@ class InferenceContext(
                     getLocalSymbol(packageSymbols, target.name)
                 } else {
                     // for other packages we just search the target package
-                    val symbol = ns.getSymbol(target) ?: err("Identifier ${target.name} not found!")
+                    val symbol = ns.getSymbol(target) ?: err("Identifier ${target.name} not found!", sourceSection)
                     symbol.type?.instantiate(level, this::freshVariable)
-                        ?: err("Type not found for identifier ${target.name}")
+                        ?: err("Type not found for identifier ${target.name}", sourceSection)
                 }
             }
         }

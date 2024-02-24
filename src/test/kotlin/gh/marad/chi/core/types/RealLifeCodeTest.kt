@@ -44,8 +44,7 @@ class RealLifeCodeTest {
                     val result = []
                     var i = 0
                     while i < arr.size() {
-                        val value = f(arr[i])
-                        result.add(value)
+                        result.add(f(arr[i]))
                         i += 1
                     }
                     result

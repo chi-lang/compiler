@@ -117,7 +117,7 @@ object Compiler {
         // infer types
         // ===========
         val typer = Typer(InferenceContext(packageDefinition, ns))
-        expressions.forEach {
+        functions.forEach {
             try {
                 val constraints = mutableListOf<Constraint>()
                 typer.typeTerm(it, 0, constraints)
@@ -126,6 +126,19 @@ object Compiler {
             } catch (ex: CompilerMessage) {
                 resultMessages.add(ex.msg)
             }
+        }
+
+        val constraints = mutableListOf<Constraint>()
+        try {
+            for (expression in code) {
+                typer.typeTerm(expression, 0, constraints)
+            }
+            val solutions = unify(constraints)
+            for (expression in code) {
+                replaceTypes(expression, solutions)
+            }
+        } catch (ex: CompilerMessage) {
+            resultMessages.add(ex.msg)
         }
 
 
