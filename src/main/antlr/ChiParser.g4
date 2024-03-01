@@ -63,11 +63,11 @@ traitFunctionDefinition : FN funcName=ID arguments=func_argument_definitions (CO
 typealias : TYPE name=ID generic_type_definitions? '=' type;
 
 type
-    : typeName                                              #TypeNameRef
+    : typeName '[' type (',' type)* ']'                     #TypeConstructorRef
     | '(' type? (COMMA type)* ')' ARROW func_return_type    #FunctionTypeRef
     | '{' recordField (',' recordField)* '}'                #RecordType
     | type '|' type                                         #SumType
-    | typeName '[' type (',' type)* ']'                     #TypeConstructorRef
+    | typeName                                              #TypeNameRef
     | UNIT                                                  #UnitTypeRef
     ;
 
@@ -85,9 +85,9 @@ expression
     : expression AS type # Cast
     | '{' ws ID ws ':' ws expression ws (','? | (',' ws ID ':' ws expression ws)* ','?) ws '}' # CreateRecord
     | '[' ws expression? ws (',' ws expression ws)* ']' # CreateArray
+    | expression IS type  # IsExpr
     | effectDefinition # EffectDef
     | handleExpression # HandleExpr
-    | expression IS type  # IsExpr
     | 'while' expression block # WhileLoopExpr
     | whenExpression # WhenExpr
     | '(' expression ')' # GroupExpr
