@@ -1,7 +1,9 @@
 package gh.marad.chi.core.compiler
 
 import gh.marad.chi.core.*
+import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.expressionast.ExpressionVisitor
+import gh.marad.chi.core.types.Variable
 
 fun markUsed(terms: List<Expression>) {
     val marker = UsageMarker()
@@ -121,6 +123,11 @@ class UsageMarker : ExpressionVisitor {
 
     override fun visitIs(arg: Is) {
         arg.value.used = arg.used
+        // We allow using 'is' as type inference aid and in this context using type variable is ok
+        // It's not ok when it's result is going to be used
+        if (arg.used && arg.checkedType is Variable) {
+            throw CompilerMessage.from("The 'is' expression cannot check type variables.", arg.sourceSection)
+        }
         visitChildren(arg)
     }
 
