@@ -48,7 +48,7 @@ class EffectConversionsKtDefinitionTest {
         result.parameters shouldHaveSize 1
         result.parameters.first() should {
             it.name shouldBe "t"
-            it.type shouldBe Variable("T", 0)
+            it.type shouldBe Variable("T", 1)
         }
     }
 
@@ -66,7 +66,7 @@ class EffectConversionsKtDefinitionTest {
             .shouldBeTypeOf<EffectDefinition>()
 
         // then
-        val T = Variable("T", 0)
+        val T = Variable("T", 1)
         result.type shouldBe Function(
             listOf(T),
         )

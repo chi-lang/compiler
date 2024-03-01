@@ -29,8 +29,8 @@ class TypeResolvingSpec {
 
     @Test
     fun `should resolve type variables`() {
-        Compiler.resolveType(TypeTable(), listOf("T"), TypeNameRef(null, null, "T", null)) shouldBe Variable("T", 0)
-        Compiler.resolveType(TypeTable(), listOf(), TypeParameterRef("T", null)) shouldBe Variable("T", 0)
+        Compiler.resolveType(TypeTable(), listOf("T"), TypeNameRef(null, null, "T", null)) shouldBe Variable("T", 1)
+        Compiler.resolveType(TypeTable(), listOf(), TypeParameterRef("T", null)) shouldBe Variable("T", 1)
     }
 
     @Test
@@ -67,7 +67,7 @@ class TypeResolvingSpec {
         val result = Compiler.resolveType(TypeTable(), emptyList(), ref)
 
         // then
-        val T = Variable("T", 0)
+        val T = Variable("T", 1)
         result shouldBe Function(
             types = listOf(Type.int, T, Type.float),
         )

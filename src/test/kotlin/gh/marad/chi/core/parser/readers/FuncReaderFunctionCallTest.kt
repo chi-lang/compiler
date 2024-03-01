@@ -28,4 +28,17 @@ class FuncReaderFunctionCallTest {
             it[1].shouldBeLongValue(2)
         }
     }
+
+    @Test
+    fun `additional lambda after function call should be added as the last param`() {
+        val code = "func(5) { a -> a }"
+        val ast = testParse(code)
+
+        ast shouldHaveSize 1
+        val call = ast[0].shouldBeTypeOf<ParseFnCall>()
+        call.arguments should {
+            it shouldHaveSize 2
+            it[1].shouldBeTypeOf<ParseLambda>()
+        }
+    }
 }
