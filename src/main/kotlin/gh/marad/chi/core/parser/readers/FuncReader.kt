@@ -31,15 +31,20 @@ internal object FuncReader {
             section = getSection(source, ctx)
         )
 
-    fun readFnCall(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.FnCallExprContext): ParseAst =
-        ParseFnCall(
+    fun readFnCall(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.FnCallExprContext): ParseAst {
+        val args = ctx.expr_comma_list().expression().map { it.accept(parser) }.toMutableList()
+        if (ctx.lambda() != null) {
+            args.add(readLambda(parser, source, ctx.lambda()))
+        }
+        return ParseFnCall(
             name = ctx.expression().text,
             function = ctx.expression().accept(parser),
             concreteTypeParameters = ctx.callGenericParameters()?.type()
                 ?.map { TypeReader.readTypeRef(parser, source, it) } ?: emptyList(),
-            arguments = ctx.expr_comma_list().expression().map { it.accept(parser) },
+            arguments = args,
             section = getSection(source, ctx)
         )
+    }
 
 }
 

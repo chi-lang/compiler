@@ -91,7 +91,7 @@ expression
     | 'while' expression block # WhileLoopExpr
     | whenExpression # WhenExpr
     | '(' expression ')' # GroupExpr
-    | expression callGenericParameters? '(' expr_comma_list ')' # FnCallExpr
+    | expression callGenericParameters? '(' expr_comma_list ')' lambda? # FnCallExpr
     | receiver=expression ws PERIOD memberName=ID # FieldAccessExpr
     | variable=expression '[' index=expression ']' # IndexOperator
     | func_with_name # FuncWithName
