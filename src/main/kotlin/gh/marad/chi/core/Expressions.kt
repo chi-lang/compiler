@@ -1,10 +1,12 @@
 package gh.marad.chi.core
 
+import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.expressionast.ExpressionVisitor
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.Import
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeId
+import gh.marad.chi.core.types.Variable
 
 sealed interface Expression {
     val sourceSection: ChiSource.Section?
@@ -281,6 +283,11 @@ data class IndexedAssignment(
 
 data class Is(val value: Expression, val checkedType: Type, override val sourceSection: ChiSource.Section?) :
     Expression {
+    init {
+        if (checkedType is Variable) {
+            throw CompilerMessage.from("The 'is' expression cannot check type variables.", sourceSection)
+        }
+    }
     override var type: Type? = null
     override var used: Boolean = false
     override fun accept(visitor: ExpressionVisitor) = visitor.visitIs(this)
