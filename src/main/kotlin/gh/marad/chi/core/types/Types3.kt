@@ -108,11 +108,13 @@ data class Sum(val id: TypeId?, val lhs: Type, val rhs: Type, val typeParams: Li
         fun create(lhs: Type, rhs: Type) = create(null, lhs, rhs)
 
         fun create(id: TypeId?, lhs: Type, rhs: Type, typeParams: List<String> = emptyList()): Type {
-            return if (lhs == rhs) {
-                lhs
-            } else {
-                Sum(id, lhs, rhs, typeParams)
-            }
+            val types = listTypes(lhs) + listTypes(rhs)
+            return types.reduce { a, b -> Sum(id, a, b, typeParams)}
+        }
+
+        fun listTypes(type: Type): Set<Type> = when(type) {
+            is Sum -> listTypes(type.lhs) + listTypes(type.rhs)
+            else -> setOf(type)
         }
     }
 
