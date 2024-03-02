@@ -101,7 +101,8 @@ data class Sum(val id: TypeId?, val lhs: Type, val rhs: Type, val typeParams: Li
     override fun <T> accept(visitor: TypeVisitor<T>): T = visitor.visitSum(this)
     override fun children(): List<Type> = listOf(lhs, rhs)
     override fun typeParams(): List<String> = typeParams
-    override fun toString(): String = "$lhs | $rhs"
+    override fun toString(): String =
+        id?.toString() ?: "$lhs | $rhs"
     override val level: Int = max(lhs.level, rhs.level)
 
     companion object {
