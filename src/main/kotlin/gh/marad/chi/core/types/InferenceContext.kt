@@ -3,12 +3,14 @@ package gh.marad.chi.core.types
 import gh.marad.chi.core.*
 import gh.marad.chi.core.Target
 import gh.marad.chi.core.analyzer.CompilerMessage
+import gh.marad.chi.core.compiler.CompileTables
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.parser.ChiSource
 
 class InferenceContext(
     val pkg: Package,
-    val ns: GlobalCompilationNamespace
+    val ns: GlobalCompilationNamespace,
+    val compileTables: CompileTables
 ) {
     private var nextVariableId = 1
     fun freshVariable(level: Int) = Variable("a${nextVariableId++}", level)
@@ -25,7 +27,7 @@ class InferenceContext(
     }
 
     init {
-        ns.getOrCreatePackage(pkg).symbols.forEach { name, symbol ->
+        compileTables.localSymbolTable.forEach { name, symbol ->
             symbol.type?.let {
                 packageSymbols.define(name, it)
             }
@@ -73,26 +75,28 @@ class InferenceContext(
     }
 
     fun listCurrentPackageFunctionsForType(name: String, type: Type): List<Pair<DotTarget, TypeScheme>> {
-        return packageSymbols.symbols
-            .filter {
-                val symbolType: Type = when(val typeScheme = it.value) {
-                    is PolyType -> typeScheme.body
-                    is Type -> typeScheme
-                }
-                it.key == name && symbolType is Function && symbolType.types.size >= 2 //&& (symbolType.types[0] == type || symbolType.types[0] is Variable)
-                        && run {
-                            try {
-                                unify(listOf(Constraint(symbolType.types.first(), type, null)))
-                                true
-                            } catch (ex: CompilerMessage) {
-                                false
-                            }
+        val symbol = compileTables.localSymbolTable.get(name)
+        return if (symbol?.type != null) {
+            val symbolType: Type = when(val typeScheme = symbol.type) {
+                is PolyType -> typeScheme.body
+                is Type -> typeScheme
+            }
+            val fitsRequirements = symbolType is Function && symbolType.types.size >= 2 && run {
+                try {
+                    unify(listOf(Constraint(symbolType.types.first(), type, null)))
+                    true
+                } catch (ex: CompilerMessage) {
+                    false
                 }
             }
-            .map {
-                DotTarget.PackageFunction(pkg.moduleName, pkg.packageName, name) to it.value
+            if (fitsRequirements) {
+                listOf(DotTarget.PackageFunction(symbol.moduleName, symbol.packageName, symbol.name) to symbolType)
+            } else {
+                emptyList()
             }
-            .toList()
+        } else {
+            emptyList()
+        }
     }
 
     fun listTypesPackageFunctionsForType(name: String, type: Type): List<Pair<DotTarget, TypeScheme>> {

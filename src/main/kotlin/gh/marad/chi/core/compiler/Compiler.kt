@@ -116,7 +116,7 @@ object Compiler {
 
         // infer types
         // ===========
-        val typer = Typer(InferenceContext(packageDefinition, ns))
+        val typer = Typer(InferenceContext(packageDefinition, ns, tables))
         functions.forEach {
             try {
                 val constraints = mutableListOf<Constraint>()
