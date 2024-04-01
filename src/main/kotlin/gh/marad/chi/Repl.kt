@@ -110,8 +110,9 @@ fun main() {
 
     while (true) {
         print("> ")
-        val code = readlnOrNull()?.replace(";", "\n")
-        if (code != null) {
+        val code = readlnOrNull()?.replace(";", "\n")?.trim()
+
+        if (!code.isNullOrBlank()) {
             val luaCode = if (code.trim().startsWith("@")) {
                 code.trimStart(' ', '@')
             } else {
@@ -125,12 +126,12 @@ fun main() {
                         continue
                     }
                     val emitter = LuaEmitter(compilationResult.program)
-                    emitter.emit()
+                    emitter.emit(returnLastValue = true)
                 } catch (ex: Exception) {
                     println("Error: ${ex.message}")
                     continue
                 }
-            }
+            }//.replace(Regex(";+"), ";").trim(' ', ';')
             println("@ $luaCode")
             lua.load(luaCode)
             val status = lua.pCall(0, 1)
@@ -138,8 +139,10 @@ fun main() {
                 val errorMessage = lua.get().toJavaObject()
                 println("Error: $errorMessage")
             } else {
-                val result = lua.get().toJavaObject()
-                println(result)
+                val luaValue = lua.get()
+                val type = luaValue.type().name
+                val result = luaValue.toJavaObject()
+                println("$result : $type")
             }
         }
     }
