@@ -5,6 +5,7 @@ import gh.marad.chi.core.compiler.Compiler
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.types.Type
+import gh.marad.chi.encodeType
 import party.iroiro.luajava.lua54.Lua54
 
 class LuaEmitter(val program: Program) {
@@ -43,7 +44,10 @@ class LuaEmitter(val program: Program) {
             emitCode("$descPath.${it.name}={")
             emitCode("public=${it.public},")
             emitCode("mutable=${it.mutable},")
-            emitCode("type=\"${it.type}\"")
+            val type = it.type
+            if (type != null) {
+                emitCode("type=\"${encodeType(type)}\"")
+            }
             emitCode("};")
         }
     }
