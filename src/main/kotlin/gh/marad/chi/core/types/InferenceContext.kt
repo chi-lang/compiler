@@ -80,6 +80,7 @@ class InferenceContext(
             val symbolType: Type = when(val typeScheme = symbol.type) {
                 is PolyType -> typeScheme.body
                 is Type -> typeScheme
+                null -> TODO()
             }
             val fitsRequirements = symbolType is Function && symbolType.types.size >= 2 && run {
                 try {
