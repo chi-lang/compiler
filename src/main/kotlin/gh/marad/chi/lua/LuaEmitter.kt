@@ -4,6 +4,9 @@ import gh.marad.chi.core.*
 import gh.marad.chi.core.compiler.Compiler
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.Symbol
+import gh.marad.chi.core.types.Array
+import gh.marad.chi.core.types.Function
+import gh.marad.chi.core.types.Record
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.encodeType
 import party.iroiro.luajava.lua54.Lua54
@@ -84,8 +87,8 @@ class LuaEmitter(val program: Program) {
             is InfixOp -> emitInfixOp(term, needResult)
             is PrefixOp -> emitPrefixOp(term, needResult)
             is InterpolatedString -> emitInterpolatedString(term, needResult)
-//            is Is -> TODO()
-//            is WhileLoop -> TODO()
+            is Is -> emitIs(term, needResult)
+            is WhileLoop -> emitWhile(term, needResult)
             is Break -> {
                 emitCode("break")
                 "nil"
@@ -248,7 +251,7 @@ class LuaEmitter(val program: Program) {
                 qualifiedName(term.target.moduleName, term.target.packageName, term.target.name)
             }
         }
-        val valueName = emitExpr(term.value)
+        val valueName = emitExpr(term.value, true)
 
         emitCode(varName)
         emitCode("=")
@@ -259,8 +262,8 @@ class LuaEmitter(val program: Program) {
 
     private fun emitIndexOperator(term: IndexOperator, needResult: Boolean): String {
         return if (needResult) {
-            val variable = emitExpr(term.variable)
-            val index = emitExpr(term.index)
+            val variable = emitExpr(term.variable, true)
+            val index = emitExpr(term.index, true)
             val name = nextTmpName()
             emitCode("local $name=")
             emitCode(variable)
@@ -275,9 +278,9 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitIndexAssignment(term: IndexedAssignment, needResult: Boolean): String {
-        val variable = emitExpr(term.variable)
-        val index = emitExpr(term.index)
-        val value = emitExpr(term.value)
+        val variable = emitExpr(term.variable, true)
+        val index = emitExpr(term.index, true)
+        val value = emitExpr(term.value, true)
 
         emitCode(variable)
         emitCode("[")
@@ -341,7 +344,7 @@ class LuaEmitter(val program: Program) {
         if (needResult) {
             emitCode("local $tmpName;")
         }
-        val condition = emitExpr(term.condition)
+        val condition = emitExpr(term.condition, needResult = true)
         emitCode("if ")
         emitCode(condition)
         emitCode(" then ")
@@ -409,6 +412,43 @@ class LuaEmitter(val program: Program) {
             "nil"
         }
     }
+
+    private fun emitIs(term: Is, needResult: Boolean): String {
+        return if (term.type == term.checkedType) {
+            "true"
+        } else {
+            val value = emitExpr(term.value, true)
+            when (term.checkedType) {
+                Type.float, Type.int -> "type($value) == \"number\""
+                Type.bool -> "type($value) == \"boolean\""
+                Type.string -> "type($value) == \"string\""
+                is Array -> {
+                    TODO()
+                }
+                is Record -> {
+                    TODO()
+                }
+                is Function -> {
+                    TODO()
+                }
+                else -> TODO()
+            }
+        }
+    }
+
+
+    private fun emitWhile(term: WhileLoop, needResult: Boolean): String {
+        val condFunName = nextTmpName()
+        emitCode("local $condFunName = function() ")
+        val result = emitExpr(term.condition, true)
+        emitCode("return $result end;")
+
+        emitCode("while ($condFunName()) do ")
+        emitExpr(term.loop)
+        emitCode("end;")
+        return "nil"
+    }
+
 
     private fun modName(): String =
         program.packageDefinition.moduleName.replace(".", "_")
