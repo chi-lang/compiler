@@ -9,6 +9,7 @@ import gh.marad.chi.core.types.Function
 import gh.marad.chi.core.types.Record
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.encodeType
+import party.iroiro.luajava.Lua
 import party.iroiro.luajava.lua54.Lua54
 
 class LuaEmitter(val program: Program) {
@@ -121,8 +122,8 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitNameDeclaration(term: NameDeclaration, needResult: Boolean): String {
-        val value = emitExpr(term.value, needResult)
-        val name = qualifiedName(term.name)
+        val value = emitExpr(term.value, true)
+        val name = if (inFunction) "local ${term.name}" else qualifiedName(term.name)
         emitCode(name)
         emitCode("=")
         emitCode(value)
@@ -204,18 +205,10 @@ class LuaEmitter(val program: Program) {
 
     private fun emitCreateArray(term: CreateArray, needResult: Boolean): String {
         return if (needResult) {
-            val name = nextTmpName()
-
-            val iter = term.values.iterator()
-            val values = ArrayList<String>(term.values.size)
-            while(iter.hasNext()) {
-                values.add(emitExpr(iter.next(), true))
-            }
-
-            emitCode("local $name = {")
-            emitCode(values.joinToString(","))
-            emitCode("};")
-            name
+            val contents = term.values.map {
+                emitExpr(it, true)
+            }.joinToString(",")
+            return "{$contents}"
         } else {
             "nil"
         }
@@ -223,20 +216,13 @@ class LuaEmitter(val program: Program) {
 
     private fun emitCreateRecord(term: CreateRecord, needResult: Boolean): String {
         return if (needResult) {
-            val name = nextTmpName()
 
-            val iter = term.fields.iterator()
-            val items = ArrayList<String>(term.fields.size)
-            while(iter.hasNext()) {
-                val field = iter.next()
-                val resultName = emitExpr(field.value, true)
-                items.add("${field.name}=$resultName")
-            }
+            val contents = term.fields.map {
+                val value = emitExpr(it.value, true)
+                "${it.name}=$value"
+            }.joinToString(",")
 
-            emitCode("local $name={")
-            emitCode(items.joinToString(","))
-            emitCode("};")
-            name
+            return "{$contents}"
         } else {
             "nil"
         }
@@ -245,7 +231,11 @@ class LuaEmitter(val program: Program) {
     private fun emitAssignment(term: Assignment, needResult: Boolean): String {
         val varName = when(term.target) {
             is LocalSymbol -> {
-                qualifiedName(term.target.name)
+                if (inFunction) {
+                    term.target.name
+                } else {
+                    qualifiedName(term.target.name)
+                }
             }
             is PackageSymbol -> {
                 qualifiedName(term.target.moduleName, term.target.packageName, term.target.name)
@@ -369,18 +359,10 @@ class LuaEmitter(val program: Program) {
 
     private fun emitInfixOp(term: InfixOp, needResult: Boolean): String {
         return if (needResult) {
-            val leftVar = emitExpr(term.left)
-            val rightVar = emitExpr(term.right)
+            val leftVar = emitExpr(term.left, true)
+            val rightVar = emitExpr(term.right, true)
 
-            val resultName = nextTmpName()
-            emitCode("local $resultName=")
-            emitCode(leftVar)
-            emitCode(" ")
-            emitCode(term.op)
-            emitCode(" ")
-            emitCode(rightVar)
-            emitCode(";")
-            resultName
+            return "($leftVar ${term.op} $rightVar)"
         } else {
             "nil"
         }
@@ -388,7 +370,7 @@ class LuaEmitter(val program: Program) {
 
     private fun emitPrefixOp(term: PrefixOp, needResult: Boolean): String {
         return if (needResult) {
-            val valueVar = emitExpr(term.expr)
+            val valueVar = emitExpr(term.expr, true)
             val resultName = nextTmpName()
             emitCode("local $resultName=")
             emitCode(term.op)
@@ -512,5 +494,28 @@ fun main() {
 
     val lua = Lua54()
     lua.openLibraries()
-    lua.execute(luaCode)
+    lua.register("chi_println") {
+        val arg = it.get().toJavaObject()
+        println(arg)
+        0
+    }
+
+    lua.run("""
+        chi = { 
+            std = { 
+                lang = { 
+                    _package = {
+                        println = { public=true, mutable=false, type='${encodeType(Type.fn(Type.any, Type.unit))}' }
+                    },
+                    println = chi_println,
+                } 
+            },
+            user = { default = { _package = {  }, print = chi_println } }
+        }
+    """.trimIndent())
+
+    val status = lua.run(luaCode)
+    if (status != Lua.LuaError.OK) {
+        println(lua.get().toJavaObject())
+    }
 }
