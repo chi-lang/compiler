@@ -486,6 +486,11 @@ fun main() {
         val id = { i -> i }
         print(id(5))
         print("hello ${'$'}s")
+        var i = 0
+        while i < 5 {
+            print(i)
+            i += 1
+        }
     """.trimIndent()
     val result = Compiler.compile(code, ns)
     val emitter = LuaEmitter(result.program)
