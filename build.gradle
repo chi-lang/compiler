@@ -4,6 +4,7 @@ plugins {
     id 'distribution'
     id 'antlr'
     id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id("pl.allegro.tech.build.axion-release") version "1.15.4"
 }
 
@@ -85,4 +86,8 @@ compileTestKotlin {
 
 sourcesJar {
     dependsOn(generateGrammarSource)
+}
+
+shadowJar {
+    archiveFileName = "chi-all.jar"
 }
