@@ -8,7 +8,7 @@ import gh.marad.chi.core.types.Array
 import gh.marad.chi.core.types.Function
 import gh.marad.chi.core.types.Record
 import gh.marad.chi.core.types.Type
-import gh.marad.chi.encodeType
+import gh.marad.chi.runtime.TypeWriter.encodeType
 import party.iroiro.luajava.Lua
 import party.iroiro.luajava.lua54.Lua54
 
@@ -50,11 +50,24 @@ class LuaEmitter(val program: Program) {
     private fun emitPackageInfo() {
         val descPath = "${generateModuleName(program.packageDefinition.moduleName, program.packageDefinition.packageName)}._package"
         val iter = program.expressions.filterIsInstance<NameDeclaration>().iterator()
+
         while(iter.hasNext()) {
             val it = iter.next()
             emitCode("$descPath.${it.name}={")
             emitCode("public=${it.public},")
             emitCode("mutable=${it.mutable},")
+            val type = it.type
+            if (type != null) {
+                emitCode("type=\"${encodeType(type)}\"")
+            }
+            emitCode("};")
+        }
+        val effects = program.expressions.filterIsInstance<EffectDefinition>().iterator()
+        while (effects.hasNext()) {
+            val it = effects.next()
+            emitCode("$descPath.${it.name}={")
+            emitCode("public=${it.public},")
+            emitCode("mutable=false,")
             val type = it.type
             if (type != null) {
                 emitCode("type=\"${encodeType(type)}\"")
@@ -102,11 +115,56 @@ class LuaEmitter(val program: Program) {
                 emitCode("return")
                 "nil"
             }
-//            is Handle -> TODO()
-//            is EffectDefinition -> TODO()
+            is Handle -> {
+                val tmpName = nextTmpName()
+
+                emitCode("local ${tmpName}_handlers={")
+                val iter = term.cases.iterator()
+                while (iter.hasNext()) {
+                    val case = iter.next()
+                    val name = normaliseEffectName(qualifiedName(case.moduleName, case.packageName, case.effectName))
+                    emitCode(name)
+                    emitCode("=function(args) ")
+                    emitCode("local function resume(x) return false, x end;")
+                    case.argumentNames.forEachIndexed { index, name ->
+                        emitCode("local $name=args[${index+1}];")
+                    }
+
+                    insideFunction {
+                        val result = emitExpr(case.body, needResult = true)
+                        emitCode("return $result")
+                    }
+                    emitCode(" end")
+                    if (iter.hasNext()) {
+                        emitCode(",")
+                    }
+                }
+                emitCode("};")
+
+                emitCode("local ${tmpName}_body=coroutine.create(function() ")
+                val result = emitExpr(term.body, needResult = true)
+                emitCode("return $result;")
+                emitCode(" end);")
+                emitCode("local ${tmpName}=chi_handle_effect(${tmpName}_body,{},${tmpName}_handlers);")
+                tmpName
+            }
+            is EffectDefinition -> {
+                val name = qualifiedName(term.moduleName, term.packageName, term.name)
+                emitCode("function ")
+                emitCode(name)
+                emitCode("(...) return coroutine.yield(\"")
+                emitCode(normaliseEffectName(name))
+                emitCode("\", {...})")
+                emitCode(" end;")
+                "nil"
+            }
             else -> TODO("Term $term not supported yet!")
         }
     }
+
+
+    private fun normaliseEffectName(name: String): String =
+        name.replace(".", "_")
 
 
     private fun emitAtom(term: Atom, needResult: Boolean): String {
@@ -187,20 +245,13 @@ class LuaEmitter(val program: Program) {
                 } else {
                     qualifiedName(target.name)
                 }
-//                emitCode(name)
             }
             is PackageSymbol -> {
                 qualifiedName(
                     target.moduleName, target.packageName, target.name
                 )
-//                emitCode(
-//                    qualifiedName(
-//                        target.moduleName, target.packageName, target.name
-//                    )
-//                )
             }
         }
-
     }
 
     private fun emitCreateArray(term: CreateArray, needResult: Boolean): String {
@@ -456,6 +507,15 @@ class LuaEmitter(val program: Program) {
             name)
 
 }
+
+// TODO:
+//  - add tests for each of the expressions (compile and run)
+//  - figure out how to redirect IO from/to Lua
+//  - implement effects with coroutines
+//  - remove the 'main' below
+//  - cleanup REPL
+//  - create launcher to launch either the REPL or script
+//  - compile the launcher to native image
 
 fun main() {
     val ns = GlobalCompilationNamespace()

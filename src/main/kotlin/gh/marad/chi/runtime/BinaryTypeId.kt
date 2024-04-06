@@ -1,4 +1,4 @@
-package gh.marad.chi
+package gh.marad.chi.runtime
 
 enum class BinaryTypeId {
     Any,

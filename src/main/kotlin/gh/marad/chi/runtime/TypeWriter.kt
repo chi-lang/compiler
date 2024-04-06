@@ -1,4 +1,4 @@
-package gh.marad.chi
+package gh.marad.chi.runtime
 
 import gh.marad.chi.core.TypeAlias
 import gh.marad.chi.core.types.*
@@ -9,12 +9,23 @@ import gh.marad.chi.core.types.Type.Companion.float
 import gh.marad.chi.core.types.Type.Companion.int
 import gh.marad.chi.core.types.Type.Companion.string
 import gh.marad.chi.core.types.Type.Companion.unit
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.io.IOException
+import java.io.*
 import java.util.*
 
 object TypeWriter {
+
+    fun decodeType(spec: String): Type {
+        val byteArray = Base64.getDecoder().decode(spec)
+        return readType(DataInputStream(ByteArrayInputStream(byteArray)))
+    }
+
+    fun encodeType(type: Type): String {
+        val baos = ByteArrayOutputStream()
+        writeType(type, DataOutputStream(baos))
+        return Base64.getEncoder().encodeToString(baos.toByteArray())
+    }
+
+
     @Throws(IOException::class)
     fun writeTypeAlias(typeAlias: TypeAlias, stream: DataOutputStream) {
         stream.writeUTF(typeAlias.typeId.moduleName)

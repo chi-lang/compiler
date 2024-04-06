@@ -34,7 +34,7 @@ publishing {
 }
 
 application {
-    mainClass = 'gh.marad.chi.ReplKt'
+    mainClass = 'gh.marad.chi.MainKt'
 }
 
 run {
@@ -48,7 +48,7 @@ repositories {
 
 dependencies {
     antlr "org.antlr:antlr4:4.12.0"
-    implementation 'org.jgrapht:jgrapht-core:1.5.1'
+//    implementation 'org.jgrapht:jgrapht-core:1.5.1'
 //    implementation 'party.iroiro.luajava:luajit:3.5.0'
 //    runtimeOnly 'party.iroiro.luajava:luajit-platform:3.5.0:natives-desktop'
     implementation 'party.iroiro.luajava:luajava:3.5.0'
@@ -68,14 +68,14 @@ generateGrammarSource {
 }
 
 compileJava {
-    sourceCompatibility = JavaVersion.VERSION_1_9
-    targetCompatibility = JavaVersion.VERSION_1_9
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 compileKotlin {
     dependsOn(generateGrammarSource)
     kotlinOptions {
-        jvmTarget = '9'
+        jvmTarget = '11'
     }
 }
 
