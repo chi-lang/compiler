@@ -168,7 +168,7 @@ class LuaEmitter(val program: Program) {
 
 
     private fun emitAtom(term: Atom, needResult: Boolean): String {
-        return if (term.type == Type.string) {
+        val value = if (term.type == Type.string) {
 //            emitCode("\"")
 //            emitCode(term.value)
 //            emitCode("\"")
@@ -177,6 +177,7 @@ class LuaEmitter(val program: Program) {
 //            emitCode(term.value)
             term.value
         }
+        return "($value)"
     }
 
     private fun emitNameDeclaration(term: NameDeclaration, needResult: Boolean): String {
@@ -255,28 +256,19 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitCreateArray(term: CreateArray, needResult: Boolean): String {
-        return if (needResult) {
-            val contents = term.values.map {
-                emitExpr(it, true)
-            }.joinToString(",")
-            return "{$contents}"
-        } else {
-            "nil"
-        }
+        val contents = term.values.map {
+            emitExpr(it, true)
+        }.joinToString(",")
+        return "({$contents})"
     }
 
     private fun emitCreateRecord(term: CreateRecord, needResult: Boolean): String {
-        return if (needResult) {
+        val contents = term.fields.map {
+            val value = emitExpr(it.value, true)
+            "${it.name}=$value"
+        }.joinToString(",")
 
-            val contents = term.fields.map {
-                val value = emitExpr(it.value, true)
-                "${it.name}=$value"
-            }.joinToString(",")
-
-            return "{$contents}"
-        } else {
-            "nil"
-        }
+        return "({$contents})"
     }
 
     private fun emitAssignment(term: Assignment, needResult: Boolean): String {
@@ -302,20 +294,16 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitIndexOperator(term: IndexOperator, needResult: Boolean): String {
-        return if (needResult) {
-            val variable = emitExpr(term.variable, true)
-            val index = emitExpr(term.index, true)
-            val name = nextTmpName()
-            emitCode("local $name=")
-            emitCode(variable)
-            emitCode("[")
-            emitCode(index)
-            emitCode("+1")
-            emitCode("];")
-            name
-        } else {
-            "nil"
-        }
+        val variable = emitExpr(term.variable, true)
+        val index = emitExpr(term.index, true)
+        val name = nextTmpName()
+        emitCode("local $name=")
+        emitCode(variable)
+        emitCode("[")
+        emitCode(index)
+        emitCode("+1")
+        emitCode("];")
+        return name
     }
 
     private fun emitIndexAssignment(term: IndexedAssignment, needResult: Boolean): String {
@@ -409,41 +397,37 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitInfixOp(term: InfixOp, needResult: Boolean): String {
-        return if (needResult) {
-            val leftVar = emitExpr(term.left, true)
-            val rightVar = emitExpr(term.right, true)
+        val leftVar = emitExpr(term.left, true)
+        val rightVar = emitExpr(term.right, true)
 
-            return "($leftVar ${term.op} $rightVar)"
-        } else {
-            "nil"
-        }
+        val op = if (term.left.type == Type.string) {
+            ".."
+        } else term.op
+
+        return "($leftVar $op $rightVar)"
     }
 
     private fun emitPrefixOp(term: PrefixOp, needResult: Boolean): String {
-        return if (needResult) {
-            val valueVar = emitExpr(term.expr, true)
-            val resultName = nextTmpName()
-            emitCode("local $resultName=")
-            emitCode(term.op)
-            emitCode(valueVar)
-            emitCode(";")
-            resultName
-        } else {
-            "nil"
+        val valueVar = emitExpr(term.expr, true)
+        val resultName = nextTmpName()
+        emitCode("local $resultName=")
+        val op = when (term.op) {
+            "!" -> "not "
+            else -> TODO("Unsupported prefix operator: ${term.op}")
         }
+        emitCode(op)
+        emitCode(valueVar)
+        emitCode(";")
+        return resultName
     }
 
     private fun emitInterpolatedString(term: InterpolatedString, needResult: Boolean): String {
-        return if (needResult) {
-            val partVars = term.parts.map { emitExpr(it, needResult = true) }
-            val resultName = nextTmpName()
-            emitCode("local $resultName=")
-            emitCode(partVars.joinToString(" .. "))
-            emitCode(";")
-            resultName
-        } else {
-            "nil"
-        }
+        val partVars = term.parts.map { emitExpr(it, needResult = true) }
+        val resultName = nextTmpName()
+        emitCode("local $resultName=")
+        emitCode(partVars.joinToString(" .. "))
+        emitCode(";")
+        return resultName
     }
 
     private fun emitIs(term: Is, needResult: Boolean): String {
