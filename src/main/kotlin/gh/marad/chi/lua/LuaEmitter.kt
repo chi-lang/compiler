@@ -1,16 +1,11 @@
 package gh.marad.chi.lua
 
 import gh.marad.chi.core.*
-import gh.marad.chi.core.compiler.Compiler
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.types.Array
 import gh.marad.chi.core.types.Function
 import gh.marad.chi.core.types.Record
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.runtime.TypeWriter.encodeType
-import party.iroiro.luajava.Lua
-import party.iroiro.luajava.lua54.Lua54
 
 class LuaEmitter(val program: Program) {
     private var sb = StringBuilder()
@@ -490,81 +485,4 @@ class LuaEmitter(val program: Program) {
             program.packageDefinition.packageName,
             name)
 
-}
-
-// TODO:
-//  - add tests for each of the expressions (compile and run)
-//  - figure out how to redirect IO from/to Lua
-//  - implement effects with coroutines
-//  - remove the 'main' below
-//  - cleanup REPL
-//  - create launcher to launch either the REPL or script
-//  - compile the launcher to native image
-
-fun main() {
-    val ns = GlobalCompilationNamespace()
-    ns.getDefaultPackage().symbols.add(Symbol(
-        "user", "default",
-        "print", Type.fn(Type.any, Type.unit),
-        true, false
-    ))
-    val code = """
-        val a = [1, 2, 3]
-        fn hello() {
-            val x = 6
-            x = 2
-            print(x)
-        }
-        hello()
-        a[2] = 10
-        print(a[2])
-        val t = {a: 10, b: 12}
-        t.b = 88
-        print(t.b)
-        if true { print(1) } else { print(2) }
-        if true { 1 } else { 2 }
-        print(123)
-        val s = 4 + t.b
-        print(s)
-        print(-10)
-        val id = { i -> i }
-        print(id(5))
-        print("hello ${'$'}s")
-        var i = 0
-        while i < 5 {
-            print(i)
-            i += 1
-        }
-    """.trimIndent()
-    val result = Compiler.compile(code, ns)
-    val emitter = LuaEmitter(result.program)
-    val luaCode = emitter.emit()
-    println(luaCode)
-
-    val lua = Lua54()
-    lua.openLibraries()
-    lua.register("chi_println") {
-        val arg = it.get().toJavaObject()
-        println(arg)
-        0
-    }
-
-    lua.run("""
-        chi = { 
-            std = { 
-                lang = { 
-                    _package = {
-                        println = { public=true, mutable=false, type='${encodeType(Type.fn(Type.any, Type.unit))}' }
-                    },
-                    println = chi_println,
-                } 
-            },
-            user = { default = { _package = {  }, print = chi_println } }
-        }
-    """.trimIndent())
-
-    val status = lua.run(luaCode)
-    if (status != Lua.LuaError.OK) {
-        println(lua.get().toJavaObject())
-    }
 }
