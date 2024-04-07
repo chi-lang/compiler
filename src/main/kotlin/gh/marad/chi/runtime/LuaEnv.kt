@@ -5,17 +5,23 @@ import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.PreludeImport
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.Variable
 import gh.marad.chi.lua.LuaEmitter
+import gh.marad.chi.lua.formatLuaCode
 import gh.marad.chi.runtime.TypeWriter.decodeType
 import gh.marad.chi.runtime.TypeWriter.encodeType
 import party.iroiro.luajava.Lua
 import party.iroiro.luajava.lua54.Lua54
 import party.iroiro.luajava.value.LuaValue
+import java.nio.ByteBuffer
 
 class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
     val lua = Lua54().also { init(it) }
 
-    fun eval(code: String): Boolean {
+    class LuaException(message: String) : RuntimeException(message)
+
+    fun eval(code: String, fileName: String? = null,
+             dontEvalOnlyShowLuaCode: Boolean = false): Boolean {
         val ns = buildGlobalCompilationNamespace()
         val compilationResult = Compiler.compile(code, ns)
         if (compilationResult.hasErrors()) {
@@ -25,14 +31,20 @@ class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
             return false
         }
         val emitter = LuaEmitter(compilationResult.program)
-        lua.load(emitter.emit(returnLastValue = true))
-        val status = lua.pCall(0, 1)
-        return if (status != Lua.LuaError.OK) {
-            val errorMessage = lua.get().toJavaObject()
-            println("Error: $errorMessage")
-            false
-        } else {
+        val luaCode = emitter.emit(returnLastValue = true)
+        return if (dontEvalOnlyShowLuaCode) {
+            println(formatLuaCode(luaCode))
             true
+        } else {
+            lua.load(luaCode)
+            val status = lua.pCall(0, 1)
+            if (status != Lua.LuaError.OK) {
+                val errorMessage = lua.get().toJavaObject()
+                println("Error: $errorMessage")
+                false
+            } else {
+                true
+            }
         }
     }
 
@@ -141,6 +153,20 @@ class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
 
     fun buildGlobalCompilationNamespace(): GlobalCompilationNamespace {
         val ns = GlobalCompilationNamespace(prelude)
+
+        ns.getOrCreatePackage("std", "lang").symbols.add(
+            Symbol("std", "lang", "embedLua",
+                Type.fn(Type.string, Variable("t@embedLua", 1)),
+                public = true, mutable = false)
+        )
+
+        ns.getOrCreatePackage("std", "lang").symbols.add(
+            Symbol("std", "lang", "luaExpr",
+                Type.fn(Type.string, Variable("t@luaExpr", 1)),
+                public = true, mutable = false)
+        )
+
+
         val modules = luaListChildren(lua, "chi")
         modules.forEach { (moduleName, _) ->
             val packages = luaListChildren(lua, "chi.$moduleName")

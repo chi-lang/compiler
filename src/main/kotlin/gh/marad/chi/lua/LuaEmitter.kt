@@ -202,25 +202,46 @@ class LuaEmitter(val program: Program) {
         return tmpName
     }
 
+    private val embedLuaTarget = PackageSymbol("std", "lang", "embedLua")
+    private val luaExprTarget = PackageSymbol("std", "lang", "luaExpr")
     private fun emitFnCall(term: FnCall, needResult: Boolean): String {
-        val fnName = emitExpr(term.function, true)
+        val function = term.function
+        if (function is VariableAccess && function.target == embedLuaTarget) {
+            val codeParam = term.parameters.first()
+            if (codeParam is Atom && codeParam.type == Type.string) {
+                val luaCode = codeParam.value.replace("\n", ";")
+                emitCode("$luaCode;")
+                return "nil"
+            } else {
+                TODO("embedLua function requires string parameter verbatim (not a variable)")
+            }
+        } else if (function is VariableAccess && function.target == luaExprTarget) {
+            val codeParam = term.parameters.first()
+            if (codeParam is Atom && codeParam.type == Type.string) {
+                val luaCode = codeParam.value.replace("\n", ";")
+                return luaCode
+            } else {
+                TODO("luaExpr function requires string parameter verbatim (not a variable)")
+            }
+        } else {
+            val fnName = emitExpr(term.function, true)
+            val iter = term.parameters.iterator()
+            val params = ArrayList<String>(term.parameters.size)
+            while (iter.hasNext()) {
+                params.add(emitExpr(iter.next(), true))
+            }
 
-        val iter = term.parameters.iterator()
-        val params = ArrayList<String>(term.parameters.size)
-        while(iter.hasNext()) {
-            params.add(emitExpr(iter.next(), true))
+
+            val tmpName = nextTmpName()
+            if (needResult) {
+                emitCode("local $tmpName=")
+            }
+            emitCode(fnName)
+            emitCode("(")
+            emitCode(params.joinToString(","))
+            emitCode(");")
+            return tmpName
         }
-
-
-        val tmpName = nextTmpName()
-        if (needResult) {
-            emitCode("local $tmpName=")
-        }
-        emitCode(fnName)
-        emitCode("(")
-        emitCode(params.joinToString(","))
-        emitCode(");")
-        return tmpName
     }
 
     private fun emitBlock(term: Block, needResult: Boolean): String {
