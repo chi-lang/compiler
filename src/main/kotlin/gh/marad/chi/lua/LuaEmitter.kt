@@ -167,6 +167,7 @@ class LuaEmitter(val program: Program) {
 //            emitCode("\"")
 //            emitCode(term.value)
 //            emitCode("\"")
+            // TODO: this should escape all the escaped codes like \n, ...
             "\"${term.value}\""
         } else {
 //            emitCode(term.value)
@@ -416,9 +417,15 @@ class LuaEmitter(val program: Program) {
         val leftVar = emitExpr(term.left, true)
         val rightVar = emitExpr(term.right, true)
 
-        val op = if (term.left.type == Type.string) {
-            ".."
-        } else term.op
+        val op = when (term.op) {
+            "!=" -> "~="
+            "&&" -> "and"
+            "||" -> "or"
+            "+" -> if (term.left.type == Type.string) {
+                ".."
+            } else term.op
+            else -> term.op
+        }
 
         return "($leftVar $op $rightVar)"
     }

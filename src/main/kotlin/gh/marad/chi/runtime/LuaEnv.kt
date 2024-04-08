@@ -1,38 +1,24 @@
 package gh.marad.chi.runtime
 
-import gh.marad.chi.core.compiler.Compiler
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.PreludeImport
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.Variable
-import gh.marad.chi.lua.LuaEmitter
 import gh.marad.chi.lua.formatLuaCode
 import gh.marad.chi.runtime.TypeWriter.decodeType
 import gh.marad.chi.runtime.TypeWriter.encodeType
 import party.iroiro.luajava.Lua
 import party.iroiro.luajava.lua54.Lua54
 import party.iroiro.luajava.value.LuaValue
-import java.nio.ByteBuffer
 
 class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
     val lua = Lua54().also { init(it) }
 
-    class LuaException(message: String) : RuntimeException(message)
-
-    fun eval(code: String, fileName: String? = null,
-             dontEvalOnlyShowLuaCode: Boolean = false): Boolean {
-        val ns = buildGlobalCompilationNamespace()
-        val compilationResult = Compiler.compile(code, ns)
-        if (compilationResult.hasErrors()) {
-            compilationResult.messages.forEach { message ->
-                println(Compiler.formatCompilationMessage(code, message))
-            }
-            return false
-        }
-        val emitter = LuaEmitter(compilationResult.program)
-        val luaCode = emitter.emit(returnLastValue = true)
-        return if (dontEvalOnlyShowLuaCode) {
+    fun eval(code: String, dontEvalOnlyShowLuaCode: Boolean = false): Boolean {
+        val luaCode = LuaCompiler(this).compileToLua(code, LuaCompiler.ErrorStrategy.PRINT)
+            ?: return false
+        return if (dontEvalOnlyShowLuaCode ) {
             println(formatLuaCode(luaCode))
             true
         } else {
@@ -59,17 +45,12 @@ class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
 
         lua.register("chi_compile") {
             val code = it.get().toJavaObject() as String
-            val ns = buildGlobalCompilationNamespace()
-            val compilationResult = Compiler.compile(code, ns)
-            if (compilationResult.hasErrors()) {
-                compilationResult.messages.forEach { message ->
-                    println(Compiler.formatCompilationMessage(code, message))
-                }
+            val luaCode = LuaCompiler(this).compileToLua(code, LuaCompiler.ErrorStrategy.PRINT)
+            if (luaCode == null) {
                 it.pushNil()
                 return@register 1
             }
-            val emitter = LuaEmitter(compilationResult.program)
-            it.push(emitter.emit(returnLastValue = true))
+            it.push(luaCode)
             1
         }
 
@@ -129,12 +110,12 @@ class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
 
     fun luaListChildren(lua: Lua, symbol: String): List<Pair<String, LuaValue>> {
         val env = lua.execute("""
-        local x = {}
-        for k, v in pairs($symbol) do
-            table.insert(x, {k, v})
-        end
-        return x
-    """.trimIndent()) ?: return emptyList()
+            local x = {}
+            for k, v in pairs($symbol) do
+                table.insert(x, {k, v})
+            end
+            return x
+        """.trimIndent()) ?: return emptyList()
 
         val data = env[0]
         var i = 1
