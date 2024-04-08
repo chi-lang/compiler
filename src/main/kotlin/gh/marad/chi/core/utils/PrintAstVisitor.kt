@@ -27,7 +27,7 @@ fun showAst(exprs: List<Expression>): String {
     return visitor.toString().trim()
 }
 
-class PrintAstVisitor : ExpressionVisitor {
+class PrintAstVisitor : ExpressionVisitor<Unit> {
     var indent = ""
     val sb = StringBuilder()
 

@@ -26,12 +26,12 @@ sealed  interface Type : TypeScheme {
     fun typeParams(): List<String>
 
     companion object {
-        @JvmStatic val any = Primitive(TypeId("std", "lang.types.any", "any"))
-        @JvmStatic val unit = Primitive(TypeId("std", "lang.types.unit", "unit"))
-        @JvmStatic val bool = Primitive(TypeId("std", "lang.types.bool", "bool"))
-        @JvmStatic val int = Primitive(TypeId("std", "lang.types.int", "int"))
-        @JvmStatic val float = Primitive(TypeId("std", "lang.types.float", "float"))
-        @JvmStatic val string = Primitive(TypeId("std", "lang.types.string", "string"))
+        @JvmStatic val any = Primitive(TypeId("std", "lang.any", "any"))
+        @JvmStatic val unit = Primitive(TypeId("std", "lang.unit", "unit"))
+        @JvmStatic val bool = Primitive(TypeId("std", "lang.bool", "bool"))
+        @JvmStatic val int = Primitive(TypeId("std", "lang.int", "int"))
+        @JvmStatic val float = Primitive(TypeId("std", "lang.float", "float"))
+        @JvmStatic val string = Primitive(TypeId("std", "lang.string", "string"))
 
         @JvmStatic fun fn(vararg types: Type) = Function(types.toList())
         @JvmStatic fun record(vararg fields: Pair<String, Type>): Record = Record(null, fields.map { Record.Field(it.first, it.second) })
@@ -127,7 +127,7 @@ data class Array(val elementType: Type, val typeParams: List<String> = emptyList
     override fun children(): List<Type> = listOf(elementType)
     override fun typeParams(): List<String> = typeParams
     override fun toString(): String = "array[$elementType]"
-    override fun getTypeId(): TypeId = TypeId("std", "lang.types.array", "array")
+    override fun getTypeId(): TypeId = TypeId("std", "lang.array", "array")
     override val level: Int = elementType.level
 }
 

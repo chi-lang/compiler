@@ -2,7 +2,7 @@ package gh.marad.chi.core.expressionast
 
 import gh.marad.chi.core.*
 
-interface DefaultExpressionVisitor : ExpressionVisitor {
+interface DefaultExpressionVisitor : ExpressionVisitor<Unit> {
     fun visitAll(exprs: List<Expression>) = exprs.forEach(this::visit)
     override fun visit(expr: Expression) = expr.accept(this)
 

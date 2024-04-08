@@ -2,31 +2,31 @@ package gh.marad.chi.core.expressionast
 
 import gh.marad.chi.core.*
 
-interface ExpressionVisitor {
-    fun visit(expr: Expression)
-    fun visitAtom(atom: Atom)
-    fun visitInterpolatedString(interpolatedString: InterpolatedString)
-    fun visitVariableAccess(variableAccess: VariableAccess)
-    fun visitFieldAccess(fieldAccess: FieldAccess)
-    fun visitFieldAssignment(fieldAssignment: FieldAssignment)
-    fun visitAssignment(assignment: Assignment)
-    fun visitNameDeclaration(nameDeclaration: NameDeclaration)
-    fun visitFn(fn: Fn)
-    fun visitBlock(block: Block)
-    fun visitFnCall(fnCall: FnCall)
-    fun visitIfElse(ifElse: IfElse)
-    fun visitInfixOp(infixOp: InfixOp)
-    fun visitPrefixOp(prefixOp: PrefixOp)
-    fun visitCast(cast: Cast)
-    fun visitWhileLoop(whileLoop: WhileLoop)
-    fun visitBreak(arg: Break)
-    fun visitContinue(arg: Continue)
-    fun visitIndexOperator(indexOperator: IndexOperator)
-    fun visitIndexedAssignment(indexedAssignment: IndexedAssignment)
-    fun visitIs(arg: Is)
-    fun visitEffectDefinition(effectDefinition: EffectDefinition)
-    fun visitHandle(handle: Handle)
-    fun visitReturn(arg: Return)
-    fun visitCreateRecord(createRecord: CreateRecord)
-    fun visitCreateArray(createArray: CreateArray)
+interface ExpressionVisitor<T> {
+    fun visit(expr: Expression): T
+    fun visitAtom(atom: Atom): T
+    fun visitInterpolatedString(interpolatedString: InterpolatedString): T
+    fun visitVariableAccess(variableAccess: VariableAccess): T
+    fun visitFieldAccess(fieldAccess: FieldAccess): T
+    fun visitFieldAssignment(fieldAssignment: FieldAssignment): T
+    fun visitAssignment(assignment: Assignment): T
+    fun visitNameDeclaration(nameDeclaration: NameDeclaration): T
+    fun visitFn(fn: Fn): T
+    fun visitBlock(block: Block): T
+    fun visitFnCall(fnCall: FnCall): T
+    fun visitIfElse(ifElse: IfElse): T
+    fun visitInfixOp(infixOp: InfixOp): T
+    fun visitPrefixOp(prefixOp: PrefixOp): T
+    fun visitCast(cast: Cast): T
+    fun visitWhileLoop(whileLoop: WhileLoop): T
+    fun visitBreak(arg: Break): T
+    fun visitContinue(arg: Continue): T
+    fun visitIndexOperator(indexOperator: IndexOperator): T
+    fun visitIndexedAssignment(indexedAssignment: IndexedAssignment): T
+    fun visitIs(arg: Is): T
+    fun visitEffectDefinition(effectDefinition: EffectDefinition): T
+    fun visitHandle(handle: Handle): T
+    fun visitReturn(arg: Return): T
+    fun visitCreateRecord(createRecord: CreateRecord): T
+    fun visitCreateArray(createArray: CreateArray): T
 }

@@ -10,7 +10,7 @@ fun markUsed(terms: List<Expression>) {
     terms.forEach { marker.visit(it) }
 }
 
-class UsageMarker : ExpressionVisitor {
+class UsageMarker : ExpressionVisitor<Unit> {
     override fun visitCreateRecord(createRecord: CreateRecord) {
         if (createRecord.used) {
             createRecord.fields.forEach { it.value.used = true }
