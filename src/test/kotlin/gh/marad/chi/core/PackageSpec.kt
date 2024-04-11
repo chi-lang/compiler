@@ -5,8 +5,9 @@ import gh.marad.chi.core.analyzer.InvalidModuleName
 import gh.marad.chi.core.analyzer.InvalidPackageName
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.messages
-import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -26,11 +27,14 @@ class PackageSpec {
         )
 
         // then
-        val targetSymbolTable = namespace.getOrCreatePackage("my.module", "some.system").symbols
-        targetSymbolTable.hasSymbol("millis").shouldBeTrue()
+        namespace.getSymbol("my.module", "some.system", "millis")
+            .shouldNotBeNull()
 
-        val defaultSymbolTable = namespace.getDefaultPackage().symbols
-        defaultSymbolTable.hasSymbol("millis") shouldBe false
+        namespace.getSymbol(
+            CompilationDefaults.defaultModule,
+            CompilationDefaults.defaultPacakge,
+            "millis")
+            .shouldBeNull()
     }
 
     @Test

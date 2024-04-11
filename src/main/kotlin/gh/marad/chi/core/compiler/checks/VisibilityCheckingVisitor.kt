@@ -25,8 +25,10 @@ class VisibilityCheckingVisitor(
         when(variableAccess.target) {
             is LocalSymbol -> {} // local symbols can be accessed normally
             is PackageSymbol -> {
-                val symbol = ns.getOrCreatePackage(variableAccess.target.moduleName, variableAccess.target.packageName)
-                    .getSymbol(variableAccess.target.name)
+                val symbol = ns.getSymbol(
+                    variableAccess.target.moduleName,
+                    variableAccess.target.packageName,
+                    variableAccess.target.name)
                 if (variableAccess.target.moduleName != currentModule && symbol?.public == false) {
                     messages.add(CannotAccessInternalName(
                         variableAccess.target.toString(),
