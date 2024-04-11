@@ -12,7 +12,7 @@ class RealLifeCodeTest {
         val ns = GlobalCompilationNamespace()
         compile(
             """
-                package std/lang.types.array
+                package std/lang.array
                 pub fn add[T](arr: array[T]) {}
             """.trimIndent(),
             ns
