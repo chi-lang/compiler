@@ -16,21 +16,21 @@ class InferenceContext(
     fun freshVariable(level: Int) = Variable("a${nextVariableId++}", level)
 
 
-    private val packageSymbols = LocalSymbols()
+    private val packageSymbols = LocalSymbols(compileTables = compileTables)
     private var localSymbols: LocalSymbols = packageSymbols
-    class LocalSymbols(val parent: LocalSymbols? = null) {
+    class LocalSymbols(val parent: LocalSymbols? = null, val compileTables: CompileTables? = null) {
         val symbols = mutableMapOf<String, TypeScheme>()
-        fun get(name: String): TypeScheme? = symbols[name] ?: parent?.get(name)
+        fun get(name: String): TypeScheme? {
+            if (compileTables != null && !symbols.containsKey(name)) {
+                compileTables.getLocalSymbol(name)?.type?.let {
+                    symbols[name] = it
+                    return it
+                }
+            }
+            return symbols[name] ?: parent?.get(name)
+        }
         fun define(name: String, typeScheme: TypeScheme) {
             symbols[name] = typeScheme
-        }
-    }
-
-    init {
-        compileTables.localSymbolTable.forEach { name, symbol ->
-            symbol.type?.let {
-                packageSymbols.define(name, it)
-            }
         }
     }
 
@@ -75,7 +75,7 @@ class InferenceContext(
     }
 
     fun listCurrentPackageFunctionsForType(name: String, type: Type): List<Pair<DotTarget, TypeScheme>> {
-        val symbol = compileTables.localSymbolTable.get(name)
+        val symbol = compileTables.getLocalSymbol(name)
         return if (symbol?.type != null) {
             val symbolType: Type = when(val typeScheme = symbol.type) {
                 is PolyType -> typeScheme.body
@@ -104,7 +104,7 @@ class InferenceContext(
         return if (type is HasTypeId) {
             type.getTypeId()
                 ?.let {
-                    id -> ns.getOrCreatePackage(id.moduleName, id.packageName).symbols.get(name)
+                    id -> ns.getSymbol(id.moduleName, id.packageName, name)
                 }
                 ?.let { symbol ->
                     val symbolType: Type = when(val typeScheme = symbol.type!!) {

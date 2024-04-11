@@ -13,19 +13,11 @@ class SymbolTable {
         symbolMap[alias] = symbol
     }
 
-    fun add(table: SymbolTable) {
-        symbolMap.putAll(table.symbolMap)
-    }
-
     fun remove(symbol: String) {
         symbolMap.remove(symbol)
     }
 
     fun get(name: String): Symbol? = symbolMap[name]
-
-    fun forEach(f: (String, Symbol) -> Unit) {
-        symbolMap.forEach(f)
-    }
 
     fun hasSymbol(name: String) = symbolMap.containsKey(name)
 }

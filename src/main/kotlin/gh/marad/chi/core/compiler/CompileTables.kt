@@ -6,15 +6,23 @@ import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.parser.readers.Import
 
 class CompileTables(currentPackage: Package, val ns: GlobalCompilationNamespace) {
-    val packageTable = PackageTable()
-    val localSymbolTable = SymbolTable()
+    private val packageAliasTable = PackageTable()
+    private val localSymbolTable = SymbolTable()
     val localTypeTable = TypeTable()
+    val pkg = ns.getOrCreatePackage(currentPackage)
 
     init {
         // add symbols and types defined in this package
-        val pkg = ns.getOrCreatePackage(currentPackage)
-        localSymbolTable.add(pkg.symbols)
         localTypeTable.add(pkg.types)
+    }
+
+
+    fun getAliasedPackage(name: String): PackageDescriptor? {
+        return packageAliasTable.get(name)
+    }
+
+    fun getLocalSymbol(name: String): Symbol? {
+        return localSymbolTable.get(name) ?: pkg.getSymbol(name)
     }
 
     fun defineSymbol(symbol: Symbol) {
@@ -44,13 +52,13 @@ class CompileTables(currentPackage: Package, val ns: GlobalCompilationNamespace)
     fun addImport(import: Import) {
         val importPkg = ns.getOrCreatePackage(import.moduleName, import.packageName)
         if (import.packageAlias != null) {
-            packageTable.add(import.packageAlias, importPkg)
+            packageAliasTable.add(import.packageAlias, importPkg)
         }
 
         import.entries.forEach { entry ->
             val importedName =  entry.alias ?: entry.name
             // find the symbol in target package
-            importPkg.symbols.get(entry.name)?.let { symbol ->
+            importPkg.getSymbol(entry.name)?.let { symbol ->
                 // import it to local symbol table
                 localSymbolTable.add(importedName, symbol)
             }

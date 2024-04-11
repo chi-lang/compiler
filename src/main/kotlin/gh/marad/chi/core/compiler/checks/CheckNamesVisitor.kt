@@ -7,16 +7,9 @@ import gh.marad.chi.core.compiler.CompileTables
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.parser.visitor.DefaultParseAstVisitor
 
-class CheckNamesVisitor(private val node: ParseAst, compileTables: CompileTables) : DefaultParseAstVisitor() {
+class CheckNamesVisitor(private val node: ParseAst, val compileTables: CompileTables) : DefaultParseAstVisitor() {
     private var messages = mutableListOf<Message>()
-    private var definedNames = mutableSetOf<String>().apply {
-        compileTables.localSymbolTable.forEach { name, _ ->
-            add(name)
-        }
-        compileTables.packageTable.forEach { name, _ ->
-            add(name)
-        }
-    }
+    private var definedNames = mutableSetOf<String>()
 
     fun check(messages: MutableList<Message>) {
         this.messages = messages
@@ -29,7 +22,9 @@ class CheckNamesVisitor(private val node: ParseAst, compileTables: CompileTables
     }
 
     override fun visitVariableRead(parseVariableRead: ParseVariableRead) {
-        if (parseVariableRead.variableName !in definedNames) {
+        if (parseVariableRead.variableName !in definedNames
+            && compileTables.getAliasedPackage(parseVariableRead.variableName) == null
+            && compileTables.getLocalSymbol(parseVariableRead.variableName) == null) {
             messages.add(UnrecognizedName(parseVariableRead.variableName, parseVariableRead.section.toCodePoint()))
         }
     }

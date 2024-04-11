@@ -173,8 +173,8 @@ class ExprConversionVisitor(
         }
 
     override fun visitFieldAccess(parseFieldAccess: ParseFieldAccess): Expression {
-        val pkg = tables.packageTable.get(parseFieldAccess.receiverName)
-        val pkgSymbol = pkg?.symbols?.get(parseFieldAccess.memberName)
+        val pkg = tables.getAliasedPackage(parseFieldAccess.receiverName)
+        val pkgSymbol = pkg?.getSymbol(parseFieldAccess.memberName)
         if (pkg != null && pkgSymbol != null) {
             return VariableAccess(
                 PackageSymbol(pkg.moduleName, pkg.packageName, parseFieldAccess.memberName),
@@ -379,7 +379,7 @@ class ExprConversionVisitor(
     private fun getSymbol(name: String, sourceSection: ChiSource.Section?): Target {
         val fnSymbolTable = currentFnSymbolTable
         return fnSymbolTable?.get(name)?.toLocalSymbol()
-            ?: tables.localSymbolTable.get(name)?.toPackageSymbol()
+            ?: tables.getLocalSymbol(name)?.toPackageSymbol()
             ?: throw ExprConversionException("Tried to get local symbol '$name'", sourceSection)
     }
 

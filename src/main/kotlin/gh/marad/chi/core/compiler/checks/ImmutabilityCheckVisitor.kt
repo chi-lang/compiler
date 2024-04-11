@@ -19,7 +19,7 @@ class ImmutabilityCheckVisitor(val messages: MutableList<Message>, val tables: C
 
     override fun visitAssignment(assignment: Assignment) {
         val mutable = when(assignment.target) {
-            is LocalSymbol -> tables.localSymbolTable.get(assignment.target.name)?.mutable
+            is LocalSymbol -> tables.getLocalSymbol(assignment.target.name)?.mutable
             is PackageSymbol -> ns.getSymbol(assignment.target)?.mutable
         }
 

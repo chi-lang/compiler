@@ -20,9 +20,12 @@ class GlobalCompilationNamespace(val prelude: List<PreludeImport> = emptyList())
     fun getOrCreatePackage(pkg: Package): PackageDescriptor =
         getOrCreateModule(pkg.moduleName).getOrCreatePackage(pkg.packageName)
 
+    fun getSymbol(moduleName: String, packageName: String, symbolName: String) =
+        getOrCreatePackage(moduleName, packageName).getSymbol(symbolName)
+
     fun getSymbol(target: PackageSymbol) =
         getOrCreatePackage(target.moduleName, target.packageName)
-            .symbols.get(target.name)
+            .getSymbol(target.name)
 
     private fun getOrCreateModule(moduleName: String) = modules.getOrPut(moduleName) { ModuleDescriptor(moduleName) }
 }
@@ -50,5 +53,8 @@ data class PackageDescriptor(
     val packageName: String,
     val symbols: SymbolTable = SymbolTable(),
     val types: TypeTable = TypeTable(),
-)
+) {
+    fun getSymbol(name: String) = symbols.get(name)
+    fun getTypeAlias(name: String) = types.getAlias(name)
+}
 

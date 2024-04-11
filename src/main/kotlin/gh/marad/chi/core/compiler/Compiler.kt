@@ -53,8 +53,8 @@ object Compiler {
         parsedProgram.imports.forEach { import ->
             val importPkg = ns.getOrCreatePackage(import.moduleName, import.packageName)
             import.entries.forEach { entry ->
-                val symbol = importPkg.symbols.get(entry.name)
-                val type = importPkg.types.getAlias(entry.name)
+                val symbol = importPkg.getSymbol(entry.name)
+                val type = importPkg.getTypeAlias(entry.name)
                 if (symbol != null && !symbol.public && import.moduleName != packageDefinition.moduleName) {
                     resultMessages.add(CannotAccessInternalName(entry.name, entry.section.toCodePoint()))
                 }
