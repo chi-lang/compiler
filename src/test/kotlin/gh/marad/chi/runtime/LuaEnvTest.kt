@@ -50,7 +50,7 @@ class LuaEnvTest {
 
     @Test
     fun `should be able to index just declared array`() {
-        eval("[1, 2, 3][1]") shouldBe 2.0
+        eval("[1, 2, 3][1]") shouldBe 1.0
     }
 
     @Test
@@ -111,17 +111,19 @@ class LuaEnvTest {
     @Test
     fun `while loop`() {
         eval("""
-            var i = 0
-            while i < 5 {
-                i += 1
-            }
-            i
+            {
+                var i = 0
+                while i < 5 {
+                    i += 1
+                }
+                i
+            }()
         """.trimIndent()) shouldBe 5.0
     }
 
     private fun eval(code: String, extEnv: LuaEnv? = null): Any? {
         val env = extEnv ?: LuaEnv()
-        return if (env.eval(code)) {
+        return if (env.eval(code, dontEvalOnlyShowLuaCode = false)) {
             env.lua.get().toJavaObject()
         } else {
             null

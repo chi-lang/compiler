@@ -1,9 +1,11 @@
 package gh.marad.chi.runtime
 
+import gh.marad.chi.core.TypeAlias
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.PreludeImport
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.TypeId
 import gh.marad.chi.core.types.Variable
 import gh.marad.chi.lua.formatLuaCode
 import gh.marad.chi.runtime.TypeWriter.decodeType
@@ -150,15 +152,27 @@ class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
 
         val modules = luaListChildren(lua, "chi")
         modules.forEach { (moduleName, _) ->
+            val chiModule = moduleName.replace("_", ".")
             val packages = luaListChildren(lua, "chi.$moduleName")
             packages.forEach { (packageName, _) ->
-                val packageDef = ns.getOrCreatePackage(moduleName, packageName)
+                val chiPackage = packageName.replace("_", ".")
+                val packageDef = ns.getOrCreatePackage(chiModule, chiPackage)
+
+                val types = luaListChildren(lua, "chi.$moduleName.$packageName._types")
+                types.forEach { (typeName, typeValue) ->
+                    val encodedType = typeValue.toJavaObject() as String
+                    packageDef.types.add(TypeAlias(
+                        TypeId(chiModule, chiPackage, typeName),
+                        decodeType(encodedType)
+                    ))
+                }
+
                 val symbols = luaListChildren(lua, "chi.$moduleName.$packageName._package")
                 symbols.forEach { (symbolName, table) ->
                     @Suppress("UNCHECKED_CAST") val table = table.toJavaObject() as Map<String, Any>
                     val symbol =
                         Symbol(
-                            moduleName, packageName, symbolName,
+                            chiModule, chiPackage, symbolName,
                             type = (table["type"] as String?)?.let { decodeType(it) },
                             public = table["public"] as Boolean,
                             mutable = table["mutable"] as Boolean

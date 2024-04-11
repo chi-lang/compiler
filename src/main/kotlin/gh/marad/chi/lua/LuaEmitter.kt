@@ -1,10 +1,8 @@
 package gh.marad.chi.lua
 
 import gh.marad.chi.core.*
-import gh.marad.chi.core.types.Array
-import gh.marad.chi.core.types.Function
-import gh.marad.chi.core.types.Record
 import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.Variable
 import gh.marad.chi.runtime.TypeWriter.encodeType
 
 class LuaEmitter(val program: Program) {
@@ -17,9 +15,16 @@ class LuaEmitter(val program: Program) {
             emitCode("if not chi.$mod then chi.$mod={} end;")
             emitCode("if not chi.$mod.$pkg then chi.$mod.$pkg={} end;")
             emitCode("if not chi.$mod.$pkg._package then chi.$mod.$pkg._package={} end;")
+            emitCode("if not chi.$mod.$pkg._types then chi.$mod.$pkg._types={} end;")
         }
 
         emitPackageInfo()
+
+        program.typeAliases.forEach {
+            emitCode("chi.$mod.$pkg._types.${it.typeId.name}=\"")
+            emitCode(encodeType(it.type))
+            emitCode("\";")
+        }
 
         val iter = program.expressions.iterator()
         while(iter.hasNext()) {
@@ -122,7 +127,7 @@ class LuaEmitter(val program: Program) {
                     emitCode("=function(args) ")
                     emitCode("local function resume(x) return false, x end;")
                     case.argumentNames.forEachIndexed { index, name ->
-                        emitCode("local $name=args[${index+1}];")
+                        emitCode("local $name=args[${index}];")
                     }
 
                     insideFunction {
@@ -169,6 +174,8 @@ class LuaEmitter(val program: Program) {
 //            emitCode("\"")
             // TODO: this should escape all the escaped codes like \n, ...
             "\"${term.value}\""
+        } else if (term.type == Type.unit) {
+            "nil"
         } else {
 //            emitCode(term.value)
             term.value
@@ -318,7 +325,6 @@ class LuaEmitter(val program: Program) {
         emitCode(variable)
         emitCode("[")
         emitCode(index)
-        emitCode("+1")
         emitCode("];")
         return name
     }
@@ -331,7 +337,6 @@ class LuaEmitter(val program: Program) {
         emitCode(variable)
         emitCode("[")
         emitCode(index)
-        emitCode("+1")
         emitCode("]")
         emitCode("=")
         emitCode(value)
@@ -340,22 +345,18 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitCast(term: Cast, needResult: Boolean): String {
-        return if (needResult) {
-            val result = emitExpr(term.expression, needResult)
-            val name = nextTmpName()
-            when (term.targetType) {
-                Type.string -> {
-                    emitCode("local $name=tostring($result);")
-                    name
-                }
-                Type.int, Type.float -> {
-                    emitCode("local $name=tonumber($result);")
-                    name
-                }
-                else -> result
+        val result = emitExpr(term.expression, true)
+        val name = nextTmpName()
+        return when (term.targetType) {
+            Type.string -> {
+                emitCode("local $name=tostring($result);")
+                name
             }
-        } else {
-            emitExpr(term.expression, needResult)
+            Type.int, Type.float -> {
+                emitCode("local $name=tonumber($result);")
+                name
+            }
+            else -> result
         }
     }
 
@@ -416,19 +417,20 @@ class LuaEmitter(val program: Program) {
     private fun emitInfixOp(term: InfixOp, needResult: Boolean): String {
         val leftVar = emitExpr(term.left, true)
         val rightVar = emitExpr(term.right, true)
+        val op = mapInfixOperation(term.op, term.left.type)
+        return "($leftVar $op $rightVar)"
+    }
 
-        val op = when (term.op) {
+    private fun mapInfixOperation(op: String, leftType: Type?): String =
+        when (op) {
             "!=" -> "~="
             "&&" -> "and"
             "||" -> "or"
-            "+" -> if (term.left.type == Type.string) {
+            "+" -> if (leftType == Type.string) {
                 ".."
-            } else term.op
-            else -> term.op
+            } else op
+            else -> op
         }
-
-        return "($leftVar $op $rightVar)"
-    }
 
     private fun emitPrefixOp(term: PrefixOp, needResult: Boolean): String {
         val valueVar = emitExpr(term.expr, true)
@@ -459,31 +461,81 @@ class LuaEmitter(val program: Program) {
         } else {
             val value = emitExpr(term.value, true)
             when (term.checkedType) {
+                Type.unit -> "type($value) == \"nil\""
                 Type.float, Type.int -> "type($value) == \"number\""
                 Type.bool -> "type($value) == \"boolean\""
                 Type.string -> "type($value) == \"string\""
-                is Array -> {
-                    TODO()
+//                is Array -> {
+//                    TODO()
+//                }
+//                is Record -> {
+//                    TODO()
+//                }
+//                is Function -> {
+//                    TODO()
+//                }
+                is Variable -> {
+                    "false"
                 }
-                is Record -> {
-                    TODO()
-                }
-                is Function -> {
-                    TODO()
-                }
-                else -> TODO()
+                else -> TODO(term.toString())
             }
         }
     }
 
+    private fun foo(term: Expression, bar: MutableList<NameDeclaration>): String {
+        return when (term) {
+            is InfixOp -> {
+                val left = foo(term.left, bar)
+                val right = foo(term.right, bar)
+                //InfixOp(term.op, left, right, term.sourceSection)
+                val op = mapInfixOperation(term.op, term.left.type)
+                "($left $op $right)"
+            }
+            else -> {
+                val tmpName = nextTmpName()
+                // create val $tmpName = { term }
+                // and add it to the list of declarations
+                bar.add(
+                    NameDeclaration(false, tmpName, mutable = false, expectedType = null, sourceSection = null,
+                        value = Fn(emptyList(), sourceSection = null, body = Block(sourceSection = null, body = listOf(term))))
+                )
+                // return a call to the declared function as an expression
+//                FnCall(
+//                    function = VariableAccess(LocalSymbol(tmpName), null),
+//                    mutableListOf(),
+//                    null
+//                )
+                "$tmpName()"
+            }
+        }
+    }
 
     private fun emitWhile(term: WhileLoop, needResult: Boolean): String {
-        val condFunName = nextTmpName()
-        emitCode("local $condFunName = function() ")
-        val result = emitExpr(term.condition, true)
-        emitCode("return $result end;")
+//        val visitor = object : DefaultMappingVisitor() {
+//            override fun visitInfixOp(infixOp: InfixOp): Expression {
+//                return super.visitInfixOp(infixOp)
+//            }
+//        }
 
-        emitCode("while ($condFunName()) do ")
+        // TODO: each condition should be separate function
+        //   otherwise we loose the special treatment of 'or' and 'and'
+        //   operators. This is more related to the infix operators
+        //   than while or if expressions
+
+//        val condFunName = nextTmpName()
+//        emitCode("local $condFunName = function() ")
+//        val result = emitExpr(term.condition, true)
+//        emitCode("return $result end;")
+
+//        emitCode("while ($condFunName()) do ")
+
+
+        val declarations = mutableListOf<NameDeclaration>()
+        val condition = foo(term.condition, declarations)
+        declarations.forEach {
+            emitExpr(it, false)
+        }
+        emitCode("while $condition do ")
         emitExpr(term.loop)
         emitCode("end;")
         return "nil"

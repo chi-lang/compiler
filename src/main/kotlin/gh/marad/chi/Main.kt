@@ -5,6 +5,7 @@ import gh.marad.chi.runtime.LuaEnv
 import org.docopt.Docopt
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlin.io.path.exists
 import kotlin.io.path.extension
 import kotlin.io.path.name
 import kotlin.system.exitProcess
@@ -30,7 +31,7 @@ fun main(args: Array<String>) {
     val opts = Docopt(doc).parse(*args)
     val programArgs = opts["ARGS"] as ArrayList<String>
     val file = opts["FILE"] as String?
-    val modules = opts["--module"] as ArrayList<*>
+    val modules = opts["--module"] as ArrayList<String>
 
     val prelude = mutableListOf<PreludeImport>()
     prelude.add(PreludeImport("std", "lang", "println", null))
@@ -39,6 +40,7 @@ fun main(args: Array<String>) {
     val env = LuaEnv(prelude)
 
     // TODO: load modules
+    evalModules(env, modules)
 
     if (opts["compile"] == true) {
         val path = Path.of(file!!)
@@ -86,4 +88,15 @@ fun main(args: Array<String>) {
         }
     }
 
+}
+
+fun evalModules(env: LuaEnv, modules: java.util.ArrayList<String>) {
+    modules.forEach {
+        val path = Path.of(it)
+        if (path.exists()) {
+            env.eval(Files.readString(path))
+        } else {
+            println("File does not exist: $it ")
+        }
+    }
 }
