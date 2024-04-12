@@ -1,8 +1,6 @@
 package gh.marad.chi
 
-import gh.marad.chi.core.Expression
-import gh.marad.chi.core.Program
-import gh.marad.chi.core.TypeAlias
+import gh.marad.chi.core.*
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.compiler.Compiler
@@ -17,7 +15,7 @@ data class ErrorMessagesException(val errors: List<Message>) : AssertionError("C
 
 fun compile(
     code: String,
-    namespace: CompilationEnv = TestCompilationEnv(),
+    namespace: TestCompilationEnv = TestCompilationEnv(),
     ignoreCompilationErrors: Boolean = false
 ): Program {
     val result = Compiler.compile(code, namespace)
@@ -35,10 +33,25 @@ fun compile(
         }
     }
 
+    // Update the test compilation env with defined types and symbols
+    for (typeAlias in program.typeAliases) {
+        namespace.addTypeDefinition(typeAlias)
+    }
+
+    for (nameDeclaration in program.expressions.filterIsInstance<NameDeclaration>()) {
+        namespace.addSymbol(program.packageDefinition.moduleName, program.packageDefinition.packageName,
+            nameDeclaration.name, nameDeclaration.type, nameDeclaration.public, nameDeclaration.mutable)
+    }
+
+    for (effectDefinition in program.expressions.filterIsInstance<EffectDefinition>()) {
+        namespace.addSymbol(program.packageDefinition.moduleName, program.packageDefinition.packageName,
+            effectDefinition.name, effectDefinition.type, effectDefinition.public, mutable = false)
+    }
+
     return program
 }
 
-fun asts(code: String, ns: CompilationEnv = TestCompilationEnv(), ignoreCompilationErrors: Boolean = false): List<Expression> {
+fun asts(code: String, ns: TestCompilationEnv = TestCompilationEnv(), ignoreCompilationErrors: Boolean = false): List<Expression> {
     return compile(code, ns, ignoreCompilationErrors).expressions
 }
 
@@ -50,7 +63,7 @@ fun messages(code: String, ns: CompilationEnv = TestCompilationEnv()): List<Mess
 
 fun ast(
     code: String,
-    ns: CompilationEnv = TestCompilationEnv(),
+    ns: TestCompilationEnv = TestCompilationEnv(),
     ignoreCompilationErrors: Boolean = false
 ): Expression = asts(code, ns, ignoreCompilationErrors).last()
 

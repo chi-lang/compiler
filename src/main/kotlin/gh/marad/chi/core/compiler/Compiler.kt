@@ -150,7 +150,7 @@ object Compiler {
             .check(expressions, resultMessages)
         FnCallCheckingVisitor()
             .check(expressions, resultMessages)
-        ImmutabilityCheckVisitor(resultMessages, tables, ns)
+        ImmutabilityCheckVisitor(packageDefinition.moduleName, packageDefinition.packageName, resultMessages, tables, ns)
             .check(expressions)
         ReturnTypeCheckVisitor(resultMessages)
             .check(expressions)

@@ -45,21 +45,16 @@ class CompileTables(currentPackage: Package,
 
     fun defineSymbol(symbol: Symbol) {
         localSymbolTable.add(symbol)
-        ns.getOrCreatePackage(symbol.moduleName, symbol.packageName).symbols.add(symbol)
     }
 
     fun removeSymbol(name: String) {
         val symbol = localSymbolTable.get(name)
         if (symbol != null) {
             localSymbolTable.remove(name)
-            ns.getOrCreatePackage(symbol.moduleName, symbol.packageName)
-                .symbols.remove(symbol.name)
         }
     }
 
     fun defineTypeAlias(alias: TypeAlias) {
         localTypeTable.add(alias)
-        ns.getOrCreatePackage(alias.typeId.moduleName, alias.typeId.packageName)
-            .types.add(alias)
     }
 }
