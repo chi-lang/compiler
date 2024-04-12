@@ -70,7 +70,7 @@ class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
                         end,
                     } 
                 },
-                user = { default = { _package = {} } }
+                user = { default = { _package = {}, _types = {} } }
             }
             
             function define(module, package, name, public, mutable, type, value)
