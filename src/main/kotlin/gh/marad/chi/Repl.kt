@@ -1,6 +1,8 @@
 package gh.marad.chi
 
 import gh.marad.chi.core.compiler.Compiler
+import gh.marad.chi.core.types.Function
+import gh.marad.chi.core.types.Type
 import gh.marad.chi.lua.LuaEmitter
 import gh.marad.chi.runtime.LuaCompilationEnv
 import gh.marad.chi.runtime.LuaEnv
@@ -54,6 +56,7 @@ class Repl(
                     continue
                 }
 
+                var resultType: Type? = null
                 val luaCode = if (code.trim().startsWith("@")) {
                     code.trimStart(' ', '@')
                 } else {
@@ -66,6 +69,8 @@ class Repl(
                             }
                             continue
                         }
+                        resultType = compilationResult.program.expressions.lastOrNull()?.type
+
                         val emitter = LuaEmitter(compilationResult.program)
                         emitter.emit(returnLastValue = true)
                     } catch (ex: Exception) {
@@ -84,10 +89,17 @@ class Repl(
                     println("Error: $errorMessage")
                 } else {
                     val luaValue = env.lua.get()
-//                    val type = luaValue.type().name
-                    val result = luaValue.toJavaObject()
-                    println(result)
-//                    println("$result : $type")
+                    var result = luaValue.toJavaObject()
+                    if (resultType is Function) {
+                        result = "<function>"
+                    }
+                    if (resultType != Type.unit) {
+                        if (result != null && resultType != null) {
+                            println("$result : $resultType")
+                        } else if (result != null) {
+                            println("$result")
+                        }
+                    }
                 }
             }
         }
