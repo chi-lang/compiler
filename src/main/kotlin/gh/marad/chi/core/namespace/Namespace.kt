@@ -44,6 +44,10 @@ class TestCompilationEnv(private val prelude: List<PreludeImport> = emptyList())
             .getTypeAlias(typeAliasName)
 
     private fun getOrCreateModule(moduleName: String) = modules.getOrPut(moduleName) { ModuleDescriptor(moduleName) }
+
+    fun addSymbol(symbol: Symbol) {
+        getOrCreatePackage(symbol.moduleName, symbol.packageName).symbols.add(symbol)
+    }
 }
 
 

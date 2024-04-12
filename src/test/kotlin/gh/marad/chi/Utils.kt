@@ -69,10 +69,9 @@ fun ast(
 
 fun TestCompilationEnv.addSymbolInDefaultPackage(name: String, type: TypeScheme? = null, public: Boolean = false,
                                              mutable: Boolean = false, @Suppress("UNUSED_PARAMETER") slot: Int = 0) {
-    val pkg = getDefaultPackage()
-    pkg.symbols.add(
+    addSymbol(
         Symbol(
-            pkg.moduleName, pkg.packageName,
+            CompilationDefaults.defaultModule, CompilationDefaults.defaultPacakge,
             name,
             type,
             public = public,
@@ -83,8 +82,7 @@ fun TestCompilationEnv.addSymbolInDefaultPackage(name: String, type: TypeScheme?
 
 fun TestCompilationEnv.addSymbol(moduleName: String, packageName: String, name: String, type: TypeScheme? = null,
                              public: Boolean = false, mutable: Boolean = false, @Suppress("UNUSED_PARAMETER") slot: Int = 0) {
-    val pkg = getOrCreatePackage(moduleName, packageName)
-    pkg.symbols.add(
+    addSymbol(
         Symbol(
             moduleName, packageName,
             name,

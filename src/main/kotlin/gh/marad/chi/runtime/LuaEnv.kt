@@ -138,13 +138,13 @@ class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
     fun buildGlobalCompilationNamespace(): CompilationEnv {
         val ns = TestCompilationEnv(prelude)
 
-        ns.getOrCreatePackage("std", "lang").symbols.add(
+        ns.addSymbol(
             Symbol("std", "lang", "embedLua",
                 Type.fn(Type.string, Variable("t@embedLua", 1)),
                 public = true, mutable = false)
         )
 
-        ns.getOrCreatePackage("std", "lang").symbols.add(
+        ns.addSymbol(
             Symbol("std", "lang", "luaExpr",
                 Type.fn(Type.string, Variable("t@luaExpr", 1)),
                 public = true, mutable = false)
@@ -178,7 +178,7 @@ class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
                             public = table["public"] as Boolean,
                             mutable = table["mutable"] as Boolean
                         )
-                    packageDef.symbols.add(symbol)
+                    ns.addSymbol(symbol)
                 }
             }
 
