@@ -10,7 +10,7 @@ class LuaCompiler(val luaEnv: LuaEnv) {
     enum class ErrorStrategy { PRINT, THROW }
 
     fun compileToLua(chiCode: String, errorStrategy: ErrorStrategy = ErrorStrategy.THROW): String? {
-        val ns = luaEnv.buildGlobalCompilationNamespace()
+        val ns = LuaCompilationEnv(luaEnv)
         val result = Compiler.compile(chiCode, ns)
         if (result.hasErrors()) {
             when (errorStrategy) {

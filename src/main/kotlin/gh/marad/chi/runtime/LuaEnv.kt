@@ -1,16 +1,12 @@
 package gh.marad.chi.runtime
 
-import gh.marad.chi.core.TypeAlias
-import gh.marad.chi.core.namespace.*
+import gh.marad.chi.core.namespace.PreludeImport
 import gh.marad.chi.core.types.Type
-import gh.marad.chi.core.types.TypeId
 import gh.marad.chi.core.types.Variable
 import gh.marad.chi.lua.formatLuaCode
-import gh.marad.chi.runtime.TypeWriter.decodeType
 import gh.marad.chi.runtime.TypeWriter.encodeType
 import party.iroiro.luajava.Lua
 import party.iroiro.luajava.lua54.Lua54
-import party.iroiro.luajava.value.LuaValue
 
 class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
     val lua = Lua54().also { init(it) }
@@ -62,6 +58,8 @@ class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
                             println = { public=true, mutable=false, type='${encodeType(Type.fn(Type.any, Type.unit))}' },
                             compileLua = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.string))}' },
                             eval = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.any))}' },
+                            embedLua = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("t@embedLua", 1)))}' },
+                            luaExpr = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("t@luaExpr", 1)))}' },
                         },
                         println = chi_println,
                         compileLua = chi_compile,
@@ -105,83 +103,4 @@ class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
             end
         """.trimIndent())
     }
-
-
-
-    fun luaListChildren(lua: Lua, symbol: String): List<Pair<String, LuaValue>> {
-        val env = lua.execute("""
-            local x = {}
-            for k, v in pairs($symbol) do
-                table.insert(x, {k, v})
-            end
-            return x
-        """.trimIndent()) ?: return emptyList()
-
-        val data = env[0]
-        var i = 1
-        val elements = mutableListOf<Pair<String, LuaValue>>()
-        while (true) {
-            val tmp = data?.get(i++) ?: break
-            if(tmp.type() == Lua.LuaType.NIL) break
-            val name = tmp.get(1)!!.toJavaObject()!!.toString()
-            val value = tmp.get(2)!!
-            elements.add(name to value)
-        }
-
-        elements.sortBy { it.first }
-        return elements.filter { it.second.type() == Lua.LuaType.TABLE } + elements.filter { it.second.type() != Lua.LuaType.TABLE }
-    }
-
-    fun buildGlobalCompilationNamespace(): CompilationEnv {
-        val ns = TestCompilationEnv(prelude)
-
-        ns.addSymbol(
-            Symbol("std", "lang", "embedLua",
-                Type.fn(Type.string, Variable("t@embedLua", 1)),
-                public = true, mutable = false)
-        )
-
-        ns.addSymbol(
-            Symbol("std", "lang", "luaExpr",
-                Type.fn(Type.string, Variable("t@luaExpr", 1)),
-                public = true, mutable = false)
-        )
-
-
-        val modules = luaListChildren(lua, "chi")
-        modules.forEach { (moduleName, _) ->
-            val chiModule = moduleName.replace("_", ".")
-            val packages = luaListChildren(lua, "chi.$moduleName")
-            packages.forEach { (packageName, _) ->
-                val chiPackage = packageName.replace("_", ".")
-                val packageDef = ns.getOrCreatePackage(chiModule, chiPackage) as TestPackageDescriptor
-
-                val types = luaListChildren(lua, "chi.$moduleName.$packageName._types")
-                types.forEach { (typeName, typeValue) ->
-                    val encodedType = typeValue.toJavaObject() as String
-                    packageDef.types.add(TypeAlias(
-                        TypeId(chiModule, chiPackage, typeName),
-                        decodeType(encodedType)
-                    ))
-                }
-
-                val symbols = luaListChildren(lua, "chi.$moduleName.$packageName._package")
-                symbols.forEach { (symbolName, table) ->
-                    @Suppress("UNCHECKED_CAST") val table = table.toJavaObject() as Map<String, Any>
-                    val symbol =
-                        Symbol(
-                            chiModule, chiPackage, symbolName,
-                            type = (table["type"] as String?)?.let { decodeType(it) },
-                            public = table["public"] as Boolean,
-                            mutable = table["mutable"] as Boolean
-                        )
-                    ns.addSymbol(symbol)
-                }
-            }
-
-        }
-        return ns
-    }
-
-
 }

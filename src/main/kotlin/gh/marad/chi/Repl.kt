@@ -2,6 +2,7 @@ package gh.marad.chi
 
 import gh.marad.chi.core.compiler.Compiler
 import gh.marad.chi.lua.LuaEmitter
+import gh.marad.chi.runtime.LuaCompilationEnv
 import gh.marad.chi.runtime.LuaEnv
 import party.iroiro.luajava.Lua.LuaError
 import kotlin.system.exitProcess
@@ -57,7 +58,7 @@ class Repl(
                     code.trimStart(' ', '@')
                 } else {
                     try {
-                        val ns = env.buildGlobalCompilationNamespace()
+                        val ns = LuaCompilationEnv(env)
                         val compilationResult = Compiler.compile(code, ns)
                         if (compilationResult.hasErrors()) {
                             compilationResult.messages.forEach {
