@@ -1,13 +1,10 @@
 package gh.marad.chi.core.compiler
 
-import gh.marad.chi.core.Package
-import gh.marad.chi.core.Program
-import gh.marad.chi.core.TypeAlias
+import gh.marad.chi.core.*
 import gh.marad.chi.core.analyzer.*
 import gh.marad.chi.core.compiler.checks.*
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
 import gh.marad.chi.core.namespace.TypeTable
-import gh.marad.chi.core.parseSource
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.types.*
@@ -33,7 +30,7 @@ object Compiler {
             }
         val packageDefinition = parsedProgram.packageDefinition?.let {
             Package(it.moduleName, it.packageName)
-        } ?: Package("user", "default")
+        } ?: Package(CompilationDefaults.defaultModule, CompilationDefaults.defaultPacakge)
 
         val resultMessages = mutableListOf<Message>()
         resultMessages.addAll(messages)
@@ -68,11 +65,10 @@ object Compiler {
         // Build symbol and type tables
         // ============================
 
-        val tables = CompileTables(packageDefinition, ns)
-        tables.addImports(ns.prelude.map {
+        val preludeImports = ns.prelude.map {
             Import(it.moduleName, it.packageName, null, listOf(Import.Entry(it.name, it.alias, null)), null)
-        })
-        tables.addImports(parsedProgram.imports)
+        }
+        val tables = CompileTables(packageDefinition, ns, preludeImports + parsedProgram.imports)
 
         val definedTypeAliases = parsedProgram.typeAliases.map { typeAliasDef ->
             val typeSchemeVariables = typeAliasDef.typeParameters.map { it.name }

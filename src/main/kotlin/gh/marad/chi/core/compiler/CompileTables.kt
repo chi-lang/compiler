@@ -1,12 +1,17 @@
 package gh.marad.chi.core.compiler
 
 import gh.marad.chi.core.Package
+import gh.marad.chi.core.PackageSymbol
 import gh.marad.chi.core.TypeAlias
 import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.parser.readers.Import
 
-class CompileTables(currentPackage: Package, val ns: GlobalCompilationNamespace) {
+class CompileTables(currentPackage: Package,
+                    val ns: GlobalCompilationNamespace,
+                    val imports: List<Import>
+    ) {
     private val packageAliasTable = PackageTable()
+    private val importedSymbols = mutableMapOf<String, PackageSymbol>()
     private val localSymbolTable = SymbolTable()
     val localTypeTable = TypeTable()
     val pkg = ns.getOrCreatePackage(currentPackage)
@@ -14,6 +19,19 @@ class CompileTables(currentPackage: Package, val ns: GlobalCompilationNamespace)
     init {
         // add symbols and types defined in this package
         localTypeTable.add(pkg.types)
+        imports.forEach { import ->
+            val importedPkg = ns.getOrCreatePackage(import.moduleName, import.packageName)
+            if (import.packageAlias != null) {
+                packageAliasTable.add(import.packageAlias, importedPkg)
+            }
+            import.entries.forEach { entry ->
+                val importedName = entry.alias ?: entry.name
+                importedSymbols[importedName] = PackageSymbol(import.moduleName, import.packageName, entry.name)
+                importedPkg.types.getAlias(entry.name)?.let { typeAlias ->
+                    localTypeTable.add(importedName, typeAlias)
+                }
+            }
+        }
     }
 
 
@@ -22,7 +40,7 @@ class CompileTables(currentPackage: Package, val ns: GlobalCompilationNamespace)
     }
 
     fun getLocalSymbol(name: String): Symbol? {
-        return localSymbolTable.get(name) ?: pkg.getSymbol(name)
+        return localSymbolTable.get(name) ?: importedSymbols[name]?.let(ns::getSymbol)  ?: pkg.getSymbol(name)
     }
 
     fun defineSymbol(symbol: Symbol) {
@@ -44,28 +62,4 @@ class CompileTables(currentPackage: Package, val ns: GlobalCompilationNamespace)
         ns.getOrCreatePackage(alias.typeId.moduleName, alias.typeId.packageName)
             .types.add(alias)
     }
-
-    fun addImports(imports: List<Import>) {
-        imports.forEach(this::addImport)
-    }
-
-    fun addImport(import: Import) {
-        val importPkg = ns.getOrCreatePackage(import.moduleName, import.packageName)
-        if (import.packageAlias != null) {
-            packageAliasTable.add(import.packageAlias, importPkg)
-        }
-
-        import.entries.forEach { entry ->
-            val importedName =  entry.alias ?: entry.name
-            // find the symbol in target package
-            importPkg.getSymbol(entry.name)?.let { symbol ->
-                // import it to local symbol table
-                localSymbolTable.add(importedName, symbol)
-            }
-            importPkg.types.getAlias(entry.name)?.let { typeAlias ->
-                localTypeTable.add(importedName, typeAlias)
-            }
-        }
-    }
-
 }

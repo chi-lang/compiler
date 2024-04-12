@@ -10,7 +10,7 @@ import gh.marad.chi.core.parser.readers.ParseAst
 fun convertAst(ast: ParseAst, ns: GlobalCompilationNamespace = GlobalCompilationNamespace()): Expression {
     val pkg = ns.getDefaultPackage()
     val pkgDef = Package(pkg.moduleName, pkg.packageName)
-    val compileTables = CompileTables(pkgDef, ns)
+    val compileTables = CompileTables(pkgDef, ns, emptyList())
     return ExprConversionVisitor(Package(pkg.moduleName, pkg.packageName), compileTables)
         .visit(ast)
 }
