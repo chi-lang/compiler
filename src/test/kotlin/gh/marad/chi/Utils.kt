@@ -7,6 +7,7 @@ import gh.marad.chi.core.compiler.Compiler
 import gh.marad.chi.core.namespace.CompilationEnv
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.namespace.TestCompilationEnv
+import gh.marad.chi.core.namespace.TestPackageDescriptor
 import gh.marad.chi.core.types.HasTypeId
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeScheme
@@ -104,6 +105,6 @@ fun TestCompilationEnv.addTypeDefinition(type: Type) {
 
 fun TestCompilationEnv.addTypeDefinition(alias: TypeAlias) {
     val id = alias.typeId
-    val pkg = getOrCreatePackage(id.moduleName, id.packageName)
+    val pkg = getOrCreatePackage(id.moduleName, id.packageName) as TestPackageDescriptor
     pkg.types.add(alias)
 }

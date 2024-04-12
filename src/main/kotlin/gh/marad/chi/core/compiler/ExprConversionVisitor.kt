@@ -177,7 +177,7 @@ class ExprConversionVisitor(
         val pkgSymbol = pkg?.getSymbol(parseFieldAccess.memberName)
         if (pkg != null && pkgSymbol != null) {
             return VariableAccess(
-                PackageSymbol(pkg.moduleName, pkg.packageName, parseFieldAccess.memberName),
+                PackageSymbol(pkgSymbol.moduleName, pkgSymbol.packageName, parseFieldAccess.memberName),
                 parseFieldAccess.receiver.section)
         }
 

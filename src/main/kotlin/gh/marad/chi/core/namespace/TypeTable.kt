@@ -2,7 +2,7 @@ package gh.marad.chi.core.namespace
 
 import gh.marad.chi.core.TypeAlias
 
-class TypeTable {
+class TypeTable(private val pkg: PackageDescriptor? = null) {
     private val aliases = mutableMapOf<String, TypeAlias>()
 
     fun add(typeAlias: TypeAlias) {
@@ -13,7 +13,7 @@ class TypeTable {
         aliases[alias] = typeAlias
     }
 
-    fun getAlias(name: String): TypeAlias? = aliases[name]
+    fun getAlias(name: String): TypeAlias? = aliases[name] ?: pkg?.getTypeAlias(name)
 
 
     fun add(table: TypeTable) {

@@ -1,10 +1,7 @@
 package gh.marad.chi.runtime
 
 import gh.marad.chi.core.TypeAlias
-import gh.marad.chi.core.namespace.CompilationEnv
-import gh.marad.chi.core.namespace.PreludeImport
-import gh.marad.chi.core.namespace.Symbol
-import gh.marad.chi.core.namespace.TestCompilationEnv
+import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeId
 import gh.marad.chi.core.types.Variable
@@ -157,7 +154,7 @@ class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
             val packages = luaListChildren(lua, "chi.$moduleName")
             packages.forEach { (packageName, _) ->
                 val chiPackage = packageName.replace("_", ".")
-                val packageDef = ns.getOrCreatePackage(chiModule, chiPackage)
+                val packageDef = ns.getOrCreatePackage(chiModule, chiPackage) as TestPackageDescriptor
 
                 val types = luaListChildren(lua, "chi.$moduleName.$packageName._types")
                 types.forEach { (typeName, typeValue) ->

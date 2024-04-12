@@ -14,8 +14,15 @@ interface CompilationEnv {
     fun getTypeAlias(moduleName: String, packageName: String, typeAliasName: String): TypeAlias?
 }
 
+interface PackageDescriptor {
+    val moduleName: String
+    val packageName: String
+    fun getSymbol(name: String): Symbol?
+    fun getTypeAlias(name: String): TypeAlias?
+}
+
 class TestCompilationEnv(private val prelude: List<PreludeImport> = emptyList()) : CompilationEnv {
-    private val modules: MutableMap<String, ModuleDescriptor> = mutableMapOf()
+    private val modules: MutableMap<String, TestModuleDescriptor> = mutableMapOf()
 
     init {
         getDefaultPackage()
@@ -43,10 +50,11 @@ class TestCompilationEnv(private val prelude: List<PreludeImport> = emptyList())
         getOrCreatePackage(moduleName, packageName)
             .getTypeAlias(typeAliasName)
 
-    private fun getOrCreateModule(moduleName: String) = modules.getOrPut(moduleName) { ModuleDescriptor(moduleName) }
+    private fun getOrCreateModule(moduleName: String) = modules.getOrPut(moduleName) { TestModuleDescriptor(moduleName) }
 
     fun addSymbol(symbol: Symbol) {
-        getOrCreatePackage(symbol.moduleName, symbol.packageName).symbols.add(symbol)
+        val descriptor = getOrCreatePackage(symbol.moduleName, symbol.packageName) as TestPackageDescriptor
+        descriptor.symbols.add(symbol)
     }
 }
 
@@ -58,23 +66,23 @@ data class PreludeImport(
     val alias: String?
 )
 
-class ModuleDescriptor(
+class TestModuleDescriptor(
     val moduleName: String,
-    private val packageDescriptors: MutableMap<String, PackageDescriptor> = mutableMapOf()
+    private val packageDescriptors: MutableMap<String, TestPackageDescriptor> = mutableMapOf()
 ) {
-    fun getOrCreatePackage(packageName: String): PackageDescriptor =
+    fun getOrCreatePackage(packageName: String): TestPackageDescriptor =
         packageDescriptors.getOrPut(packageName) {
-            PackageDescriptor(moduleName, packageName)
+            TestPackageDescriptor(moduleName, packageName)
         }
 }
 
-data class PackageDescriptor(
-    val moduleName: String,
-    val packageName: String,
+data class TestPackageDescriptor(
+    override val moduleName: String,
+    override val packageName: String,
     val symbols: SymbolTable = SymbolTable(),
     val types: TypeTable = TypeTable(),
-) {
-    fun getSymbol(name: String) = symbols.get(name)
-    fun getTypeAlias(name: String) = types.getAlias(name)
+) : PackageDescriptor {
+    override fun getSymbol(name: String) = symbols.get(name)
+    override fun getTypeAlias(name: String) = types.getAlias(name)
 }
 

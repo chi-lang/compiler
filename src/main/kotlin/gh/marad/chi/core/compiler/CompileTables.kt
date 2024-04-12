@@ -13,12 +13,11 @@ class CompileTables(currentPackage: Package,
     private val packageAliasTable = PackageTable()
     private val importedSymbols = mutableMapOf<String, PackageSymbol>()
     private val localSymbolTable = SymbolTable()
-    val localTypeTable = TypeTable()
     val pkg = ns.getOrCreatePackage(currentPackage)
+    val localTypeTable = TypeTable(pkg)
 
     init {
         // add symbols and types defined in this package
-        localTypeTable.add(pkg.types)
         imports.forEach { import ->
             val importedPkg = ns.getOrCreatePackage(import.moduleName, import.packageName)
             if (import.packageAlias != null) {
@@ -27,7 +26,7 @@ class CompileTables(currentPackage: Package,
             import.entries.forEach { entry ->
                 val importedName = entry.alias ?: entry.name
                 importedSymbols[importedName] = PackageSymbol(import.moduleName, import.packageName, entry.name)
-                importedPkg.types.getAlias(entry.name)?.let { typeAlias ->
+                importedPkg.getTypeAlias(entry.name)?.let { typeAlias ->
                     localTypeTable.add(importedName, typeAlias)
                 }
             }
