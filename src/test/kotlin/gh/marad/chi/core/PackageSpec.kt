@@ -3,7 +3,7 @@ package gh.marad.chi.core
 import gh.marad.chi.compile
 import gh.marad.chi.core.analyzer.InvalidModuleName
 import gh.marad.chi.core.analyzer.InvalidPackageName
-import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
+import gh.marad.chi.core.namespace.TestCompilationEnv
 import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.nulls.shouldBeNull
@@ -17,7 +17,7 @@ class PackageSpec {
     @Test
     fun `should set current module and package and define name there`() {
         // when
-        val namespace = GlobalCompilationNamespaceImpl()
+        val namespace = TestCompilationEnv()
         compile(
             """
                 package my.module/some.system

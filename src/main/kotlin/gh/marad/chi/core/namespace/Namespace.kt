@@ -5,9 +5,8 @@ import gh.marad.chi.core.Package
 import gh.marad.chi.core.PackageSymbol
 import gh.marad.chi.core.TypeAlias
 
-interface GlobalCompilationNamespace {
+interface CompilationEnv {
     fun getPreludeImports(): List<PreludeImport>
-    fun getDefaultPackage(): PackageDescriptor
     fun getOrCreatePackage(moduleName: String, packageName: String): PackageDescriptor
     fun getOrCreatePackage(pkg: Package): PackageDescriptor
     fun getSymbol(moduleName: String, packageName: String, symbolName: String): Symbol?
@@ -15,7 +14,7 @@ interface GlobalCompilationNamespace {
     fun getTypeAlias(moduleName: String, packageName: String, typeAliasName: String): TypeAlias?
 }
 
-class GlobalCompilationNamespaceImpl(private val prelude: List<PreludeImport> = emptyList()) : GlobalCompilationNamespace {
+class TestCompilationEnv(private val prelude: List<PreludeImport> = emptyList()) : CompilationEnv {
     private val modules: MutableMap<String, ModuleDescriptor> = mutableMapOf()
 
     init {
@@ -24,7 +23,7 @@ class GlobalCompilationNamespaceImpl(private val prelude: List<PreludeImport> = 
 
     override fun getPreludeImports(): List<PreludeImport> = prelude
 
-    override fun getDefaultPackage() =
+    fun getDefaultPackage() =
         getOrCreatePackage(CompilationDefaults.defaultModule, CompilationDefaults.defaultPacakge)
 
     override fun getOrCreatePackage(moduleName: String, packageName: String): PackageDescriptor =

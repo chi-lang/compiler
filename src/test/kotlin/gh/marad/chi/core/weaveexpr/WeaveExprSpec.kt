@@ -3,7 +3,7 @@ package gh.marad.chi.core.weaveexpr
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.core.*
 import gh.marad.chi.core.expressionast.internal.convertAst
-import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
+import gh.marad.chi.core.namespace.TestCompilationEnv
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.parser.shouldBeStringValue
 import gh.marad.chi.core.parser.testParse
@@ -56,7 +56,7 @@ class WeaveExprSpec {
 
     @Test
     fun `converting to expression`() {
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
         ns.addSymbolInDefaultPackage("toUpper")
         val code = """
             "hello" ~> toUpper(_)
@@ -74,7 +74,7 @@ class WeaveExprSpec {
 
     @Test
     fun `converting chain to expressions`() {
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
         ns.addSymbolInDefaultPackage("toUpper")
         val code = """
             "2hello" 

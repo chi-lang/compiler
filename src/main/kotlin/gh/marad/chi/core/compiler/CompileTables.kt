@@ -7,7 +7,7 @@ import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.parser.readers.Import
 
 class CompileTables(currentPackage: Package,
-                    val ns: GlobalCompilationNamespace,
+                    val ns: CompilationEnv,
                     val imports: List<Import>
     ) {
     private val packageAliasTable = PackageTable()

@@ -3,7 +3,7 @@ package gh.marad.chi.core.compiler
 import gh.marad.chi.core.*
 import gh.marad.chi.core.analyzer.*
 import gh.marad.chi.core.compiler.checks.*
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.CompilationEnv
 import gh.marad.chi.core.namespace.TypeTable
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.*
@@ -14,10 +14,10 @@ import gh.marad.chi.core.types.Function
 object Compiler {
 
     @JvmStatic
-    fun compile(code: String, ns: GlobalCompilationNamespace): CompilationResult = compile(ChiSource(code), ns)
+    fun compile(code: String, ns: CompilationEnv): CompilationResult = compile(ChiSource(code), ns)
 
     @JvmStatic
-    fun compile(source: ChiSource, ns: GlobalCompilationNamespace): CompilationResult {
+    fun compile(source: ChiSource, ns: CompilationEnv): CompilationResult {
         // parsing
 
         val (parsedProgram, messages) =

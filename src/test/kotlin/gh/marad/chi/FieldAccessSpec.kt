@@ -1,7 +1,7 @@
 package gh.marad.chi
 
 import gh.marad.chi.core.*
-import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
+import gh.marad.chi.core.namespace.TestCompilationEnv
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeId
 import io.kotest.matchers.should
@@ -13,7 +13,7 @@ class FieldAccessSpec {
     @Test
     fun `should call function from package that type is declared in`() {
         // given
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
 
         val type = Type.record(TypeId("mod", "pkg", "Type"))
         ns.addTypeDefinition(type)
@@ -58,7 +58,7 @@ class FieldAccessSpec {
     @Test
     fun `should work with multiple chained function calls`() {
         // given
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
         val type = Type.record(TypeId("mod", "pkg", "Type"))
         ns.addTypeDefinition(type)
         ns.addSymbol("mod", "pkg", "bar", Type.fn(type, Type.int), public = true)
@@ -85,8 +85,8 @@ class FieldAccessSpec {
                     .target shouldBe PackageSymbol("mod", "pkg", "bar")
                 barCall.parameters[0].shouldBeTypeOf<VariableAccess>()
                     .target shouldBe PackageSymbol(
-                    ns.getDefaultPackage().moduleName,
-                    ns.getDefaultPackage().packageName,
+                    CompilationDefaults.defaultModule,
+                    CompilationDefaults.defaultPacakge,
                     "foo")
             }
         }
@@ -95,7 +95,7 @@ class FieldAccessSpec {
     @Test
     fun `should prefer reading field value over any function`() {
         // given
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
         val type = Type.record(TypeId("mod", "pkg", "Type"), "bar" to Type.string)
         ns.addTypeDefinition(type)
         ns.addSymbol("mod", "pkg", "Type", Type.fn(Type.string, type), public = true)
@@ -121,7 +121,7 @@ class FieldAccessSpec {
     @Test
     fun `should prefer local function over function from receiver types package`() {
         // given
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
         val type = Type.record(TypeId("mod", "pkg", "Type"))
         ns.addTypeDefinition(type)
         ns.addSymbol("mod", "pkg", "bar", Type.fn(type, Type.int), public = true)
@@ -147,7 +147,7 @@ class FieldAccessSpec {
     @Test
     fun `should read function from aliased package`() {
         // given
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
         ns.addSymbol("mod", "pack", "foo", Type.int, public = true)
 
         // when

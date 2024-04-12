@@ -1,10 +1,10 @@
 package gh.marad.chi.runtime
 
 import gh.marad.chi.core.TypeAlias
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
+import gh.marad.chi.core.namespace.CompilationEnv
 import gh.marad.chi.core.namespace.PreludeImport
 import gh.marad.chi.core.namespace.Symbol
+import gh.marad.chi.core.namespace.TestCompilationEnv
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeId
 import gh.marad.chi.core.types.Variable
@@ -135,8 +135,8 @@ class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
         return elements.filter { it.second.type() == Lua.LuaType.TABLE } + elements.filter { it.second.type() != Lua.LuaType.TABLE }
     }
 
-    fun buildGlobalCompilationNamespace(): GlobalCompilationNamespace {
-        val ns = GlobalCompilationNamespaceImpl(prelude)
+    fun buildGlobalCompilationNamespace(): CompilationEnv {
+        val ns = TestCompilationEnv(prelude)
 
         ns.getOrCreatePackage("std", "lang").symbols.add(
             Symbol("std", "lang", "embedLua",

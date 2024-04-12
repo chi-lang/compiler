@@ -8,11 +8,11 @@ import gh.marad.chi.core.analyzer.CannotAccessInternalName
 import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.analyzer.toCodePoint
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.CompilationEnv
 
 class VisibilityCheckingVisitor(
     private val currentModule: String,
-    private val ns: GlobalCompilationNamespace,
+    private val ns: CompilationEnv,
 ) : DefaultExpressionVisitor {
     private var messages = mutableListOf<Message>()
 

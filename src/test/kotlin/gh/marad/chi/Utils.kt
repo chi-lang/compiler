@@ -6,9 +6,9 @@ import gh.marad.chi.core.TypeAlias
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.compiler.Compiler
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
+import gh.marad.chi.core.namespace.CompilationEnv
 import gh.marad.chi.core.namespace.Symbol
+import gh.marad.chi.core.namespace.TestCompilationEnv
 import gh.marad.chi.core.types.HasTypeId
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeScheme
@@ -17,7 +17,7 @@ data class ErrorMessagesException(val errors: List<Message>) : AssertionError("C
 
 fun compile(
     code: String,
-    namespace: GlobalCompilationNamespace = GlobalCompilationNamespaceImpl(),
+    namespace: CompilationEnv = TestCompilationEnv(),
     ignoreCompilationErrors: Boolean = false
 ): Program {
     val result = Compiler.compile(code, namespace)
@@ -38,11 +38,11 @@ fun compile(
     return program
 }
 
-fun asts(code: String, ns: GlobalCompilationNamespace = GlobalCompilationNamespaceImpl(), ignoreCompilationErrors: Boolean = false): List<Expression> {
+fun asts(code: String, ns: CompilationEnv = TestCompilationEnv(), ignoreCompilationErrors: Boolean = false): List<Expression> {
     return compile(code, ns, ignoreCompilationErrors).expressions
 }
 
-fun messages(code: String, ns: GlobalCompilationNamespace = GlobalCompilationNamespaceImpl()): List<Message> {
+fun messages(code: String, ns: CompilationEnv = TestCompilationEnv()): List<Message> {
     val result = Compiler.compile(code, ns)
     return result.messages
 }
@@ -50,12 +50,12 @@ fun messages(code: String, ns: GlobalCompilationNamespace = GlobalCompilationNam
 
 fun ast(
     code: String,
-    ns: GlobalCompilationNamespace = GlobalCompilationNamespaceImpl(),
+    ns: CompilationEnv = TestCompilationEnv(),
     ignoreCompilationErrors: Boolean = false
 ): Expression = asts(code, ns, ignoreCompilationErrors).last()
 
-fun GlobalCompilationNamespace.addSymbolInDefaultPackage(name: String, type: TypeScheme? = null, public: Boolean = false,
-                                                         mutable: Boolean = false, @Suppress("UNUSED_PARAMETER") slot: Int = 0) {
+fun TestCompilationEnv.addSymbolInDefaultPackage(name: String, type: TypeScheme? = null, public: Boolean = false,
+                                             mutable: Boolean = false, @Suppress("UNUSED_PARAMETER") slot: Int = 0) {
     val pkg = getDefaultPackage()
     pkg.symbols.add(
         Symbol(
@@ -68,8 +68,8 @@ fun GlobalCompilationNamespace.addSymbolInDefaultPackage(name: String, type: Typ
     )
 }
 
-fun GlobalCompilationNamespace.addSymbol(moduleName: String, packageName: String, name: String, type: TypeScheme? = null,
-                                         public: Boolean = false, mutable: Boolean = false, @Suppress("UNUSED_PARAMETER") slot: Int = 0) {
+fun TestCompilationEnv.addSymbol(moduleName: String, packageName: String, name: String, type: TypeScheme? = null,
+                             public: Boolean = false, mutable: Boolean = false, @Suppress("UNUSED_PARAMETER") slot: Int = 0) {
     val pkg = getOrCreatePackage(moduleName, packageName)
     pkg.symbols.add(
         Symbol(
@@ -82,7 +82,7 @@ fun GlobalCompilationNamespace.addSymbol(moduleName: String, packageName: String
     )
 }
 
-fun GlobalCompilationNamespace.addTypeDefinition(type: Type) {
+fun TestCompilationEnv.addTypeDefinition(type: Type) {
     if (type is HasTypeId && type.getTypeId() != null) {
         val id = type.getTypeId()!!
         addTypeDefinition(TypeAlias(id, type))
@@ -91,7 +91,7 @@ fun GlobalCompilationNamespace.addTypeDefinition(type: Type) {
     }
 }
 
-fun GlobalCompilationNamespace.addTypeDefinition(alias: TypeAlias) {
+fun TestCompilationEnv.addTypeDefinition(alias: TypeAlias) {
     val id = alias.typeId
     val pkg = getOrCreatePackage(id.moduleName, id.packageName)
     pkg.types.add(alias)

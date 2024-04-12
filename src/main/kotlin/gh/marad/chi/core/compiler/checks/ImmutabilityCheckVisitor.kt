@@ -9,9 +9,9 @@ import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.analyzer.toCodePoint
 import gh.marad.chi.core.compiler.CompileTables
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.CompilationEnv
 
-class ImmutabilityCheckVisitor(val messages: MutableList<Message>, val tables: CompileTables, val ns: GlobalCompilationNamespace) : DefaultExpressionVisitor {
+class ImmutabilityCheckVisitor(val messages: MutableList<Message>, val tables: CompileTables, val ns: CompilationEnv) : DefaultExpressionVisitor {
 
     fun check(exprs: List<Expression>) {
         exprs.forEach(this::visit)

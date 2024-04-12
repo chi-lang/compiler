@@ -4,12 +4,12 @@ import gh.marad.chi.core.*
 import gh.marad.chi.core.Target
 import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.compiler.CompileTables
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.CompilationEnv
 import gh.marad.chi.core.parser.ChiSource
 
 class InferenceContext(
     val pkg: Package,
-    val ns: GlobalCompilationNamespace,
+    val ns: CompilationEnv,
     val compileTables: CompileTables
 ) {
     private var nextVariableId = 1

@@ -3,7 +3,7 @@ package gh.marad.chi.core.analyzer
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.ast
 import gh.marad.chi.asts
-import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
+import gh.marad.chi.core.namespace.TestCompilationEnv
 import gh.marad.chi.core.types.Array
 import gh.marad.chi.core.types.Function
 import gh.marad.chi.core.types.Type
@@ -20,7 +20,7 @@ class FnCallTypeCheckingSpec {
     @Test
     fun `should check that parameter argument types match`() {
         // given
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
         ns.addSymbolInDefaultPackage("x", Type.int)
         ns.addSymbolInDefaultPackage("test", Type.fn(Type.int, Type.fn(Type.unit), Type.int))
 
@@ -39,7 +39,7 @@ class FnCallTypeCheckingSpec {
     @Test
     fun `should check function arity`() {
         // given
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
         ns.addSymbolInDefaultPackage("test", Type.fn(Type.int, Type.fn(Type.unit), Type.int))
 
         // expect
@@ -55,7 +55,7 @@ class FnCallTypeCheckingSpec {
     @Test
     fun `should check that only functions are called`() {
         // given
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
         ns.addSymbolInDefaultPackage("x", Type.int)
 
         // expect
@@ -68,7 +68,7 @@ class FnCallTypeCheckingSpec {
     @Test
     fun `should resolve generic return type for complex case`() {
         // given
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
         val T = Variable("T", 0)
         val R = Variable("R", 0)
         ns.addSymbolInDefaultPackage("map", Function(

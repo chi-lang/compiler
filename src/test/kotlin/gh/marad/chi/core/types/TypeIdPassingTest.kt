@@ -1,14 +1,14 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.compile
-import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
+import gh.marad.chi.core.namespace.TestCompilationEnv
 import gh.marad.chi.core.utils.printAst
 import org.junit.jupiter.api.Test
 
 class TypeIdPassingTest {
     @Test
     fun `should use declared name type id`() {
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
 
         compile(
             """

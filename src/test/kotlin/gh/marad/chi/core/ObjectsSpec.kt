@@ -4,7 +4,7 @@ import gh.marad.chi.ast
 import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.MemberDoesNotExist
 import gh.marad.chi.core.compiler.Compiler
-import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
+import gh.marad.chi.core.namespace.TestCompilationEnv
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeId
 import gh.marad.chi.messages
@@ -60,7 +60,7 @@ class ObjectsSpec {
                 type Square = { side: float }
                 type Shape = Circle | Square
             """.trimIndent(),
-            GlobalCompilationNamespaceImpl()
+            TestCompilationEnv()
         ).program.typeAliases
 
         // then

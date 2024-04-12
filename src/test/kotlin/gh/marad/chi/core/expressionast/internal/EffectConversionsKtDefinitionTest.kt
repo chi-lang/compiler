@@ -1,7 +1,8 @@
 package gh.marad.chi.core.expressionast.internal
 
+import gh.marad.chi.core.CompilationDefaults
 import gh.marad.chi.core.EffectDefinition
-import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
+import gh.marad.chi.core.namespace.TestCompilationEnv
 import gh.marad.chi.core.parser.readers.ParseEffectDefinition
 import gh.marad.chi.core.parser.readers.TypeNameRef
 import gh.marad.chi.core.parser.readers.TypeParameterRef
@@ -18,23 +19,22 @@ class EffectConversionsKtDefinitionTest {
     @Test
     fun `should be defined in current package`() {
         // given
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
 
         // when
         val result = convertAst(sampleEffectDefinition, ns)
 
-
         // then
         result.shouldBeTypeOf<EffectDefinition>()
-        result.moduleName shouldBe ns.getDefaultPackage().moduleName
-        result.packageName shouldBe ns.getDefaultPackage().packageName
+        result.moduleName shouldBe CompilationDefaults.defaultModule
+        result.packageName shouldBe CompilationDefaults.defaultPacakge
         result.name shouldBe sampleEffectDefinition.name
     }
 
     @Test
     fun `type parameters should be resolved in arguments`() {
         // given
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
         val definition = sampleEffectDefinition.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
             formalArguments = listOf(arg("t", typeName = "T"))
@@ -55,7 +55,7 @@ class EffectConversionsKtDefinitionTest {
     @Test
     fun `type prameters should be resolved in return type`() {
         // given
-        val ns = GlobalCompilationNamespaceImpl()
+        val ns = TestCompilationEnv()
         val definition = sampleEffectDefinition.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
             returnTypeRef = TypeNameRef(null, null, "T", sectionB)

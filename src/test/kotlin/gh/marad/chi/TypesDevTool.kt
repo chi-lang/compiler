@@ -1,7 +1,7 @@
 package gh.marad.chi
 
 import gh.marad.chi.core.compiler.Compiler
-import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
+import gh.marad.chi.core.namespace.TestCompilationEnv
 import gh.marad.chi.core.types.PolyType
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.Variable
@@ -53,7 +53,7 @@ fun main() {
         val p1 = input.map(calcPaper).sum()
     """.trimIndent()
 
-    val ns = GlobalCompilationNamespaceImpl()
+    val ns = TestCompilationEnv()
     ns.addSymbol("aoc", "lib", "load", Type.fn(Type.string, Type.string), public = true)
     val stringTypeId = Type.string.getTypeId()
     ns.addSymbol(stringTypeId.moduleName, stringTypeId.packageName, "split",
