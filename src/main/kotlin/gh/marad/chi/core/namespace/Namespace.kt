@@ -27,6 +27,10 @@ class GlobalCompilationNamespace(val prelude: List<PreludeImport> = emptyList())
         getOrCreatePackage(target.moduleName, target.packageName)
             .getSymbol(target.name)
 
+    fun getTypeAlias(moduleName: String, packageName: String, typeAliasName: String) =
+        getOrCreatePackage(moduleName, packageName)
+            .getTypeAlias(typeAliasName)
+
     private fun getOrCreateModule(moduleName: String) = modules.getOrPut(moduleName) { ModuleDescriptor(moduleName) }
 }
 
