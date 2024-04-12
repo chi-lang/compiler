@@ -2,7 +2,7 @@ package gh.marad.chi.core
 
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.ast
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
 import gh.marad.chi.core.types.Type
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -13,7 +13,7 @@ class ReadingVariablesSpec {
     @Test
     fun `should read package variable`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbolInDefaultPackage("foo", Type.int)
 
         // when
@@ -33,7 +33,7 @@ class ReadingVariablesSpec {
     @Test
     fun `should read package variable from function`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbolInDefaultPackage("foo", Type.int)
 
         // when

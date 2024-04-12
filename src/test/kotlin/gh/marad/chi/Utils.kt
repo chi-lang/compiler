@@ -7,6 +7,7 @@ import gh.marad.chi.core.analyzer.Level
 import gh.marad.chi.core.analyzer.Message
 import gh.marad.chi.core.compiler.Compiler
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.types.HasTypeId
 import gh.marad.chi.core.types.Type
@@ -16,7 +17,7 @@ data class ErrorMessagesException(val errors: List<Message>) : AssertionError("C
 
 fun compile(
     code: String,
-    namespace: GlobalCompilationNamespace = GlobalCompilationNamespace(),
+    namespace: GlobalCompilationNamespace = GlobalCompilationNamespaceImpl(),
     ignoreCompilationErrors: Boolean = false
 ): Program {
     val result = Compiler.compile(code, namespace)
@@ -37,11 +38,11 @@ fun compile(
     return program
 }
 
-fun asts(code: String, ns: GlobalCompilationNamespace = GlobalCompilationNamespace(), ignoreCompilationErrors: Boolean = false): List<Expression> {
+fun asts(code: String, ns: GlobalCompilationNamespace = GlobalCompilationNamespaceImpl(), ignoreCompilationErrors: Boolean = false): List<Expression> {
     return compile(code, ns, ignoreCompilationErrors).expressions
 }
 
-fun messages(code: String, ns: GlobalCompilationNamespace = GlobalCompilationNamespace()): List<Message> {
+fun messages(code: String, ns: GlobalCompilationNamespace = GlobalCompilationNamespaceImpl()): List<Message> {
     val result = Compiler.compile(code, ns)
     return result.messages
 }
@@ -49,7 +50,7 @@ fun messages(code: String, ns: GlobalCompilationNamespace = GlobalCompilationNam
 
 fun ast(
     code: String,
-    ns: GlobalCompilationNamespace = GlobalCompilationNamespace(),
+    ns: GlobalCompilationNamespace = GlobalCompilationNamespaceImpl(),
     ignoreCompilationErrors: Boolean = false
 ): Expression = asts(code, ns, ignoreCompilationErrors).last()
 

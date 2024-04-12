@@ -2,6 +2,7 @@ package gh.marad.chi.runtime
 
 import gh.marad.chi.core.TypeAlias
 import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
 import gh.marad.chi.core.namespace.PreludeImport
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.types.Type
@@ -135,7 +136,7 @@ class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
     }
 
     fun buildGlobalCompilationNamespace(): GlobalCompilationNamespace {
-        val ns = GlobalCompilationNamespace(prelude)
+        val ns = GlobalCompilationNamespaceImpl(prelude)
 
         ns.getOrCreatePackage("std", "lang").symbols.add(
             Symbol("std", "lang", "embedLua",

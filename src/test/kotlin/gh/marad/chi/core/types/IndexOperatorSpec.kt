@@ -3,7 +3,7 @@ package gh.marad.chi.core.types
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.core.analyzer.TypeIsNotIndexable
 import gh.marad.chi.core.analyzer.TypeMismatch
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
 import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 
 @Suppress("unused")
 class IndexOperatorSpec {
-    val ns = GlobalCompilationNamespace().also {
+    val ns = GlobalCompilationNamespaceImpl().also {
         it.addSymbolInDefaultPackage("arr", Type.array(Type.int))
     }
 

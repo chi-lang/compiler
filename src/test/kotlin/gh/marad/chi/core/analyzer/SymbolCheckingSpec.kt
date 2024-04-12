@@ -3,7 +3,7 @@ package gh.marad.chi.core.analyzer
 import gh.marad.chi.addSymbol
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.addTypeDefinition
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeId
 import gh.marad.chi.messages
@@ -43,7 +43,7 @@ class SymbolCheckingSpec {
     @Test
     fun `should find variable defined in package`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbolInDefaultPackage("x", Type.int)
 
         // when
@@ -82,7 +82,7 @@ class SymbolCheckingSpec {
     @Test
     fun `should accept imported symbols`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbol("foo", "bar", "x", Type.int, public = true)
 
         // when
@@ -109,7 +109,7 @@ class SymbolCheckingSpec {
     @Test
     fun `should not emit error message if function is defined in scope`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbolInDefaultPackage("f", Type.fn(Type.int))
 
         // when
@@ -122,7 +122,7 @@ class SymbolCheckingSpec {
     @Test
     fun `should accept using non-public symbols from the same module`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         val pkg = ns.getDefaultPackage()
         ns.addSymbol(pkg.moduleName, "otherPackage", "x", Type.int, public = false)
 
@@ -139,7 +139,7 @@ class SymbolCheckingSpec {
     @Test
     fun `should not accept using non-public symbols from other modules`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbol("otherModule", "foo", "x", public = false)
 
         // when
@@ -156,7 +156,7 @@ class SymbolCheckingSpec {
 
     //@Test
     fun `should not allow using non-public fields in type from other module`() {
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addTypeDefinition(Type.record(
             TypeId("foo", "bar", "Foo"),
             "i" to Type.int,

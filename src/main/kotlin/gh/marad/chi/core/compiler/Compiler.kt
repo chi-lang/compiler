@@ -64,7 +64,7 @@ object Compiler {
         // Build symbol and type tables
         // ============================
 
-        val preludeImports = ns.prelude.map {
+        val preludeImports = ns.getPreludeImports().map {
             Import(it.moduleName, it.packageName, null, listOf(Import.Entry(it.name, it.alias, null)), null)
         }
         val tables = CompileTables(packageDefinition, ns, preludeImports + parsedProgram.imports)

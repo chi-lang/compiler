@@ -4,7 +4,7 @@ package gh.marad.chi.core.analyzer
 
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.compile
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -33,7 +33,7 @@ class AssignmentTypeCheckingSpec  {
 class NameDeclarationTypeCheckingSpec {
     @Test
     fun `should return nothing for simple atom and variable read`() {
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbolInDefaultPackage("x", Type.fn(Type.unit))
         messages("5", ns).shouldBeEmpty()
         messages("x", ns).shouldBeEmpty()
@@ -225,7 +225,7 @@ class IsExprSpec {
 
     @Test
     fun `should also work with imported types`() {
-        val namespace = GlobalCompilationNamespace()
+        val namespace = GlobalCompilationNamespaceImpl()
         val defCode = """
             package foo/bar
             type A = { a: int }
@@ -246,7 +246,7 @@ class IsExprSpec {
 
     @Test
     fun `should not allow importing variables and functions that are not public`() {
-        val namespace = GlobalCompilationNamespace()
+        val namespace = GlobalCompilationNamespaceImpl()
         val defCode = """
             package mymod/mypkg
             fn foo() { return }

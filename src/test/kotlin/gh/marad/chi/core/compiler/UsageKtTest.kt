@@ -4,7 +4,7 @@ import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.addTypeDefinition
 import gh.marad.chi.ast
 import gh.marad.chi.core.*
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeId
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -43,7 +43,7 @@ class UsageKtTest {
     @Test
     fun `assignment should mark value as used`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbolInDefaultPackage("x", Type.int, mutable = true)
         val expr = ast("x = 5", ns).shouldBeTypeOf<Assignment>()
 
@@ -54,7 +54,7 @@ class UsageKtTest {
     @Test
     fun `field assignment should mark value as read`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         val type = Type.record(
             TypeId("mod", "pkg", "Foo"),
             "bar" to Type.int
@@ -70,7 +70,7 @@ class UsageKtTest {
     @Test
     fun `function call should mark parameters as used`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbolInDefaultPackage("func", Type.fn(Type.int, Type.bool, Type.unit))
         val expr = ast("func(5, true)", ns).shouldBeTypeOf<FnCall>()
 
@@ -81,7 +81,7 @@ class UsageKtTest {
     @Test
     fun `index operator should mark index as used`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbolInDefaultPackage("x", Type.array(Type.int))
         val expr = ast("x[5]", ns).shouldBeTypeOf<IndexOperator>()
 
@@ -92,7 +92,7 @@ class UsageKtTest {
     @Test
     fun `indexed assignment should mark index and value as used`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbolInDefaultPackage("x", Type.array(Type.int))
         val expr = ast("x[5] = 8", ns).shouldBeTypeOf<IndexedAssignment>()
 

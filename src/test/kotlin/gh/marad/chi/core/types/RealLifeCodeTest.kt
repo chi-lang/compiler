@@ -2,14 +2,14 @@ package gh.marad.chi.core.types
 
 import gh.marad.chi.addSymbol
 import gh.marad.chi.compile
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
 import gh.marad.chi.core.utils.printAst
 import org.junit.jupiter.api.Test
 
 class RealLifeCodeTest {
     @Test
     fun `should find function from different package by type id`() {
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         compile(
             """
                 package std/lang.array
@@ -32,7 +32,7 @@ class RealLifeCodeTest {
         val typeVar = Variable("T", 1)
         val arrayType = Type.array(typeVar)
         val arrayTypeId = arrayType.getTypeId()
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbol(arrayTypeId.moduleName, arrayTypeId.packageName, "size",
             type = PolyType(0, Type.fn(arrayType, Type.int)), public = true)
         ns.addSymbol(arrayTypeId.moduleName, arrayTypeId.packageName, "add",

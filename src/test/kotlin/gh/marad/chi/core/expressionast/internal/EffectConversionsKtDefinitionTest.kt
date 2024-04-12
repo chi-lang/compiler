@@ -1,7 +1,7 @@
 package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.EffectDefinition
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
 import gh.marad.chi.core.parser.readers.ParseEffectDefinition
 import gh.marad.chi.core.parser.readers.TypeNameRef
 import gh.marad.chi.core.parser.readers.TypeParameterRef
@@ -18,7 +18,7 @@ class EffectConversionsKtDefinitionTest {
     @Test
     fun `should be defined in current package`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
 
         // when
         val result = convertAst(sampleEffectDefinition, ns)
@@ -34,7 +34,7 @@ class EffectConversionsKtDefinitionTest {
     @Test
     fun `type parameters should be resolved in arguments`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         val definition = sampleEffectDefinition.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
             formalArguments = listOf(arg("t", typeName = "T"))
@@ -55,7 +55,7 @@ class EffectConversionsKtDefinitionTest {
     @Test
     fun `type prameters should be resolved in return type`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         val definition = sampleEffectDefinition.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
             returnTypeRef = TypeNameRef(null, null, "T", sectionB)

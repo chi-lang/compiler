@@ -2,7 +2,7 @@ package gh.marad.chi.core
 
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.ast
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
 import gh.marad.chi.core.types.Type
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
@@ -31,7 +31,7 @@ class ParserSpec {
 
     @Test
     fun `should read nested function invocations`() {
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbolInDefaultPackage("a", Type.fn(Type.int, Type.int))
         ns.addSymbolInDefaultPackage("b", Type.fn(Type.int, Type.int))
         ns.addSymbolInDefaultPackage("x", Type.int)

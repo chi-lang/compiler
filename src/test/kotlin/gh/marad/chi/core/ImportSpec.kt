@@ -4,7 +4,7 @@ import gh.marad.chi.addSymbol
 import gh.marad.chi.ast
 import gh.marad.chi.asts
 import gh.marad.chi.compile
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
 import gh.marad.chi.core.namespace.PreludeImport
 import gh.marad.chi.core.types.Type
 import io.kotest.matchers.should
@@ -40,7 +40,7 @@ class ImportSpec {
     @Test
     fun `importing function from package`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbol("std", "time", "millis", Type.fn(Type.int), public = true)
 
         // when
@@ -67,7 +67,7 @@ class ImportSpec {
     @Test
     fun `import function with alias`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbol("std", "time", "millis", Type.fn(Type.int), public = true)
 
         // when
@@ -94,7 +94,7 @@ class ImportSpec {
     @Test
     fun `whole package alias`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbol("std", "time", "millis", Type.fn(Type.int), public = true)
 
         // when
@@ -122,7 +122,7 @@ class ImportSpec {
     @Test
     fun `import package and functions and alias everything`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbol("std", "time", "millis", Type.fn(Type.int), public = true)
 
         // when
@@ -153,7 +153,7 @@ class ImportSpec {
         val prelude = listOf(
             PreludeImport("foo", "bar", "baz", null)
         )
-        val ns = GlobalCompilationNamespace(prelude)
+        val ns = GlobalCompilationNamespaceImpl(prelude)
         ns.addSymbol("foo", "bar", "baz", public = true, type = Type.int)
 
         // when

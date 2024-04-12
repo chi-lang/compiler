@@ -3,31 +3,44 @@ package gh.marad.chi.core.namespace
 import gh.marad.chi.core.CompilationDefaults
 import gh.marad.chi.core.Package
 import gh.marad.chi.core.PackageSymbol
+import gh.marad.chi.core.TypeAlias
 
-class GlobalCompilationNamespace(val prelude: List<PreludeImport> = emptyList()) {
+interface GlobalCompilationNamespace {
+    fun getPreludeImports(): List<PreludeImport>
+    fun getDefaultPackage(): PackageDescriptor
+    fun getOrCreatePackage(moduleName: String, packageName: String): PackageDescriptor
+    fun getOrCreatePackage(pkg: Package): PackageDescriptor
+    fun getSymbol(moduleName: String, packageName: String, symbolName: String): Symbol?
+    fun getSymbol(target: PackageSymbol): Symbol?
+    fun getTypeAlias(moduleName: String, packageName: String, typeAliasName: String): TypeAlias?
+}
+
+class GlobalCompilationNamespaceImpl(private val prelude: List<PreludeImport> = emptyList()) : GlobalCompilationNamespace {
     private val modules: MutableMap<String, ModuleDescriptor> = mutableMapOf()
 
     init {
         getDefaultPackage()
     }
 
-    fun getDefaultPackage() =
+    override fun getPreludeImports(): List<PreludeImport> = prelude
+
+    override fun getDefaultPackage() =
         getOrCreatePackage(CompilationDefaults.defaultModule, CompilationDefaults.defaultPacakge)
 
-    fun getOrCreatePackage(moduleName: String, packageName: String): PackageDescriptor =
+    override fun getOrCreatePackage(moduleName: String, packageName: String): PackageDescriptor =
         getOrCreateModule(moduleName).getOrCreatePackage(packageName)
 
-    fun getOrCreatePackage(pkg: Package): PackageDescriptor =
+    override fun getOrCreatePackage(pkg: Package): PackageDescriptor =
         getOrCreateModule(pkg.moduleName).getOrCreatePackage(pkg.packageName)
 
-    fun getSymbol(moduleName: String, packageName: String, symbolName: String) =
+    override fun getSymbol(moduleName: String, packageName: String, symbolName: String) =
         getOrCreatePackage(moduleName, packageName).getSymbol(symbolName)
 
-    fun getSymbol(target: PackageSymbol) =
+    override fun getSymbol(target: PackageSymbol) =
         getOrCreatePackage(target.moduleName, target.packageName)
             .getSymbol(target.name)
 
-    fun getTypeAlias(moduleName: String, packageName: String, typeAliasName: String) =
+    override fun getTypeAlias(moduleName: String, packageName: String, typeAliasName: String) =
         getOrCreatePackage(moduleName, packageName)
             .getTypeAlias(typeAliasName)
 

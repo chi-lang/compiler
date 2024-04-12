@@ -2,7 +2,7 @@ package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.core.*
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
+import gh.marad.chi.core.namespace.GlobalCompilationNamespaceImpl
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.types.Type
 import io.kotest.matchers.shouldBe
@@ -13,7 +13,7 @@ class VariablesConversionsKtAssignmentTest {
     @Test
     fun `generate assignment`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbolInDefaultPackage("variable", Type.int)
 
         // when
@@ -36,7 +36,7 @@ class VariablesConversionsKtAssignmentTest {
     @Test
     fun `generate indexed assignment`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbolInDefaultPackage("variable", Type.int)
 
         // when
@@ -60,7 +60,7 @@ class VariablesConversionsKtAssignmentTest {
     @Test
     fun `generate field assignment`() {
         // given
-        val ns = GlobalCompilationNamespace()
+        val ns = GlobalCompilationNamespaceImpl()
         ns.addSymbolInDefaultPackage("object", Type.int)
 
         // when
