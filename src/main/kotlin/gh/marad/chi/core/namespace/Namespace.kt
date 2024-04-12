@@ -17,7 +17,6 @@ interface CompilationEnv {
 interface PackageDescriptor {
     val moduleName: String
     val packageName: String
-    fun getSymbol(name: String): Symbol?
     fun getTypeAlias(name: String): TypeAlias?
 }
 
@@ -33,10 +32,10 @@ class TestCompilationEnv(private val prelude: List<PreludeImport> = emptyList())
     fun getDefaultPackage() =
         getOrCreatePackage(CompilationDefaults.defaultModule, CompilationDefaults.defaultPacakge)
 
-    override fun getOrCreatePackage(moduleName: String, packageName: String): PackageDescriptor =
+    override fun getOrCreatePackage(moduleName: String, packageName: String): TestPackageDescriptor =
         getOrCreateModule(moduleName).getOrCreatePackage(packageName)
 
-    override fun getOrCreatePackage(pkg: Package): PackageDescriptor =
+    override fun getOrCreatePackage(pkg: Package): TestPackageDescriptor =
         getOrCreateModule(pkg.moduleName).getOrCreatePackage(pkg.packageName)
 
     override fun getSymbol(moduleName: String, packageName: String, symbolName: String) =
@@ -53,7 +52,7 @@ class TestCompilationEnv(private val prelude: List<PreludeImport> = emptyList())
     private fun getOrCreateModule(moduleName: String) = modules.getOrPut(moduleName) { TestModuleDescriptor(moduleName) }
 
     fun addSymbol(symbol: Symbol) {
-        val descriptor = getOrCreatePackage(symbol.moduleName, symbol.packageName) as TestPackageDescriptor
+        val descriptor = getOrCreatePackage(symbol.moduleName, symbol.packageName)
         descriptor.symbols.add(symbol)
     }
 }
@@ -82,7 +81,7 @@ data class TestPackageDescriptor(
     val symbols: SymbolTable = SymbolTable(),
     val types: TypeTable = TypeTable(),
 ) : PackageDescriptor {
-    override fun getSymbol(name: String) = symbols.get(name)
+    fun getSymbol(name: String) = symbols.get(name)
     override fun getTypeAlias(name: String) = types.getAlias(name)
 }
 

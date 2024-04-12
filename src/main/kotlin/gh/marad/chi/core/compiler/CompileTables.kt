@@ -6,9 +6,9 @@ import gh.marad.chi.core.TypeAlias
 import gh.marad.chi.core.namespace.*
 import gh.marad.chi.core.parser.readers.Import
 
-class CompileTables(currentPackage: Package,
+class CompileTables(val currentPackage: Package,
                     val ns: CompilationEnv,
-                    val imports: List<Import>
+                    imports: List<Import>
     ) {
     private val packageAliasTable = PackageTable()
     private val importedSymbols = mutableMapOf<String, PackageSymbol>()
@@ -26,7 +26,7 @@ class CompileTables(currentPackage: Package,
             import.entries.forEach { entry ->
                 val importedName = entry.alias ?: entry.name
                 importedSymbols[importedName] = PackageSymbol(import.moduleName, import.packageName, entry.name)
-                importedPkg.getTypeAlias(entry.name)?.let { typeAlias ->
+                ns.getTypeAlias(import.moduleName, import.packageName, entry.name)?.let { typeAlias ->
                     localTypeTable.add(importedName, typeAlias)
                 }
             }
@@ -39,7 +39,9 @@ class CompileTables(currentPackage: Package,
     }
 
     fun getLocalSymbol(name: String): Symbol? {
-        return localSymbolTable.get(name) ?: importedSymbols[name]?.let(ns::getSymbol)  ?: pkg.getSymbol(name)
+        return localSymbolTable.get(name)
+            ?: importedSymbols[name]?.let(ns::getSymbol)
+            ?: ns.getSymbol(currentPackage.moduleName, currentPackage.packageName, name)
     }
 
     fun defineSymbol(symbol: Symbol) {

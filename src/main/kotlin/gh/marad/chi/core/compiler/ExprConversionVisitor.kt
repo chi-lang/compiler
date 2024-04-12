@@ -174,7 +174,9 @@ class ExprConversionVisitor(
 
     override fun visitFieldAccess(parseFieldAccess: ParseFieldAccess): Expression {
         val pkg = tables.getAliasedPackage(parseFieldAccess.receiverName)
-        val pkgSymbol = pkg?.getSymbol(parseFieldAccess.memberName)
+        val pkgSymbol = pkg?.let {
+            tables.ns.getSymbol(it.moduleName, it.packageName, parseFieldAccess.memberName)
+        }
         if (pkg != null && pkgSymbol != null) {
             return VariableAccess(
                 PackageSymbol(pkgSymbol.moduleName, pkgSymbol.packageName, parseFieldAccess.memberName),

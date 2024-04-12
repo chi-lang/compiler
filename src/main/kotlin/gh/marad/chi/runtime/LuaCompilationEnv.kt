@@ -22,12 +22,25 @@ class LuaCompilationEnv(
         return getOrCreatePackage(pkg.moduleName, pkg.packageName)
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun getSymbol(moduleName: String, packageName: String, symbolName: String): Symbol? {
-        return getOrCreatePackage(moduleName, packageName).getSymbol(symbolName)
+        val luaPkgPath = "chi.${moduleName.replace(".", "_")}.${packageName.replace('.', '_')}"
+        val path = "$luaPkgPath._package.$symbolName"
+        val map = luaEnv.lua.execute("return $path")?.get(0)?.toJavaObject() ?: return null
+        map as Map<String, Any>
+        return Symbol(
+            moduleName,
+            packageName,
+            symbolName,
+            type = (map["type"] as String?)?.let { TypeWriter.decodeType(it) },
+            public = map["public"] as Boolean,
+            mutable = map["mutable"] as Boolean
+        )
+
     }
 
     override fun getSymbol(target: PackageSymbol): Symbol? {
-        return getOrCreatePackage(target.moduleName, target.packageName).getSymbol(target.name)
+        return getSymbol(target.moduleName, target.packageName, target.name)
     }
 
     override fun getTypeAlias(moduleName: String, packageName: String, typeAliasName: String): TypeAlias? {
@@ -41,21 +54,6 @@ class LuaCompilationEnv(
         private val luaEnv: LuaEnv,
     ) : PackageDescriptor {
         val luaPkgPath = "chi.${moduleName.replace(".", "_")}.${packageName.replace('.', '_')}"
-
-        @Suppress("UNCHECKED_CAST")
-        override fun getSymbol(name: String): Symbol? {
-            val path = "$luaPkgPath._package.$name"
-            val map = luaEnv.lua.execute("return $path")?.get(0)?.toJavaObject() ?: return null
-            map as Map<String, Any>
-            return Symbol(
-                moduleName,
-                packageName,
-                name,
-                type = (map["type"] as String?)?.let { TypeWriter.decodeType(it) },
-                public = map["public"] as Boolean,
-                mutable = map["mutable"] as Boolean
-            )
-        }
 
         override fun getTypeAlias(name: String): TypeAlias? {
             val path = "$luaPkgPath._types.$name"
