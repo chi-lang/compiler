@@ -5,14 +5,15 @@ import gh.marad.chi.core.PackageSymbol
 import gh.marad.chi.core.TypeAlias
 import gh.marad.chi.core.namespace.CompilationEnv
 import gh.marad.chi.core.namespace.PackageDescriptor
-import gh.marad.chi.core.namespace.PreludeImport
 import gh.marad.chi.core.namespace.Symbol
+import gh.marad.chi.core.parser.readers.Import
 import gh.marad.chi.core.types.TypeId
 
 class LuaCompilationEnv(
-    val luaEnv: LuaEnv
+    val luaEnv: LuaEnv,
+    val imports: Set<Import> = emptySet()
 ) : CompilationEnv {
-    override fun getPreludeImports(): List<PreludeImport> = luaEnv.prelude
+    override fun getPreludeImports(): List<Import> = luaEnv.prelude + imports
 
     override fun getOrCreatePackage(moduleName: String, packageName: String): PackageDescriptor {
         return LuaPackageDescriptor(moduleName, packageName, luaEnv)

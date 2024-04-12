@@ -1,6 +1,6 @@
 package gh.marad.chi.runtime
 
-import gh.marad.chi.core.namespace.PreludeImport
+import gh.marad.chi.core.parser.readers.Import
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.Variable
 import gh.marad.chi.lua.formatLuaCode
@@ -8,7 +8,7 @@ import gh.marad.chi.runtime.TypeWriter.encodeType
 import party.iroiro.luajava.Lua
 import party.iroiro.luajava.lua54.Lua54
 
-class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
+class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
     val lua = Lua54().also { init(it) }
 
     fun eval(code: String, dontEvalOnlyShowLuaCode: Boolean = false): Boolean {
@@ -55,13 +55,16 @@ class LuaEnv(val prelude: MutableList<PreludeImport> = mutableListOf()) {
                 std = { 
                     lang = { 
                         _package = {
-                            println = { public=true, mutable=false, type='${encodeType(Type.fn(Type.any, Type.unit))}' },
+                            println    = { public=true, mutable=false, type='${encodeType(Type.fn(Type.any, Type.unit))}' },
                             compileLua = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.string))}' },
-                            eval = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.any))}' },
-                            embedLua = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("t@embedLua", 1)))}' },
-                            luaExpr = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("t@luaExpr", 1)))}' },
+                            eval       = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.any))}' },
+                            embedLua   = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("t@embedLua", 1)))}' },
+                            luaExpr    = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("t@luaExpr", 1)))}' },
                         },
-                        println = chi_println,
+                        println = function(to_show)
+                            io.write(tostring(to_show), "\n")
+                            io.flush()
+                        end,
                         compileLua = chi_compile,
                         eval = function(chi_code)
                             code = chi_compile(chi_code)

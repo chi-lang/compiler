@@ -1,6 +1,7 @@
 package gh.marad.chi
 
 import gh.marad.chi.core.compiler.Compiler
+import gh.marad.chi.core.parser.readers.Import
 import gh.marad.chi.core.types.Function
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.lua.LuaEmitter
@@ -13,6 +14,7 @@ class Repl(
     private val env: LuaEnv,
     var showCompiledLuaCode: Boolean = false,
 ) {
+    private val imports = mutableSetOf<Import>()
 
     private val commands: MutableMap<String, (Array<String>) -> Unit> = mutableMapOf(
         ".exit" to { _: Array<String> ->
@@ -23,8 +25,24 @@ class Repl(
             println("Toggling compiled lua code visibility.")
             showCompiledLuaCode = !showCompiledLuaCode
         },
+        ".imports" to { _: Array<String> ->
+            println("Active imports: ")
+            imports.forEach { import ->
+                val packageAlias = import.packageAlias?.let { " as $it" } ?: ""
+                val entries = import.entries.joinToString(", ") { entry ->
+                    val entryAlias = entry.alias?.let { " as $it" } ?: ""
+                    "${entry.name}$entryAlias"
+                }
+                println(" - ${import.moduleName}/${import.packageName}$packageAlias { $entries }")
+            }
+        },
+        ".clearImports" to { _: Array<String> ->
+            imports.clear()
+            println("Imports cleared!")
+        },
+
     ).also {
-        it[".help"] = { args: Array<String> ->
+        it[".help"] = { _: Array<String> ->
             println("Available commands:")
             println("\t${it.keys.joinToString(" ")}")
         }
@@ -41,14 +59,10 @@ class Repl(
         }
     }
 
-    fun run(initialCommands: List<String> = emptyList()) {
-        val preload = initialCommands.toMutableList()
+    fun run() {
         while (true) {
             print("> ")
-            val code = if (preload.isNotEmpty()) {
-                preload.removeFirst().also { println(it) }
-            } else readlnOrNull()?.replace(";", "\n")?.trim()
-
+            val code = readlnOrNull()?.replace(";", "\n")?.trim()
 
             if (!code.isNullOrBlank()) {
 
@@ -61,7 +75,7 @@ class Repl(
                     code.trimStart(' ', '@')
                 } else {
                     try {
-                        val ns = LuaCompilationEnv(env)
+                        val ns = LuaCompilationEnv(env, imports)
                         val compilationResult = Compiler.compile(code, ns)
                         if (compilationResult.hasErrors()) {
                             compilationResult.messages.forEach {
@@ -70,6 +84,8 @@ class Repl(
                             continue
                         }
                         resultType = compilationResult.program.expressions.lastOrNull()?.type
+
+                        imports.addAll(compilationResult.program.imports)
 
                         val emitter = LuaEmitter(compilationResult.program)
                         emitter.emit(returnLastValue = true)

@@ -1,6 +1,6 @@
 package gh.marad.chi
 
-import gh.marad.chi.core.namespace.PreludeImport
+import gh.marad.chi.core.parser.readers.Import
 import gh.marad.chi.runtime.LuaEnv
 import org.docopt.Docopt
 import java.nio.file.Files
@@ -33,11 +33,13 @@ fun main(args: Array<String>) {
     val file = opts["FILE"] as String?
     val modules = opts["--module"] as ArrayList<String>
 
-    val prelude = mutableListOf<PreludeImport>()
-    prelude.add(PreludeImport("std", "lang", "println", null))
-    prelude.add(PreludeImport("std", "lang", "eval", null))
+    val imports = mutableListOf<Import>()
+    imports.add(Import("std", "lang", packageAlias = null, entries = listOf(
+        Import.Entry("println", alias = null, section = null),
+        Import.Entry("eval", alias = null, section = null)
+    ), null))
 
-    val env = LuaEnv(prelude)
+    val env = LuaEnv(imports)
 
     // TODO: load modules
     evalModules(env, modules)

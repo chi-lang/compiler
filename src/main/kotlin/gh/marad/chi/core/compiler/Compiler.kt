@@ -64,10 +64,7 @@ object Compiler {
         // Build symbol and type tables
         // ============================
 
-        val preludeImports = ns.getPreludeImports().map {
-            Import(it.moduleName, it.packageName, null, listOf(Import.Entry(it.name, it.alias, null)), null)
-        }
-        val tables = CompileTables(packageDefinition, ns, preludeImports + parsedProgram.imports)
+        val tables = CompileTables(packageDefinition, ns, ns.getPreludeImports() + parsedProgram.imports)
 
         val definedTypeAliases = parsedProgram.typeAliases.map { typeAliasDef ->
             val typeSchemeVariables = typeAliasDef.typeParameters.map { it.name }

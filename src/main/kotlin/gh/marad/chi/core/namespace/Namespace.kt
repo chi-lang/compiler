@@ -4,9 +4,10 @@ import gh.marad.chi.core.CompilationDefaults
 import gh.marad.chi.core.Package
 import gh.marad.chi.core.PackageSymbol
 import gh.marad.chi.core.TypeAlias
+import gh.marad.chi.core.parser.readers.Import
 
 interface CompilationEnv {
-    fun getPreludeImports(): List<PreludeImport>
+    fun getPreludeImports(): List<Import>
     fun getOrCreatePackage(moduleName: String, packageName: String): PackageDescriptor
     fun getOrCreatePackage(pkg: Package): PackageDescriptor
     fun getSymbol(moduleName: String, packageName: String, symbolName: String): Symbol?
@@ -20,14 +21,14 @@ interface PackageDescriptor {
     fun getTypeAlias(name: String): TypeAlias?
 }
 
-class TestCompilationEnv(private val prelude: List<PreludeImport> = emptyList()) : CompilationEnv {
+class TestCompilationEnv(private val imports: List<Import> = emptyList()) : CompilationEnv {
     private val modules: MutableMap<String, TestModuleDescriptor> = mutableMapOf()
 
     init {
         getDefaultPackage()
     }
 
-    override fun getPreludeImports(): List<PreludeImport> = prelude
+    override fun getPreludeImports(): List<Import> = imports
 
     fun getDefaultPackage() =
         getOrCreatePackage(CompilationDefaults.defaultModule, CompilationDefaults.defaultPacakge)
@@ -63,7 +64,14 @@ data class PreludeImport(
     val packageName: String,
     val name: String,
     val alias: String?
-)
+) {
+    fun toImport() = Import(moduleName, packageName, packageAlias = null,
+        entries = listOf(
+            Import.Entry(name, alias, section = null)
+        ),
+        section = null
+    )
+}
 
 class TestModuleDescriptor(
     val moduleName: String,

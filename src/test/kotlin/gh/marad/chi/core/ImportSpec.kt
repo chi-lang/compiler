@@ -151,7 +151,7 @@ class ImportSpec {
     fun `should import prelude`() {
         // given
         val prelude = listOf(
-            PreludeImport("foo", "bar", "baz", null)
+            PreludeImport("foo", "bar", "baz", null).toImport()
         )
         val ns = TestCompilationEnv(prelude)
         ns.addSymbol("foo", "bar", "baz", public = true, type = Type.int)
