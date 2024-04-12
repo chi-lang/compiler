@@ -283,7 +283,10 @@ class LuaEmitter(val program: Program) {
         val contents = term.values.map {
             emitExpr(it, true)
         }.joinToString(",")
-        return "({$contents})"
+        val name = nextTmpName()
+        emitCode("local $name={$contents};")
+        emitCode("setmetatable($name, array_meta_table);")
+        return name
     }
 
     private fun emitCreateRecord(term: CreateRecord, needResult: Boolean): String {
@@ -292,7 +295,10 @@ class LuaEmitter(val program: Program) {
             "${it.name}=$value"
         }.joinToString(",")
 
-        return "({$contents})"
+        val name = nextTmpName()
+        emitCode("local $name={$contents};")
+        emitCode("setmetatable($name, record_meta_table);")
+        return name
     }
 
     private fun emitAssignment(term: Assignment, needResult: Boolean): String {

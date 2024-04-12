@@ -2,7 +2,6 @@ package gh.marad.chi
 
 import gh.marad.chi.core.compiler.Compiler
 import gh.marad.chi.core.parser.readers.Import
-import gh.marad.chi.core.types.Function
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.lua.LuaEmitter
 import gh.marad.chi.runtime.LuaCompilationEnv
@@ -60,6 +59,20 @@ class Repl(
     }
 
     fun run() {
+
+        env.lua.run("""
+            function repl_print(value, chi_type)
+                if chi_type == "unit" then return end
+                local t = type(value)
+                if t == "function" then chi_print("<function>")
+                else
+                    chi_print(value, false)
+                end
+                if chi_type then chi_print(" : " .. chi_type) end
+                chi_println("")
+            end
+        """.trimIndent())
+
         while (true) {
             print("> ")
             val code = readlnOrNull()?.replace(";", "\n")?.trim()
@@ -98,24 +111,15 @@ class Repl(
                 if (showCompiledLuaCode) {
                     println("@ $luaCode")
                 }
+                env.lua.getGlobal("repl_print")
                 env.lua.load(luaCode)
                 val status = env.lua.pCall(0, 1)
                 if (status != LuaError.OK) {
                     val errorMessage = env.lua.get().toJavaObject()
                     println("Error: $errorMessage")
                 } else {
-                    val luaValue = env.lua.get()
-                    var result = luaValue.toJavaObject()
-                    if (resultType is Function) {
-                        result = "<function>"
-                    }
-                    if (resultType != Type.unit) {
-                        if (result != null && resultType != null) {
-                            println("$result : $resultType")
-                        } else if (result != null) {
-                            println("$result")
-                        }
-                    }
+                    env.lua.push(resultType.toString())
+                    env.lua.pCall(2, 0)
                 }
             }
         }

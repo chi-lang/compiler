@@ -33,12 +33,6 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
     private fun init(lua: Lua) {
         lua.openLibraries()
 
-        lua.register("chi_println") {
-            val arg = it.get().toJavaObject()
-            println(arg)
-            0
-        }
-
         lua.register("chi_compile") {
             val code = it.get().toJavaObject() as String
             val luaCode = LuaCompiler(this).compileToLua(code, LuaCompiler.ErrorStrategy.PRINT)
@@ -51,6 +45,24 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
         }
 
         lua.run("""
+            function chi_tostring(value)
+                if type(value) == 'function' then
+                    return '<function>'
+                else 
+                    return tostring(value)
+                end
+            end
+            
+            chi_print = function(to_show, flush)
+                io.write(chi_tostring(to_show))
+                if not flush then io.flush() end
+            end
+            
+            chi_println = function(to_show, flush)
+                io.write(chi_tostring(to_show), "\n")
+                if not flush then io.flush() end
+            end
+            
             chi = { 
                 std = { 
                     lang = { 
@@ -58,22 +70,40 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                             println    = { public=true, mutable=false, type='${encodeType(Type.fn(Type.any, Type.unit))}' },
                             compileLua = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.string))}' },
                             eval       = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.any))}' },
-                            embedLua   = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("t@embedLua", 1)))}' },
-                            luaExpr    = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("t@luaExpr", 1)))}' },
+                            embedLua   = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("a", 1)))}' },
+                            luaExpr    = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("a", 1)))}' },
                         },
-                        println = function(to_show)
-                            io.write(tostring(to_show), "\n")
-                            io.flush()
-                        end,
+                        print = chi_print,
+                        println = chi_println,
                         compileLua = chi_compile,
                         eval = function(chi_code)
                             code = chi_compile(chi_code)
                             local f = load(code)
                             return f()
                         end,
-                    } 
+                    }
                 },
                 user = { default = { _package = {}, _types = {} } }
+            }
+            
+            array_meta_table = {
+                __tostring = function(arr)
+                    local s = {}
+                    for _, v in ipairs(arr) do
+                        table.insert(s, chi_tostring(v))
+                    end
+                    return "[" .. table.concat(s, ", ") .. "]"
+                end
+            }
+            
+            record_meta_table = {
+                __tostring = function(rec)
+                    local s = {}
+                    for k, v in pairs(rec) do
+                        table.insert(s, chi_tostring(k) .. ": " .. chi_tostring(v))
+                    end
+                    return "{" .. table.concat(s, ", ") .. "}"
+                end
             }
             
             function define(module, package, name, public, mutable, type, value)
