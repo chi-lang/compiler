@@ -1,7 +1,9 @@
 package gh.marad.chi
 
 import gh.marad.chi.core.parser.readers.Import
+import gh.marad.chi.runtime.LuaCompiler
 import gh.marad.chi.runtime.LuaEnv
+import gh.marad.chi.runtime.ModuleLoader
 import org.docopt.Docopt
 import java.nio.file.Files
 import java.nio.file.Path
@@ -41,7 +43,9 @@ fun main(args: Array<String>) {
 
     val env = LuaEnv(imports)
 
-    // TODO: load modules
+    env.setModuleLoader(ModuleLoader(
+        LuaCompiler(env), Path.of("D:/dev/chi-stdlib")))
+
     evalModules(env, modules)
 
     if (opts["compile"] == true) {

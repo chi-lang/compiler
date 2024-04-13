@@ -55,7 +55,7 @@ fun main() {
     val luaCompiler = LuaCompiler(env)
     val loader = ModuleLoader(luaCompiler, Path.of("D:/dev/chi-stdlib"))
     try {
-        val code = loader.load("std", "string")
+        val code = loader.load("std", "lang.string")
         println(formatLuaCode(code))
         env.lua.run(code)
     } catch (ex: LuaCompiler.Error) {

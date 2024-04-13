@@ -7,6 +7,7 @@ import gh.marad.chi.lua.formatLuaCode
 import gh.marad.chi.runtime.TypeWriter.encodeType
 import party.iroiro.luajava.Lua
 import party.iroiro.luajava.lua54.Lua54
+import java.nio.ByteBuffer
 
 class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
     val lua = Lua54().also { init(it) }
@@ -27,6 +28,20 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
             } else {
                 true
             }
+        }
+    }
+
+    fun setModuleLoader(loader: ModuleLoader) {
+        lua.setExternalLoader { qualifier, L ->
+            val (modName, pkgName) = qualifier.split("/")
+            println("Loading $modName / $pkgName")
+            val luaCode = loader.load(modName, pkgName)
+            println("Lua code: $luaCode")
+            val bytes = luaCode.toByteArray()
+            val buffer = ByteBuffer.allocateDirect(bytes.size)
+            buffer.put(bytes)
+            buffer.flip()
+            buffer
         }
     }
 
