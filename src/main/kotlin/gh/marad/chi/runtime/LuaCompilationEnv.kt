@@ -38,7 +38,6 @@ class LuaCompilationEnv(
             public = map["public"] as Boolean,
             mutable = map["mutable"] as Boolean
         )
-
     }
 
     override fun getSymbol(target: PackageSymbol): Symbol? {
