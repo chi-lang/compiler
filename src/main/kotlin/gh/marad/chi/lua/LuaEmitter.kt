@@ -11,17 +11,15 @@ class LuaEmitter(val program: Program) {
         sb = StringBuilder()
         val mod = modName()
         val pkg = pkgName()
+        val luaPkgPath =luaPackagePath(mod, pkg)
         if (!(mod == CompilationDefaults.defaultModule && pkg == CompilationDefaults.defaultPacakge)) {
-            emitCode("if not chi.$mod then chi.$mod={} end;")
-            emitCode("if not chi.$mod.$pkg then chi.$mod.$pkg={} end;")
-            emitCode("if not chi.$mod.$pkg._package then chi.$mod.$pkg._package={} end;")
-            emitCode("if not chi.$mod.$pkg._types then chi.$mod.$pkg._types={} end;")
+            emitCode("if not $luaPkgPath then $luaPkgPath = { _package={}, _types={} } end;")
         }
 
         emitPackageInfo()
 
         program.typeAliases.forEach {
-            emitCode("chi.$mod.$pkg._types.${it.typeId.name}=\"")
+            emitCode("$luaPkgPath._types.${it.typeId.name}=\"")
             emitCode(encodeType(it.type))
             emitCode("\";")
         }
@@ -48,7 +46,7 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitPackageInfo() {
-        val descPath = "${generateModuleName(program.packageDefinition.moduleName, program.packageDefinition.packageName)}._package"
+        val descPath = "${luaPackagePath(program.packageDefinition.moduleName, program.packageDefinition.packageName)}._package"
         val iter = program.expressions.filterIsInstance<NameDeclaration>().iterator()
 
         while(iter.hasNext()) {
@@ -548,27 +546,27 @@ class LuaEmitter(val program: Program) {
     }
 
 
-    private fun modName(): String =
-        program.packageDefinition.moduleName.replace(".", "_")
-
-    private fun modName(name: String): String =
-        name.replace(".", "_")
-    private fun pkgName(): String =
-        program.packageDefinition.packageName.replace(".", "_")
-
-    private fun pkgName(pkg: String): String =
-        pkg.replace(".", "_")
-
-    private fun generateModuleName(module: String, pkg: String): String =
-        "chi.${modName(module)}.${pkgName(pkg)}"
-
-    private fun qualifiedName(module: String, pkg: String, name: String): String =
-        "${generateModuleName(module, pkg)}.$name"
-
+    private fun modName(): String = Companion.modName(program.packageDefinition.moduleName)
+    private fun pkgName(): String = Companion.pkgName(program.packageDefinition.packageName)
     private fun qualifiedName(name: String) =
         qualifiedName(
             program.packageDefinition.moduleName,
             program.packageDefinition.packageName,
             name)
+
+    companion object {
+        fun modName(name: String): String =
+            name.replace(".", "_")
+
+        fun pkgName(pkg: String): String =
+            pkg.replace(".", "_")
+
+        fun luaPackagePath(module: String, pkg: String): String =
+            "chi.${modName(module)}__${pkgName(pkg)}"
+
+        fun qualifiedName(module: String, pkg: String, name: String): String =
+            "${luaPackagePath(module, pkg)}.$name"
+
+    }
 
 }

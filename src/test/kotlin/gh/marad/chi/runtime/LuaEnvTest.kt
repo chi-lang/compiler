@@ -121,6 +121,22 @@ class LuaEnvTest {
         """.trimIndent()) shouldBe 5.0
     }
 
+    @Test
+    fun `should define and load types`() {
+        val env = LuaEnv()
+        eval("""
+            package some/pkg
+            type A = int | unit
+        """.trimIndent(), env)
+
+        eval("""
+            package ohter/pkg
+            import some/pkg { A }
+            val a: A = 5
+        """.trimIndent(), env) shouldBe 5.0
+
+    }
+
     private fun eval(code: String, extEnv: LuaEnv? = null): Any? {
         val env = extEnv ?: LuaEnv()
         return if (env.eval(code, dontEvalOnlyShowLuaCode = false)) {

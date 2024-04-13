@@ -78,27 +78,27 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                 if not flush then io.flush() end
             end
             
-            chi = { 
-                std = { 
-                    lang = { 
-                        _package = {
-                            println    = { public=true, mutable=false, type='${encodeType(Type.fn(Type.any, Type.unit))}' },
-                            compileLua = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.string))}' },
-                            eval       = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.any))}' },
-                            embedLua   = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("a", 1)))}' },
-                            luaExpr    = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("a", 1)))}' },
-                        },
-                        print = chi_print,
-                        println = chi_println,
-                        compileLua = chi_compile,
-                        eval = function(chi_code)
-                            code = chi_compile(chi_code)
-                            local f = load(code)
-                            return f()
-                        end,
-                    }
+            chi = {}
+            chi.std__lang = {
+                _package = {
+                    println    = { public=true, mutable=false, type='${encodeType(Type.fn(Type.any, Type.unit))}' },
+                    compileLua = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.string))}' },
+                    eval       = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.any))}' },
+                    embedLua   = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("a", 1)))}' },
+                    luaExpr    = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("a", 1)))}' },
                 },
-                user = { default = { _package = {}, _types = {} } }
+                print = chi_print,
+                println = chi_println,
+                compileLua = chi_compile,
+                eval = function(chi_code)
+                    code = chi_compile(chi_code)
+                    local f = load(code)
+                    return f()
+                end,
+            }
+            chi.user__default = {
+                _package = {},
+                _types = {}
             }
             
             array_meta_table = {
