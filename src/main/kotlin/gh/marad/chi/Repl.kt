@@ -118,7 +118,11 @@ class Repl(
                     val errorMessage = env.lua.get().toJavaObject()
                     println("Error: $errorMessage")
                 } else {
-                    env.lua.push(resultType.toString())
+                    if (resultType != null) {
+                        env.lua.push(resultType.toString())
+                    } else {
+                        env.lua.pushNil()
+                    }
                     env.lua.pCall(2, 0)
                 }
             }

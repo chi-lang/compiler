@@ -45,6 +45,11 @@ fun main(args: Array<String>) {
 
     env.setModuleLoader(ModuleLoader(
         LuaCompiler(env), Path.of("D:/dev/chi-stdlib")))
+    env.lua.run("""
+        require("std/lang.option")
+        require("std/lang.array")
+        require("std/lang.string")
+    """.trimIndent())
 
     evalModules(env, modules)
 

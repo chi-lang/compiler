@@ -24,6 +24,11 @@ class LuaEmitter(val program: Program) {
             emitCode("\";")
         }
 
+        // Requires must be after _package and _types declarations to avoid circular dependencies
+        program.imports.forEach {
+            emitCode("require(\"${it.moduleName}/${it.packageName}\");")
+        }
+
         val iter = program.expressions.iterator()
         while(iter.hasNext()) {
             val result = emitExpr(iter.next(), returnLastValue && !iter.hasNext())

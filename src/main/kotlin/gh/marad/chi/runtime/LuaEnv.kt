@@ -15,7 +15,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
     fun eval(code: String, dontEvalOnlyShowLuaCode: Boolean = false): Boolean {
         val luaCode = LuaCompiler(this).compileToLua(code, LuaCompiler.ErrorStrategy.PRINT)
             ?: return false
-        return if (dontEvalOnlyShowLuaCode ) {
+        return if (dontEvalOnlyShowLuaCode) {
             println(formatLuaCode(luaCode))
             true
         } else {
@@ -34,9 +34,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
     fun setModuleLoader(loader: ModuleLoader) {
         lua.setExternalLoader { qualifier, L ->
             val (modName, pkgName) = qualifier.split("/")
-            println("Loading $modName / $pkgName")
             val luaCode = loader.load(modName, pkgName)
-            println("Lua code: $luaCode")
             val bytes = luaCode.toByteArray()
             val buffer = ByteBuffer.allocateDirect(bytes.size)
             buffer.put(bytes)
@@ -61,8 +59,11 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
 
         lua.run("""
             function chi_tostring(value)
-                if type(value) == 'function' then
+                local t = type(value)
+                if t == 'function' then
                     return '<function>'
+                elseif t == 'nil' then
+                    return 'unit'
                 else 
                     return tostring(value)
                 end
@@ -78,6 +79,11 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                 if not flush then io.flush() end
             end
             
+            chi_reload_module = function(module)
+                package.loaded[module] = nil
+                require(module)
+            end
+            
             chi = {}
             chi.std__lang = {
                 _package = {
@@ -86,6 +92,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                     eval       = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.any))}' },
                     embedLua   = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("a", 1)))}' },
                     luaExpr    = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("a", 1)))}' },
+                    reload     = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.unit))}' },
                 },
                 print = chi_print,
                 println = chi_println,
@@ -95,11 +102,17 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                     local f = load(code)
                     return f()
                 end,
+                reload = chi_reload_module,
             }
+            
+            package.loaded["std/lang"] = chi.std__lang
+            
+            
             chi.user__default = {
                 _package = {},
                 _types = {}
             }
+            
             
             array_meta_table = {
                 __tostring = function(arr)
@@ -148,7 +161,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                     newArgs = coroutine.yield(effectName, args)
                 end
                 return chi_handle_effect(co, newArgs, handlers)
-            end
+            end    
         """.trimIndent())
     }
 }
