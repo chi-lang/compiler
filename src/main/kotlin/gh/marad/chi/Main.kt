@@ -43,14 +43,21 @@ fun main(args: Array<String>) {
 
     val env = LuaEnv(imports)
 
-    env.setModuleLoader(ModuleLoader(
-        LuaCompiler(env), Path.of("D:/dev/chi-stdlib")))
-    env.lua.run("""
-        require("std/lang.option")
-        require("std/lang.array")
-        require("std/lang.string")
-    """.trimIndent())
-
+    val chiHome = System.getenv("CHI_HOME")
+    if (chiHome != null) {
+        env.setModuleLoader(
+            ModuleLoader(
+                LuaCompiler(env), Path.of(chiHome,"lib")
+            )
+        )
+        env.lua.run(
+            """
+                require("std/lang.option")
+                require("std/lang.array")
+                require("std/lang.string")
+            """.trimIndent()
+        )
+    }
     evalModules(env, modules)
 
     if (opts["compile"] == true) {
