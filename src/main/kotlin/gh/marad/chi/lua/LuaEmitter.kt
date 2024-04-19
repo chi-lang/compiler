@@ -1,41 +1,64 @@
 package gh.marad.chi.lua
 
 import gh.marad.chi.core.*
+import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.Variable
 import gh.marad.chi.runtime.TypeWriter.encodeType
 
 class LuaEmitter(val program: Program) {
     private var sb = StringBuilder()
-    fun emit(returnLastValue: Boolean = false): String {
+
+    /**
+     * @param emitModule Tells the emitter to create LUA module. False means it should return the last value
+     *                   and should be used whenever you need to evaluate some code and get it's result.
+     */
+    fun emit(emitModule: Boolean = true): String {
         sb = StringBuilder()
-        val mod = modName()
-        val pkg = pkgName()
-        val luaPkgPath =luaPackagePath(mod, pkg)
-        if (!(mod == CompilationDefaults.defaultModule && pkg == CompilationDefaults.defaultPacakge)) {
-            emitCode("if not $luaPkgPath then $luaPkgPath = { _package={}, _types={} } end;")
-        }
+
+        val packageQualifier = "${program.packageDefinition.moduleName}/${program.packageDefinition.packageName}"
+        emitCode("local __P_ = package.loaded['$packageQualifier'] or {_package={},_types={}};")
+        emitCode("package.loaded['$packageQualifier'] = __P_;")
+        emitCode("local __S_ = __P_._package;")
+        emitCode("local __T_ = __P_._types;")
 
         emitPackageInfo()
 
         program.typeAliases.forEach {
-            emitCode("$luaPkgPath._types.${it.typeId.name}=\"")
+            emitCode("__T_.${it.typeId.name}=\"")
             emitCode(encodeType(it.type))
             emitCode("\";")
         }
 
         // Requires must be after _package and _types declarations to avoid circular dependencies
-        program.imports.forEach {
-            emitCode("require(\"${it.moduleName}/${it.packageName}\");")
+        val requires = mutableSetOf<Pair<String,String>>()
+        val visitor = object : DefaultExpressionVisitor {
+            override fun visitVariableAccess(va: VariableAccess) {
+                if (va.target is PackageSymbol &&
+                    va.target.moduleName != program.packageDefinition.moduleName &&
+                    va.target.packageName != program.packageDefinition.packageName) {
+                    requires.add(va.target.moduleName to va.target.packageName)
+                }
+                super.visitVariableAccess(va)
+            }
+        }
+
+        program.expressions.forEach { it.accept(visitor) }
+
+        requires.forEach { (mod, pkg) ->
+            val localName = localPackagePath(mod, pkg)
+            emitCode("local $localName = require(\"$mod/$pkg\");")
         }
 
         val iter = program.expressions.iterator()
         while(iter.hasNext()) {
-            val result = emitExpr(iter.next(), returnLastValue && !iter.hasNext())
-//            emitCode(";")
-            if (returnLastValue && !iter.hasNext()) {
-                // after emitting the last last expression we need to return
-                emitCode("return $result")
+            val result = emitExpr(iter.next(), !iter.hasNext())
+            if (!iter.hasNext()) {
+                if (emitModule) {
+                    emitCode("return __P_")
+                } else {
+                    emitCode("return $result")
+                }
             }
         }
         return sb.toString()
@@ -51,7 +74,7 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitPackageInfo() {
-        val descPath = "${luaPackagePath(program.packageDefinition.moduleName, program.packageDefinition.packageName)}._package"
+        val descPath = "__S_"
         val iter = program.expressions.filterIsInstance<NameDeclaration>().iterator()
 
         while(iter.hasNext()) {
@@ -118,49 +141,49 @@ class LuaEmitter(val program: Program) {
                 emitCode("return")
                 "nil"
             }
-            is Handle -> {
-                val tmpName = nextTmpName()
-
-                emitCode("local ${tmpName}_handlers={")
-                val iter = term.cases.iterator()
-                while (iter.hasNext()) {
-                    val case = iter.next()
-                    val name = normaliseEffectName(qualifiedName(case.moduleName, case.packageName, case.effectName))
-                    emitCode(name)
-                    emitCode("=function(args) ")
-                    emitCode("local function resume(x) return false, x end;")
-                    case.argumentNames.forEachIndexed { index, name ->
-                        emitCode("local $name=args[${index}];")
-                    }
-
-                    insideFunction {
-                        val result = emitExpr(case.body, needResult = true)
-                        emitCode("return $result")
-                    }
-                    emitCode(" end")
-                    if (iter.hasNext()) {
-                        emitCode(",")
-                    }
-                }
-                emitCode("};")
-
-                emitCode("local ${tmpName}_body=coroutine.create(function() ")
-                val result = emitExpr(term.body, needResult = true)
-                emitCode("return $result;")
-                emitCode(" end);")
-                emitCode("local ${tmpName}=chi_handle_effect(${tmpName}_body,{},${tmpName}_handlers);")
-                tmpName
-            }
-            is EffectDefinition -> {
-                val name = qualifiedName(term.moduleName, term.packageName, term.name)
-                emitCode("function ")
-                emitCode(name)
-                emitCode("(...) return coroutine.yield(\"")
-                emitCode(normaliseEffectName(name))
-                emitCode("\", {...})")
-                emitCode(" end;")
-                "nil"
-            }
+//            is Handle -> {
+//                val tmpName = nextTmpName()
+//
+//                emitCode("local ${tmpName}_handlers={")
+//                val iter = term.cases.iterator()
+//                while (iter.hasNext()) {
+//                    val case = iter.next()
+//                    val name = normaliseEffectName(qualifiedName(case.moduleName, case.packageName, case.effectName))
+//                    emitCode(name)
+//                    emitCode("=function(args) ")
+//                    emitCode("local function resume(x) return false, x end;")
+//                    case.argumentNames.forEachIndexed { index, name ->
+//                        emitCode("local $name=args[${index}];")
+//                    }
+//
+//                    insideFunction {
+//                        val result = emitExpr(case.body, needResult = true)
+//                        emitCode("return $result")
+//                    }
+//                    emitCode(" end")
+//                    if (iter.hasNext()) {
+//                        emitCode(",")
+//                    }
+//                }
+//                emitCode("};")
+//
+//                emitCode("local ${tmpName}_body=coroutine.create(function() ")
+//                val result = emitExpr(term.body, needResult = true)
+//                emitCode("return $result;")
+//                emitCode(" end);")
+//                emitCode("local ${tmpName}=chi_handle_effect(${tmpName}_body,{},${tmpName}_handlers);")
+//                tmpName
+//            }
+//            is EffectDefinition -> {
+//                val name = qualifiedName(term.moduleName, term.packageName, term.name)
+//                emitCode("function ")
+//                emitCode(name)
+//                emitCode("(...) return coroutine.yield(\"")
+//                emitCode(normaliseEffectName(name))
+//                emitCode("\", {...})")
+//                emitCode(" end;")
+//                "nil"
+//            }
             else -> TODO("Term $term not supported yet!")
         }
     }
@@ -172,28 +195,34 @@ class LuaEmitter(val program: Program) {
 
     private fun emitAtom(term: Atom, needResult: Boolean): String {
         val value = if (term.type == Type.string) {
-//            emitCode("\"")
-//            emitCode(term.value)
-//            emitCode("\"")
             // TODO: this should escape all the escaped codes like \n, ...
             "\"${term.value}\""
         } else if (term.type == Type.unit) {
             "nil"
         } else {
-//            emitCode(term.value)
             term.value
         }
         return "($value)"
     }
 
     private fun emitNameDeclaration(term: NameDeclaration, needResult: Boolean): String {
-        val value = emitExpr(term.value, true)
-        val name = if (inFunction) "local ${term.name}" else qualifiedName(term.name)
-        emitCode(name)
-        emitCode("=")
-        emitCode(value)
-        emitCode(";")
-        return name
+        if (!inFunction && term.value is Fn) {
+            emitCode("function __P_.${term.name}(")
+            emitCode(term.value.parameters.joinToString(",") { it.name })
+            emitCode(") ")
+            val result = emitFnBody(term.value.body)
+            emitCode("return $result")
+            emitCode(" end;")
+            return "nil"
+        } else {
+            val value = emitExpr(term.value, true)
+            val name = if (inFunction) "local ${term.name}" else topLevelName(term.name)
+            emitCode(name)
+            emitCode("=")
+            emitCode(value)
+            emitCode(";")
+            return name
+        }
     }
 
     private var nextTmpId = 0
@@ -207,11 +236,13 @@ class LuaEmitter(val program: Program) {
         emitCode("function(")
         emitCode(term.parameters.joinToString(",") { it.name })
         emitCode(") ")
-        val result = insideFunction { emitBlock(term.body, needResult = true) }
+        val result = emitFnBody(term.body)
         emitCode("return $result")
         emitCode(" end;")
         return tmpName
     }
+
+    private fun emitFnBody(block: Block): String = insideFunction { emitBlock(block,needResult = true) }
 
     private val embedLuaTarget = PackageSymbol("std", "lang", "embedLua")
     private val luaExprTarget = PackageSymbol("std", "lang", "luaExpr")
@@ -271,13 +302,18 @@ class LuaEmitter(val program: Program) {
                 if (inFunction) {
                     target.name
                 } else {
-                    qualifiedName(target.name)
+                    topLevelName(target.name)
                 }
             }
             is PackageSymbol -> {
-                qualifiedName(
-                    target.moduleName, target.packageName, target.name
-                )
+                if (target.moduleName == program.packageDefinition.moduleName &&
+                    target.packageName == program.packageDefinition.packageName) {
+                    topLevelName(target.name)
+                } else {
+                    localQualifiedName(
+                        target.moduleName, target.packageName, target.name
+                    )
+                }
             }
         }
     }
@@ -310,11 +346,18 @@ class LuaEmitter(val program: Program) {
                 if (inFunction) {
                     term.target.name
                 } else {
-                    qualifiedName(term.target.name)
+                    topLevelName(term.target.name)
                 }
             }
             is PackageSymbol -> {
-                qualifiedName(term.target.moduleName, term.target.packageName, term.target.name)
+                if (term.target.moduleName == program.packageDefinition.moduleName &&
+                    term.target.packageName == program.packageDefinition.packageName) {
+                    topLevelName(term.target.name)
+                } else {
+                    localQualifiedName(
+                        term.target.moduleName, term.target.packageName, term.target.name
+                    )
+                }
             }
         }
         val valueName = emitExpr(term.value, true)
@@ -551,13 +594,8 @@ class LuaEmitter(val program: Program) {
     }
 
 
-    private fun modName(): String = Companion.modName(program.packageDefinition.moduleName)
-    private fun pkgName(): String = Companion.pkgName(program.packageDefinition.packageName)
-    private fun qualifiedName(name: String) =
-        qualifiedName(
-            program.packageDefinition.moduleName,
-            program.packageDefinition.packageName,
-            name)
+    private fun topLevelName(name: String) =
+        "__P_.$name"
 
     companion object {
         fun modName(name: String): String =
@@ -566,11 +604,14 @@ class LuaEmitter(val program: Program) {
         fun pkgName(pkg: String): String =
             pkg.replace(".", "_")
 
-        fun luaPackagePath(module: String, pkg: String): String =
-            "chi.${modName(module)}__${pkgName(pkg)}"
+        fun packagePath(module: String, pkg: String): String =
+            "${modName(module)}__${pkgName(pkg)}"
 
-        fun qualifiedName(module: String, pkg: String, name: String): String =
-            "${luaPackagePath(module, pkg)}.$name"
+        fun localPackagePath(module: String, pkg: String): String =
+            "__${packagePath(module, pkg)}"
+
+        fun localQualifiedName(module: String, pkg: String, name: String): String =
+            "${localPackagePath(module, pkg)}.$name"
 
     }
 

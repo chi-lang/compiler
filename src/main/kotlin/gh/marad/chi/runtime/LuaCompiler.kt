@@ -9,7 +9,7 @@ class LuaCompiler(val luaEnv: LuaEnv) {
     class Error(val messages: List<Message>): RuntimeException("Compilation errors")
     enum class ErrorStrategy { PRINT, THROW }
 
-    fun compileToLua(chiCode: String, errorStrategy: ErrorStrategy = ErrorStrategy.THROW): String? {
+    fun compileToLua(chiCode: String, errorStrategy: ErrorStrategy = ErrorStrategy.THROW, emitModule: Boolean = true): String? {
         val ns = LuaCompilationEnv(luaEnv)
         val result = Compiler.compile(chiCode, ns)
         if (result.hasErrors()) {
@@ -24,6 +24,6 @@ class LuaCompiler(val luaEnv: LuaEnv) {
             }
         }
         val emitter = LuaEmitter(result.program)
-        return emitter.emit(returnLastValue = true)
+        return emitter.emit(emitModule)
     }
 }

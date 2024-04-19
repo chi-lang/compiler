@@ -8,7 +8,6 @@ import gh.marad.chi.core.namespace.PackageDescriptor
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.parser.readers.Import
 import gh.marad.chi.core.types.TypeId
-import gh.marad.chi.lua.LuaEmitter
 
 class LuaCompilationEnv(
     val luaEnv: LuaEnv,
@@ -26,8 +25,7 @@ class LuaCompilationEnv(
 
     @Suppress("UNCHECKED_CAST")
     override fun getSymbol(moduleName: String, packageName: String, symbolName: String): Symbol? {
-        val luaPkgPath = LuaEmitter.luaPackagePath(moduleName, packageName)
-        val path = "$luaPkgPath._package.$symbolName"
+        val path = "package.loaded['$moduleName/$packageName']._package.$symbolName"
         val map = luaEnv.lua.execute("return $path")?.get(0)?.toJavaObject() ?: return null
         map as Map<String, Any>
         return Symbol(
@@ -54,7 +52,7 @@ class LuaCompilationEnv(
         override val packageName: String,
         private val luaEnv: LuaEnv,
     ) : PackageDescriptor {
-        val luaPkgPath = LuaEmitter.luaPackagePath(moduleName, packageName)
+        val luaPkgPath = "package.loaded['$moduleName/$packageName']"
 
         override fun getTypeAlias(name: String): TypeAlias? {
             val path = "$luaPkgPath._types.$name"

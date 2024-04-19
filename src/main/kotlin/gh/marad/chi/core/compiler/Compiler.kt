@@ -64,7 +64,10 @@ object Compiler {
         // Build symbol and type tables
         // ============================
 
-        val tables = CompileTables(packageDefinition, ns, ns.getPreludeImports() + parsedProgram.imports)
+        val imports = ns.getPreludeImports() + parsedProgram.imports
+
+
+        val tables = CompileTables(packageDefinition, ns, imports)
 
         val definedTypeAliases = parsedProgram.typeAliases.map { typeAliasDef ->
             val typeSchemeVariables = typeAliasDef.typeParameters.map { it.name }
@@ -84,7 +87,7 @@ object Compiler {
         if (resultMessages.isNotEmpty()) {
             return CompilationResult(
                 refineMessages(resultMessages),
-                Program(packageDefinition, parsedProgram.imports, definedTypeAliases, emptyList(), parsedProgram.section),
+                Program(packageDefinition, imports, definedTypeAliases, emptyList(), parsedProgram.section),
             )
         }
 
@@ -137,7 +140,7 @@ object Compiler {
         if (resultMessages.isNotEmpty()) {
             return CompilationResult(
                 refineMessages(resultMessages),
-                Program(packageDefinition, parsedProgram.imports, definedTypeAliases, expressions, parsedProgram.section),
+                Program(packageDefinition, imports, definedTypeAliases, expressions, parsedProgram.section),
             )
         }
 
@@ -157,7 +160,7 @@ object Compiler {
 
         return CompilationResult(
             refineMessages(resultMessages),
-            Program(packageDefinition, parsedProgram.imports, definedTypeAliases, expressions, parsedProgram.section),
+            Program(packageDefinition, imports, definedTypeAliases, expressions, parsedProgram.section),
         )
     }
 

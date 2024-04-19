@@ -101,7 +101,7 @@ class Repl(
                         imports.addAll(compilationResult.program.imports)
 
                         val emitter = LuaEmitter(compilationResult.program)
-                        emitter.emit(returnLastValue = true)
+                        emitter.emit(emitModule = false)
                     } catch (ex: Exception) {
                         println("Error: ${ex.message}")
                         continue

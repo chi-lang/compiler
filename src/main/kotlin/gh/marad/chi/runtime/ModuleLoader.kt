@@ -57,7 +57,8 @@ fun main() {
     try {
         val code = loader.load("std", "lang.string")
         println(formatLuaCode(code))
-        env.lua.run(code)
+        val result = env.lua.run(code)
+        println(result)
     } catch (ex: LuaCompiler.Error) {
         ex.messages.forEach {
             println(it.message)

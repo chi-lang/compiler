@@ -12,8 +12,8 @@ import java.nio.ByteBuffer
 class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
     val lua = Lua54().also { init(it) }
 
-    fun eval(code: String, dontEvalOnlyShowLuaCode: Boolean = false): Boolean {
-        val luaCode = LuaCompiler(this).compileToLua(code, LuaCompiler.ErrorStrategy.PRINT)
+    fun eval(code: String, dontEvalOnlyShowLuaCode: Boolean = false, emitModule: Boolean = true): Boolean {
+        val luaCode = LuaCompiler(this).compileToLua(code, LuaCompiler.ErrorStrategy.PRINT, emitModule)
             ?: return false
         return if (dontEvalOnlyShowLuaCode) {
             println(formatLuaCode(luaCode))
@@ -85,7 +85,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
             end
             
             chi = {}
-            chi.std__lang = {
+            package.loaded['std/lang'] = {
                 _package = {
                     println    = { public=true, mutable=false, type='${encodeType(Type.fn(Type.any, Type.unit))}' },
                     compileLua = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.string))}' },
@@ -105,10 +105,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                 reload = chi_reload_module,
             }
             
-            package.loaded["std/lang"] = chi.std__lang
-            
-            
-            chi.user__default = {
+            package.loaded['user/default'] = {
                 _package = {},
                 _types = {}
             }

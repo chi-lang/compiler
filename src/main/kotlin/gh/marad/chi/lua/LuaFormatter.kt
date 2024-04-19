@@ -2,10 +2,10 @@ package gh.marad.chi.lua
 
 fun formatLuaCode(luaCode: String): String {
     val statements = luaCode
-        .replace("function\\([^)]*\\)|do|then".toRegex()) { result ->
+        .replace("function[^(]*\\([^)]*\\)|do|then".toRegex()) { result ->
             result.value + "\n"
         }
-        .replace("end".toRegex()) { result ->
+        .replace("\\bend\\b".toRegex()) { result ->
             "\n" + result.value
         }
         .replace(";", "\n")
