@@ -251,20 +251,18 @@ object Compiler {
                 Function(params + listOf(returnType), createdVars.filter { it in typeSchemeVariables })
             }
             is SumTypeRef -> {
-                val createdVars = mutableListOf<String>()
-                val lhs = resolveType(typeTable, typeSchemeVariables, ref.lhs, currentlyReadTypeId, createdVars)
-                val rhs = resolveType(typeTable, typeSchemeVariables, ref.rhs, currentlyReadTypeId, createdVars)
-                Sum.create(id = null, lhs, rhs, createdVars.filter { it in typeSchemeVariables })
+                val lhs = resolveType(typeTable, typeSchemeVariables, ref.lhs, currentlyReadTypeId)
+                val rhs = resolveType(typeTable, typeSchemeVariables, ref.rhs, currentlyReadTypeId)
+                Sum.create(id = null, lhs, rhs, typeSchemeVariables.toList())
             }
             is RecordTypeRef -> {
-                val createdVars = mutableListOf<String>()
                 val fields = ref.fields.map {
                     Record.Field(
                         it.name,
                         resolveType(typeTable, typeSchemeVariables, it.typeRef, currentlyReadTypeId)
                     )
                 }
-                Record(id = null, fields, createdVars.filter { it in typeSchemeVariables })
+                Record(id = null, fields, typeSchemeVariables.toList())
             }
         }
     }
