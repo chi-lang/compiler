@@ -35,8 +35,8 @@ class LuaEmitter(val program: Program) {
         val visitor = object : DefaultExpressionVisitor {
             override fun visitVariableAccess(va: VariableAccess) {
                 if (va.target is PackageSymbol &&
-                    va.target.moduleName != program.packageDefinition.moduleName &&
-                    va.target.packageName != program.packageDefinition.packageName) {
+                    (va.target.moduleName != program.packageDefinition.moduleName ||
+                    va.target.packageName != program.packageDefinition.packageName)) {
                     requires.add(va.target.moduleName to va.target.packageName)
                 }
                 super.visitVariableAccess(va)
@@ -584,8 +584,11 @@ class LuaEmitter(val program: Program) {
 
         val declarations = mutableListOf<NameDeclaration>()
         val condition = foo(term.condition, declarations)
-        declarations.forEach {
-            emitExpr(it, false)
+
+        insideFunction {
+            declarations.forEach {
+                    emitExpr(it, false)
+            }
         }
         emitCode("while $condition do ")
         emitExpr(term.loop)

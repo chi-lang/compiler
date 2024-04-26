@@ -5,6 +5,7 @@ import gh.marad.chi.runtime.LuaCompiler
 import gh.marad.chi.runtime.LuaEnv
 import gh.marad.chi.runtime.ModuleLoader
 import org.docopt.Docopt
+import party.iroiro.luajava.Lua
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
@@ -50,13 +51,16 @@ fun main(args: Array<String>) {
                 LuaCompiler(env), Path.of(chiHome,"lib")
             )
         )
-        env.lua.run(
+        val result = env.lua.run(
             """
                 require("std/lang.option")
                 require("std/lang.array")
                 require("std/lang.string")
             """.trimIndent()
         )
+        if (result != Lua.LuaError.OK) {
+            println("Error loading stdlib: ${env.lua.get().toJavaObject()}")
+        }
     }
     evalModules(env, modules)
 

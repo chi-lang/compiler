@@ -30,7 +30,7 @@ class ModuleLoader(
         if (luaSrcPath.exists()) {
             val chiSrcModificationTime = Files.getLastModifiedTime(chiSrcPath, LinkOption.NOFOLLOW_LINKS).toInstant()
             val luaSrcModificationTime = Files.getLastModifiedTime(luaSrcPath, LinkOption.NOFOLLOW_LINKS).toInstant()
-            if (chiSrcModificationTime.isAfter(luaSrcModificationTime)) {
+            if (chiSrcModificationTime.isBefore(luaSrcModificationTime)) {
                 return Files.readString(luaSrcPath)
             }
         }
