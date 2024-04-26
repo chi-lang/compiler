@@ -65,7 +65,7 @@ typealias : TYPE name=ID generic_type_definitions? '=' type;
 type
     : typeName '[' type (',' type)* ']'                     #TypeConstructorRef
     | '(' type? (COMMA type)* ')' ARROW func_return_type    #FunctionTypeRef
-    | '{' recordField (',' recordField)* '}'                #RecordType
+    | '{' recordField? (',' recordField)* '}'               #RecordType
     | type '|' type                                         #SumType
     | typeName                                              #TypeNameRef
     | UNIT                                                  #UnitTypeRef
@@ -83,7 +83,7 @@ qualifierSeparator: ':' ':';
 // ====================================================================================================
 expression
     : expression AS type # Cast
-    | '{' ws ID ws ':' ws expression ws (','? | (',' ws ID ':' ws expression ws)* ','?) ws '}' # CreateRecord
+    | '{' (ws ID ws ':' ws expression)? ws (','? | (',' ws ID ':' ws expression ws)* ','?) ws '}' # CreateRecord
     | '[' ws expression? ws (',' ws expression ws)* ']' # CreateArray
     | expression IS type  # IsExpr
     | effectDefinition # EffectDef
