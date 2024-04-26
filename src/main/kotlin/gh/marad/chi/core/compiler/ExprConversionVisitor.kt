@@ -65,7 +65,7 @@ class ExprConversionVisitor(
         Atom.string(stringText.text, stringText.section)
 
     override fun visitLambda(parseLambda: ParseLambda): Expression {
-        val fnSymbolTable = FnSymbolTable()
+        val fnSymbolTable = FnSymbolTable(currentFnSymbolTable)
         val params = parseLambda.formalArguments.map {
             val type = it.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it) }
             fnSymbolTable.addArgument(it.name, type)
@@ -84,7 +84,7 @@ class ExprConversionVisitor(
     }
 
     override fun visitFuncWithName(parseFuncWithName: ParseFuncWithName): Expression {
-        val fnSymbolTable = FnSymbolTable()
+        val fnSymbolTable = FnSymbolTable(currentFnSymbolTable)
 
         val prevTypeSchemeVariables = currentTypeSchemeVariables
         currentTypeSchemeVariables = parseFuncWithName.typeParameters.map { it.name }
