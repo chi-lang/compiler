@@ -51,15 +51,17 @@ fun main(args: Array<String>) {
                 LuaCompiler(env), Path.of(chiHome,"lib")
             )
         )
-        val result = env.lua.run(
-            """
-                require("std/lang.option")
-                require("std/lang.array")
-                require("std/lang.string")
-            """.trimIndent()
-        )
-        if (result != Lua.LuaError.OK) {
-            println("Error loading stdlib: ${env.lua.get().toJavaObject()}")
+        if (Files.exists(Path.of(chiHome, "lib", "std.chim"))) {
+            val result = env.lua.run(
+                """
+                    chi_load_module("$chiHome/lib/std.chim")
+                """.trimIndent()
+            )
+            if (result != Lua.LuaError.OK) {
+                println("Error loading stdlib: ${env.lua.get().toJavaObject()}")
+            }
+        } else {
+            println("WARN: Missing stdlib. Things might not work as expected!")
         }
     }
     evalModules(env, modules)

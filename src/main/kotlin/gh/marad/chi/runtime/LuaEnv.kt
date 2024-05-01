@@ -84,6 +84,17 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                 require(module)
             end
             
+            chi_load_module = function(path)
+                local f=io.open(path,'r')
+                if f == nil then
+                    chi_println("Error!")
+                end
+                local r=f:read('a')
+                f:close()
+                local loader = load(r)
+                loader()
+            end
+            
             chi = {}
             package.loaded['std/lang'] = {
                 _package = {
@@ -93,6 +104,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                     embedLua   = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("a", 1)))}' },
                     luaExpr    = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("a", 1)))}' },
                     reload     = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.unit))}' },
+                    loadModule = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.unit))}' },
                 },
                 print = chi_print,
                 println = chi_println,
@@ -103,6 +115,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                     return f()
                 end,
                 reload = chi_reload_module,
+                loadModule = chi_load_module
             }
             
             package.loaded['user/default'] = {
