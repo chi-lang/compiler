@@ -65,7 +65,7 @@ typealias : TYPE name=ID generic_type_definitions? '=' type;
 type
     : typeName '[' type (',' type)* ']'                     #TypeConstructorRef
     | '(' type? (COMMA type)* ')' ARROW func_return_type    #FunctionTypeRef
-    | '{' recordField? (',' recordField)* '}'               #RecordType
+    | '{' ws recordField? (ws ',' ws recordField)* ws '}'               #RecordType
     | type '|' type                                         #SumType
     | typeName                                              #TypeNameRef
     | UNIT                                                  #UnitTypeRef
