@@ -130,15 +130,20 @@ class LuaEmitter(val program: Program) {
             is Is -> emitIs(term, needResult)
             is WhileLoop -> emitWhile(term, needResult)
             is Break -> {
-                emitCode("break")
+                emitCode("break;")
                 "nil"
             }
             is Continue -> {
-                emitCode("continue")
+                emitCode("continue;")
                 "nil"
             }
             is Return -> {
-                emitCode("return")
+                if (term.value != null) {
+                    val result = emitExpr(term.value, true)
+                    emitCode("return $result;")
+                } else {
+                    emitCode("return;")
+                }
                 "nil"
             }
 //            is Handle -> {
@@ -211,7 +216,10 @@ class LuaEmitter(val program: Program) {
             emitCode(term.value.parameters.joinToString(",") { it.name })
             emitCode(") ")
             val result = emitFnBody(term.value.body)
-            emitCode("return $result")
+            if (term.value.body.body.lastOrNull() !is Return) {
+                // if the last expr is Return then it will emit this itself
+                emitCode("return $result")
+            }
             emitCode(" end;")
             return "nil"
         } else {
@@ -237,7 +245,11 @@ class LuaEmitter(val program: Program) {
         emitCode(term.parameters.joinToString(",") { it.name })
         emitCode(") ")
         val result = emitFnBody(term.body)
-        emitCode("return $result")
+
+        if (term.body.body.lastOrNull() !is Return) {
+            // if the last expr is Return then it will emit this itself
+            emitCode("return $result")
+        }
         emitCode(" end;")
         return tmpName
     }
@@ -577,7 +589,7 @@ class LuaEmitter(val program: Program) {
 //        val condFunName = nextTmpName()
 //        emitCode("local $condFunName = function() ")
 //        val result = emitExpr(term.condition, true)
-//        emitCode("return $result end;")
+//        emitCode(" return $result end;")
 
 //        emitCode("while ($condFunName()) do ")
 
