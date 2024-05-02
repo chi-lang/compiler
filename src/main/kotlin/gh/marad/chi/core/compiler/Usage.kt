@@ -144,4 +144,10 @@ class UsageMarker : ExpressionVisitor<Unit> {
         arg.value?.used = true
         visitChildren(arg)
     }
+
+    override fun visitForLoop(forLoop: ForLoop) {
+        forLoop.iterable.used = true
+        forLoop.body.used = true
+        visitChildren(forLoop)
+    }
 }

@@ -114,4 +114,10 @@ open class DefaultParseAstVisitor : ParseAstVisitor<Unit> {
 
     override fun visitCreateArray(parseCreateArray: ParseCreateArray) =
         parseCreateArray.children().forEach { it.accept(this) }
+
+    override fun visitFor(parseFor: ParseFor) =
+        parseFor.children().forEach { it.accept(this) }
+
+    override fun visitForKv(parseForKV: ParseForKV) =
+        parseForKV.children().forEach { it.accept(this) }
 }

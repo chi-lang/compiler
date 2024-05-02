@@ -178,6 +178,17 @@ class Typer(
                 Type.unit
             }
 
+            is ForLoop -> {
+                typeTerm(term.iterable, level, constraints)
+                ctx.withNewLocalScope {
+                    term.vars.forEach {
+                        ctx.defineLocalSymbol(it, ctx.freshVariable(level))
+                    }
+                    typeTerm(term.body, level, constraints)
+                }
+                Type.unit
+            }
+
             is FieldAssignment -> {
                 val receiverType = typeTerm(term.receiver, level, constraints)
                 val valueType = typeTerm(term.value, level, constraints)

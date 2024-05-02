@@ -33,12 +33,11 @@ data class ParseFor(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T {
-        TODO("Not yet implemented")
+        return visitor.visitFor(this)
     }
 
-    override fun children(): List<ParseAst> {
-        TODO("Not yet implemented")
-    }
+    override fun children(): List<ParseAst> =
+        listOf(iterable, body)
 }
 
 data class ParseForKV(
@@ -49,11 +48,10 @@ data class ParseForKV(
     override val section: ChiSource.Section?
 ) : ParseAst {
     override fun <T> accept(visitor: ParseAstVisitor<T>): T {
-        TODO("Not yet implemented")
+        return visitor.visitForKv(this)
     }
 
-    override fun children(): List<ParseAst> {
-        TODO("Not yet implemented")
-    }
+    override fun children(): List<ParseAst> =
+        listOf(iterable, body)
 
 }

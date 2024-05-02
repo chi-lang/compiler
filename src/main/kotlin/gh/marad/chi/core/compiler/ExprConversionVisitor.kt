@@ -372,6 +372,29 @@ class ExprConversionVisitor(
             parseCreateArray.section
         )
 
+    override fun visitFor(parseFor: ParseFor): Expression {
+        val  fnSymbolTable = FnSymbolTable(currentFnSymbolTable)
+        fnSymbolTable.addLocal(parseFor.name, null, false)
+        return ForLoop(
+            vars = listOf(parseFor.name),
+            visit(parseFor.iterable),
+            withFnSymbolTable(fnSymbolTable) { visitBlock(parseFor.body) as Block },
+            parseFor.section
+        )
+    }
+
+    override fun visitForKv(parseFor: ParseForKV): Expression {
+        val fnSymbolTable = FnSymbolTable(currentFnSymbolTable)
+        fnSymbolTable.addLocal(parseFor.key, null, false)
+        fnSymbolTable.addLocal(parseFor.value, null, false)
+        return ForLoop(
+            vars = listOf(parseFor.key, parseFor.value),
+            visit(parseFor.iterable),
+            withFnSymbolTable(fnSymbolTable) { visitBlock(parseFor.body) as Block },
+            parseFor.section
+        )
+    }
+
     private fun <T> withFnSymbolTable(fnSymbolTable: FnSymbolTable, f: () -> T): T {
         val prevFnSymbolTable = currentFnSymbolTable
         currentFnSymbolTable = fnSymbolTable

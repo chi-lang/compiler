@@ -29,4 +29,5 @@ interface ExpressionVisitor<T> {
     fun visitReturn(arg: Return): T
     fun visitCreateRecord(createRecord: CreateRecord): T
     fun visitCreateArray(createArray: CreateArray): T
+    fun visitForLoop(forLoop: ForLoop): T
 }

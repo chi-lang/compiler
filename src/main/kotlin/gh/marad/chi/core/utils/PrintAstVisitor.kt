@@ -51,6 +51,7 @@ class PrintAstVisitor : ExpressionVisitor<Unit> {
     override fun visitPrefixOp(prefixOp: PrefixOp) = node(prefixOp)
     override fun visitCast(cast: Cast) = node(cast)
     override fun visitWhileLoop(whileLoop: WhileLoop) = node(whileLoop)
+    override fun visitForLoop(forLoop: ForLoop) = node(forLoop)
     override fun visitBreak(arg: Break) = node(arg)
     override fun visitContinue(arg: Continue) = node(arg)
     override fun visitIndexOperator(indexOperator: IndexOperator) = node(indexOperator)

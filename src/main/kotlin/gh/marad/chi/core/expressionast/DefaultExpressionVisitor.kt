@@ -51,6 +51,9 @@ interface DefaultExpressionVisitor : ExpressionVisitor<Unit> {
     override fun visitWhileLoop(whileLoop: WhileLoop) =
         whileLoop.children().forEach { visit(it) }
 
+    override fun visitForLoop(forLoop: ForLoop) =
+        forLoop.children().forEach { visit(it) }
+
     override fun visitBreak(arg: Break) =
         arg.children().forEach { visit(it) }
 
