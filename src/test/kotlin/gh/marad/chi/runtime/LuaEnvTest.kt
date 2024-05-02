@@ -1,5 +1,6 @@
 package gh.marad.chi.runtime
 
+import gh.marad.chi.runtime.TestEnv.eval
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -135,15 +136,6 @@ class LuaEnvTest {
             val a: A = 5
         """.trimIndent(), env) shouldBe 5.0
 
-    }
-
-    private fun eval(code: String, extEnv: LuaEnv? = null): Any? {
-        val env = extEnv ?: LuaEnv()
-        return if (env.eval(code, dontEvalOnlyShowLuaCode = false, emitModule = false)) {
-            env.lua.get().toJavaObject()
-        } else {
-            null
-        }
     }
 
 }

@@ -12,6 +12,7 @@ ELSE : 'else';
 AS : 'as';
 WHILE : 'while';
 FOR : 'for';
+IN : 'in';
 PACKAGE : 'package';
 IMPORT : 'import';
 DATA : 'data';

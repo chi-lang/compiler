@@ -88,6 +88,8 @@ expression
     | expression IS type  # IsExpr
     | effectDefinition # EffectDef
     | handleExpression # HandleExpr
+    | 'for' name=ID 'in' expression ws block # ForLoop
+    | 'for' key=ID ',' value=ID 'in' expression ws block # ForKVLoop
     | 'while' expression block # WhileLoopExpr
     | whenExpression # WhenExpr
     | '(' expression ')' # GroupExpr
