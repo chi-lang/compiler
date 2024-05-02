@@ -47,11 +47,11 @@ fun main(args: Array<String>) {
 
     val chiHome = System.getenv("CHI_HOME")
     if (chiHome != null) {
-        env.setModuleLoader(
-            ModuleLoader(
-                LuaCompiler(env), Path.of(chiHome,"lib")
-            )
-        )
+//        env.setModuleLoader(
+//            ModuleLoader(
+//                LuaCompiler(env), Path.of(chiHome,"lib")
+//            )
+//        )
         if (Files.exists(Path.of(chiHome, "lib", "std.chim"))) {
             val result = env.lua.run(
                 """

@@ -25,7 +25,7 @@ class FnCallTypeCheckingSpec {
         ns.addSymbolInDefaultPackage("test", Type.fn(Type.int, Type.fn(Type.unit), Type.int))
 
         // expect
-        messages("test(10, {})", ns).shouldBeEmpty()
+        messages("test(10, { 5 })", ns).shouldBeEmpty()
         messages("test(10, 20)", ns).should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<NotAFunction>()

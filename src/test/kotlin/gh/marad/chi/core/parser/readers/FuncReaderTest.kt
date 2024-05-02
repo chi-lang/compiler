@@ -104,8 +104,8 @@ class FuncReaderTest {
     }
 
     @Test
-    fun `should read empty anonymous function`() {
+    fun `should read create record`() {
         val ast = testParse("{}")
-        ast[0].shouldBeTypeOf<ParseLambda>()
+        ast[0].shouldBeTypeOf<ParseCreateRecord>()
     }
 }

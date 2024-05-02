@@ -79,7 +79,7 @@ class FnTypeCheckingSpec {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
                 error.expected shouldBe Type.int
-                error.actual shouldBe Type.fn(Type.unit)
+                error.actual shouldBe Type.record()
             }
         }
     }
@@ -96,7 +96,7 @@ class FnTypeCheckingSpec {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
                 error.expected shouldBe Type.int
-                error.actual shouldBe Type.fn(Type.unit)
+                error.actual shouldBe Type.record()
             }
         }
     }
@@ -134,11 +134,11 @@ class IfElseTypeCheckingSpec {
     fun `if-else type is unit when branch types differ (or 'else' branch is missing)`() {
         messages("val x: unit = if(true) { 2 }").shouldBeEmpty()
         messages("val x: int = if(true) { 2 } else { 3 }").shouldBeEmpty()
-        messages("val x: int = if(true) { 2 } else { {} }").should {
+        messages("val x: int = if(true) { 2 } else { { 5 } }").should {
             it.shouldHaveSize(1)
             it[0].shouldBeTypeOf<TypeMismatch>().should { error ->
                 error.expected shouldBe Type.int
-                error.actual shouldBe Type.union(null, Type.int, Type.fn(Type.unit))
+                error.actual shouldBe Type.union(null, Type.int, Type.fn(Type.int))
             }
         }
     }
