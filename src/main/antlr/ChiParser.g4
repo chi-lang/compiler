@@ -10,7 +10,7 @@ newline : NEWLINE+;
 // Package and import definitions
 // ====================================================================================================
 package_definition : 'package' moduleName? '/' packageName?;
-import_definition : 'import' moduleName '/' packageName ('as' package_import_alias)? (LBRACE (import_entry ','?)+ RBRACE)?;
+import_definition : 'import' moduleName '/' packageName ('as' package_import_alias)? (LBRACE ws (import_entry ','? ws)+ ws RBRACE)?;
 
 package_import_alias : ID;
 import_entry : import_name ('as' name_import_alias)?;
