@@ -99,6 +99,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
             package.loaded['std/lang'] = {
                 _package = {
                     println    = { public=true, mutable=false, type='${encodeType(Type.fn(Type.any, Type.unit))}' },
+                    print      = { public=true, mutable=false, type='${encodeType(Type.fn(Type.any, Type.unit))}' },
                     compileLua = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.string))}' },
                     eval       = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Type.any))}' },
                     embedLua   = { public=true, mutable=false, type='${encodeType(Type.fn(Type.string, Variable("a", 1)))}' },

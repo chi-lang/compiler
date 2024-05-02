@@ -39,6 +39,7 @@ fun main(args: Array<String>) {
     val imports = mutableListOf<Import>()
     imports.add(Import("std", "lang", packageAlias = null, entries = listOf(
         Import.Entry("println", alias = null, section = null),
+        Import.Entry("print", alias = null, section = null),
         Import.Entry("eval", alias = null, section = null)
     ), null))
 
@@ -111,13 +112,13 @@ fun main(args: Array<String>) {
             exitProcess(1)
         }
     }
-
 }
 
 fun evalModules(env: LuaEnv, modules: java.util.ArrayList<String>) {
     modules.forEach {
         val path = Path.of(it)
         if (path.exists()) {
+            println(path.extension)
             env.eval(Files.readString(path))
         } else {
             println("File does not exist: $it ")
