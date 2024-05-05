@@ -152,7 +152,7 @@ class Typer(
                     val elseBranchType = typeTerm(term.elseBranch, level, constraints)
                     Sum.create(thenBranchType, elseBranchType)
                 } else {
-                    Type.unit
+                    Sum.create(thenBranchType, Type.unit)
                 }
             }
 

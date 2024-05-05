@@ -132,7 +132,7 @@ class FnTypeCheckingSpec {
 class IfElseTypeCheckingSpec {
     @Test
     fun `if-else type is unit when branch types differ (or 'else' branch is missing)`() {
-        messages("val x: unit = if(true) { 2 }").shouldBeEmpty()
+        messages("val x: int|unit = if(true) { 2 }").shouldBeEmpty()
         messages("val x: int = if(true) { 2 } else { 3 }").shouldBeEmpty()
         messages("val x: int = if(true) { 2 } else { { 5 } }").should {
             it.shouldHaveSize(1)
