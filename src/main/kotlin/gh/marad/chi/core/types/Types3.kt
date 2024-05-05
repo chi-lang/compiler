@@ -26,6 +26,8 @@ sealed  interface Type : TypeScheme {
     fun typeParams(): List<String>
 
     companion object {
+        @JvmStatic val optionTypeId = TypeId("std", "lang.option", "Option")
+
         @JvmStatic val any = Primitive(TypeId("std", "lang.any", "any"))
         @JvmStatic val unit = Primitive(TypeId("std", "lang.unit", "unit"))
         @JvmStatic val bool = Primitive(TypeId("std", "lang.bool", "bool"))
@@ -39,6 +41,7 @@ sealed  interface Type : TypeScheme {
         @JvmStatic fun array(elementType: Type) = Array(elementType)
         @JvmStatic fun union(id: TypeId?, vararg types: Type): Sum =
             types.reduceRight { lhs, rhs -> Sum.create(id, lhs, rhs) } as Sum
+        @JvmStatic fun option(type: Type) = Sum.create(optionTypeId, type, unit)
     }
 }
 
@@ -110,10 +113,11 @@ data class Sum(val id: TypeId?, val lhs: Type, val rhs: Type, val typeParams: Li
 
         fun create(id: TypeId?, lhs: Type, rhs: Type, typeParams: List<String> = emptyList()): Type {
             val types = listTypes(lhs) + listTypes(rhs)
-            return types.reduce { a, b -> Sum(id, a, b, typeParams)}
+            val finalId = id ?: if (types.contains(Type.unit)) Type.optionTypeId else null
+            return types.reduce { a, b -> Sum(finalId, a, b, typeParams)}
         }
 
-        fun listTypes(type: Type): Set<Type> = when(type) {
+        private fun listTypes(type: Type): Set<Type> = when(type) {
             is Sum -> listTypes(type.lhs) + listTypes(type.rhs)
             else -> setOf(type)
         }
