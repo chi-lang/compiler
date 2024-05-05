@@ -1,9 +1,7 @@
 package gh.marad.chi
 
 import gh.marad.chi.core.parser.readers.Import
-import gh.marad.chi.runtime.LuaCompiler
 import gh.marad.chi.runtime.LuaEnv
-import gh.marad.chi.runtime.ModuleLoader
 import org.docopt.Docopt
 import party.iroiro.luajava.Lua
 import java.nio.file.Files
@@ -103,8 +101,8 @@ fun main(args: Array<String>) {
     } else {
         if (file.endsWith(".chi")) {
             val source = Files.readString(Path.of(file))
-            val onlyShowLuaCode = opts["-l"] as Boolean
-            env.eval(source, dontEvalOnlyShowLuaCode = onlyShowLuaCode)
+            val showLuaCode = opts["-l"] as Boolean
+            env.eval(source, showLuaCode = showLuaCode, dryRun = showLuaCode)
         } else if (file.endsWith(".chic")) {
             println("Running compiled code")
         } else {

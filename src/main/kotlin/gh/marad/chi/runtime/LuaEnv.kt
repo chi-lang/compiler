@@ -12,22 +12,23 @@ import java.nio.ByteBuffer
 class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
     val lua = Lua54().also { init(it) }
 
-    fun eval(code: String, dontEvalOnlyShowLuaCode: Boolean = false, emitModule: Boolean = true): Boolean {
+    fun eval(code: String, showLuaCode: Boolean = false, dryRun: Boolean = false, emitModule: Boolean = true): Boolean {
         val luaCode = LuaCompiler(this).compileToLua(code, LuaCompiler.ErrorStrategy.PRINT, emitModule)
             ?: return false
-        return if (dontEvalOnlyShowLuaCode) {
+        if (showLuaCode) {
             println(formatLuaCode(luaCode))
-            true
+        }
+        if (dryRun) {
+            return true
+        }
+        lua.load(luaCode)
+        val status = lua.pCall(0, 1)
+        return if (status != Lua.LuaError.OK) {
+            val errorMessage = lua.get().toJavaObject()
+            println("Error: $errorMessage")
+            false
         } else {
-            lua.load(luaCode)
-            val status = lua.pCall(0, 1)
-            if (status != Lua.LuaError.OK) {
-                val errorMessage = lua.get().toJavaObject()
-                println("Error: $errorMessage")
-                false
-            } else {
-                true
-            }
+            true
         }
     }
 
