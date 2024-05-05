@@ -16,4 +16,12 @@ class ScopingTest {
             }
         """.trimIndent())
     }
+
+    @Test
+    fun `function scope should see package scope`() {
+        ast("""
+            val x = 5
+            fn foo(): int { x }
+        """.trimIndent())
+    }
 }

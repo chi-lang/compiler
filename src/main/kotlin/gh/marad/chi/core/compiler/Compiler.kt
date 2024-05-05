@@ -24,7 +24,7 @@ object Compiler {
             try { parseSource(source) }
             catch (ex: CompilerMessage) {
                 Pair(
-                    ParseProgram(null, emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), null),
+                    ParseProgram(null, emptyList(), emptyList(), emptyList(), emptyList(), null),
                     listOf(ex.msg)
                 )
             }
@@ -81,7 +81,7 @@ object Compiler {
         }
 
         // analyze parse ast
-        CheckNamesVisitor(ParseBlock(parsedProgram.functions + parsedProgram.topLevelCode, parsedProgram.section), tables)
+        CheckNamesVisitor(ParseBlock(parsedProgram.code, parsedProgram.section), tables)
             .check(resultMessages)
 
         if (resultMessages.isNotEmpty()) {
@@ -93,16 +93,13 @@ object Compiler {
 
         // convert to ast
         // ==============
-        val (functions, code) = try {
+        val expressions = try {
             val converter = ExprConversionVisitor(packageDefinition, tables)
-            val functions = parsedProgram.functions.map { converter.visit(it) }
-            val code = parsedProgram.topLevelCode.map { converter.visit(it) }
-            Pair(functions, code)
+            parsedProgram.code.map { converter.visit(it) }
         } catch (ex: CompilerMessage) {
             resultMessages.add(ex.msg)
-            Pair(emptyList(), emptyList())
+            emptyList()
         }
-        val expressions = functions + code
 
         markUsed(expressions)
 
@@ -111,6 +108,11 @@ object Compiler {
 
         // infer types
         // ===========
+        val (functions, code: List<Expression>) = run {
+            val groups = expressions.groupBy { it is NameDeclaration && it.value.type is Function }
+            Pair(groups[true] ?: emptyList(), groups[false] ?: emptyList())
+        }
+
         val typer = Typer(InferenceContext(packageDefinition, ns, tables))
         functions.forEach {
             try {

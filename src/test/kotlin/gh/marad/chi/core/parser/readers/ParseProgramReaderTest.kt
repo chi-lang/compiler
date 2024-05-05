@@ -46,16 +46,13 @@ class ParseProgramReaderTest {
             it[0].typeName shouldBe "Baz"
         }
 
-        program.functions.should {
-            it shouldHaveSize 2
-            it[0].shouldBeTypeOf<ParseFuncWithName>()
-            it[1].shouldBeTypeOf<ParseEffectDefinition>()
-        }
+        program.code.should {
+            it shouldHaveSize 3
 
-        program.topLevelCode.should {
-            it shouldHaveSize 1
             it[0].shouldBeTypeOf<ParseNameDeclaration>()
                 .symbol.name shouldBe "bar"
+            it[1].shouldBeTypeOf<ParseFuncWithName>()
+            it[2].shouldBeTypeOf<ParseEffectDefinition>()
         }
     }
 }
