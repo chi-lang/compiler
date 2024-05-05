@@ -106,8 +106,4 @@ internal class ParserVisitor(private val source: ChiSource) : ChiParserBaseVisit
 
     override fun visitForLoop(ctx: ChiParser.ForLoopContext): ParseAst =
         ForReader.readFor(this, source, ctx)
-
-    override fun visitForKVLoop(ctx: ChiParser.ForKVLoopContext): ParseAst =
-        ForReader.readForKV(this, source, ctx)
-
 }

@@ -38,19 +38,10 @@ class CheckNamesVisitor(private val node: ParseAst, val compileTables: CompileTa
 
     override fun visitFor(parseFor: ParseFor) {
         withNewScope {
-            definedNames.add(parseFor.name)
+            definedNames.addAll(parseFor.vars)
             super.visitFor(parseFor)
         }
     }
-
-    override fun visitForKv(parseForKV: ParseForKV) {
-        withNewScope {
-            definedNames.add(parseForKV.key)
-            definedNames.add(parseForKV.value)
-            super.visitForKv(parseForKV)
-        }
-    }
-
 
     override fun visitFuncWithName(parseFuncWithName: ParseFuncWithName) {
         definedNames.add(parseFuncWithName.name)

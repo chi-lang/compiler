@@ -1,8 +1,8 @@
 package gh.marad.chi.core.parser.readers
 
 import gh.marad.chi.core.parser.testParse
+import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.jupiter.api.Test
 
@@ -15,7 +15,7 @@ class ForReaderTest {
 
         ast shouldHaveSize 1
         val loop = ast[0].shouldBeTypeOf<ParseFor>()
-        loop.name shouldBe "a"
+        loop.vars shouldContainExactly  listOf("a")
         loop.iterable.shouldBeTypeOf<ParseCreateArray>()
     }
 
@@ -25,9 +25,8 @@ class ForReaderTest {
         val ast = testParse(code)
 
         ast shouldHaveSize 1
-        val loop = ast[0].shouldBeTypeOf<ParseForKV>()
-        loop.key shouldBe "k"
-        loop.value shouldBe "v"
+        val loop = ast[0].shouldBeTypeOf<ParseFor>()
+        loop.vars shouldContainExactly  listOf("k", "v")
         loop.iterable.shouldBeTypeOf<ParseCreateArray>()
     }
 }

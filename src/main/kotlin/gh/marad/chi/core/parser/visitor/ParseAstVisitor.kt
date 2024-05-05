@@ -41,5 +41,4 @@ interface ParseAstVisitor<T> {
     fun visitUnit(unitValue: UnitValue): T
     fun visitCreateArray(parseCreateArray: ParseCreateArray): T
     fun visitFor(parseFor: ParseFor): T
-    fun visitForKv(parseForKV: ParseForKV): T
 }

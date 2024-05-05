@@ -374,21 +374,11 @@ class ExprConversionVisitor(
 
     override fun visitFor(parseFor: ParseFor): Expression {
         val  fnSymbolTable = FnSymbolTable(currentFnSymbolTable)
-        fnSymbolTable.addLocal(parseFor.name, null, false)
+        parseFor.vars.forEach {
+            fnSymbolTable.addLocal(it, null, false)
+        }
         return ForLoop(
-            vars = listOf(parseFor.name),
-            visit(parseFor.iterable),
-            withFnSymbolTable(fnSymbolTable) { visitBlock(parseFor.body) as Block },
-            parseFor.section
-        )
-    }
-
-    override fun visitForKv(parseFor: ParseForKV): Expression {
-        val fnSymbolTable = FnSymbolTable(currentFnSymbolTable)
-        fnSymbolTable.addLocal(parseFor.key, null, false)
-        fnSymbolTable.addLocal(parseFor.value, null, false)
-        return ForLoop(
-            vars = listOf(parseFor.key, parseFor.value),
+            vars = parseFor.vars,
             visit(parseFor.iterable),
             withFnSymbolTable(fnSymbolTable) { visitBlock(parseFor.body) as Block },
             parseFor.section
