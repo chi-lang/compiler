@@ -70,7 +70,42 @@ class ForLoopSpec {
         result shouldBe 6
     }
 
-    // TODO: make it work with generator without arguments
+    @Test
+    fun `should work with simple generator function`() {
+        val result = eval("""
+            var x = 0
+            fn gen(): int|unit {
+                x += 1
+                if x <= 3 { x }
+            }
+            
+            var sum = 0
+            for a in gen {
+                sum += a
+            }
+            sum
+        """.trimIndent())
+
+        result shouldBe 6
+    }
+
+    @Test
+    fun `should work with lambda functions`() {
+        val result = eval("""
+            var x = 0
+            var sum = 0
+            for a in { 
+                x += 1  
+                if x <= 3 { x } 
+            } { 
+                sum += a 
+            }
+            sum
+        """.trimIndent(), showLuaCode = true)
+
+        result shouldBe 6
+    }
+
     // TODO: check generator function type
     // TODO: fix variable types
 }

@@ -2,6 +2,9 @@ package gh.marad.chi.lua
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
+import gh.marad.chi.core.types.Array
+import gh.marad.chi.core.types.Function
+import gh.marad.chi.core.types.Record
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.Variable
 import gh.marad.chi.runtime.TypeWriter.encodeType
@@ -129,6 +132,7 @@ class LuaEmitter(val program: Program) {
             is InterpolatedString -> emitInterpolatedString(term, needResult)
             is Is -> emitIs(term, needResult)
             is WhileLoop -> emitWhile(term, needResult)
+            is ForLoop -> emitForLoop(term)
             is Break -> {
                 emitCode("break;")
                 "nil"
@@ -238,9 +242,7 @@ class LuaEmitter(val program: Program) {
 
     private fun emitFn(term: Fn, needResult: Boolean): String {
         val tmpName = nextTmpName()
-        if (needResult) {
-            emitCode("local $tmpName=")
-        }
+        emitCode("local $tmpName=")
         emitCode("function(")
         emitCode(term.parameters.joinToString(",") { it.name })
         emitCode(") ")
@@ -605,6 +607,31 @@ class LuaEmitter(val program: Program) {
         emitCode("while $condition do ")
         emitExpr(term.loop)
         emitCode("end;")
+        return "nil"
+    }
+
+    private fun emitForLoop(term: ForLoop): String {
+        val iterable = emitExpr(term.iterable)
+        val (vars, elements) = if (term.iterable.type is Array) {
+            val vars = if (term.vars.size == 1) {
+                "_,${term.vars.first()}"
+            } else {
+                term.vars.joinToString(",")
+            }
+            vars to "ipairs($iterable)"
+        } else if (term.iterable.type is Record) {
+            term.vars.joinToString(",") to "pairs($iterable)"
+        } else if (term.iterable.type is Function) {
+            term.vars.joinToString(",") to iterable
+        } else {
+            throw RuntimeException("Not implemented for type ${term.iterable.type}")
+        }
+
+        emitCode("for $vars in $elements do ")
+        insideFunction {
+            emitExpr(term.body)
+        }
+        emitCode(" end;")
         return "nil"
     }
 
