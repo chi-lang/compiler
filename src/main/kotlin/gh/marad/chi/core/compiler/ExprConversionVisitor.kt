@@ -379,8 +379,15 @@ class ExprConversionVisitor(
         }
         return ForLoop(
             vars = parseFor.vars,
-            visit(parseFor.iterable),
+            iterable = visit(parseFor.iterable),
+            state = parseFor.state?.let(::visit),
+            init = parseFor.init?.let(::visit),
             withFnSymbolTable(fnSymbolTable) { visitBlock(parseFor.body) as Block },
+            varSections = parseFor.varSections,
+            iterableSection = parseFor.iterableSection,
+            stateSection = parseFor.stateSection,
+            initSection = parseFor.initSection,
+            bodySection = parseFor.bodySection,
             parseFor.section
         )
     }

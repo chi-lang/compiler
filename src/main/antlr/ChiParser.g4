@@ -88,7 +88,7 @@ expression
     | expression IS type  # IsExpr
     | effectDefinition # EffectDef
     | handleExpression # HandleExpr
-    | 'for' ID (',' ID)? 'in' iterable=expression ws block # ForLoop
+    | 'for' ID (',' ID)? 'in' iterable=expression (',' state=expression ',' init=expression)? ws block # ForLoop
     | 'while' expression block # WhileLoopExpr
     | whenExpression # WhenExpr
     | '(' expression ')' # GroupExpr

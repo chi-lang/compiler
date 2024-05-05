@@ -242,7 +242,13 @@ data class WhileLoop(val condition: Expression, val loop: Expression, override v
     override fun children(): List<Expression> = listOf(condition, loop)
 }
 
-data class ForLoop(val vars: List<String>, val iterable: Expression, val body: Block,
+data class ForLoop(val vars: List<String>, val iterable: Expression, val state: Expression?, val init: Expression?,
+                   val body: Block,
+                   val varSections: List<ChiSource.Section>,
+                   val iterableSection: ChiSource.Section,
+                   val stateSection: ChiSource.Section?,
+                   val initSection: ChiSource.Section?,
+                   val bodySection: ChiSource.Section,
                    override val sourceSection: ChiSource.Section?) : Expression {
     override var type: Type? = null
     override var used: Boolean = false

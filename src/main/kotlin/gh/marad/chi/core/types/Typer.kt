@@ -179,10 +179,90 @@ class Typer(
             }
 
             is ForLoop -> {
-                typeTerm(term.iterable, level, constraints)
+                val iterableType = typeTerm(term.iterable, level, constraints)
+                val stateType = term.state?.let { typeTerm(it, level, constraints) }
+                val initType = term.init?.let { typeTerm(it, level, constraints) }
+
+                val solution = unify(constraints)
+                val finalIterableType = mapType(iterableType, solution)
+
+                val varTypes = term.vars.map { it to ctx.freshVariable(level) }
+
+                // basic form for array
+                if (finalIterableType is Array) {
+                    when (term.vars.size) {
+                        1 -> {
+                            // type of the variable is the type of element array
+                            constraints.add(
+                                Constraint(
+                                    finalIterableType.elementType,
+                                    varTypes.first().second,
+                                    term.varSections.first()
+                                )
+                            )
+                        }
+
+                        2 -> {
+                            // type of the index variable is int, the second variable's type is the same as array element type
+                            constraints.add(Constraint(Type.int, varTypes[0].second, term.varSections[0]))
+                            constraints.add(
+                                Constraint(
+                                    finalIterableType.elementType,
+                                    varTypes[1].second,
+                                    term.varSections[1]
+                                )
+                            )
+                        }
+
+                        else -> {
+                            err("Too many variable names!", term.varSections.first())
+                        }
+                    }
+                } else if (finalIterableType is Record) {
+                    if (term.vars.size != 2) {
+                        err("Iteration through record should have two variables", term.varSections[0])
+                    }
+                    constraints.add(Constraint(Type.string, varTypes[0].second, term.varSections[0]))
+                    constraints.add(Constraint(Type.any, varTypes[1].second, term.varSections[1]))
+                } else if (finalIterableType is Function) {
+                    if (term.vars.size != 1) {
+                        err("Generator function requires only one variable", term.varSections[0])
+                    }
+
+                    if (stateType != null && initType != null) {
+                        // stateful generator
+                        if (finalIterableType.types.size != 3) {
+                            err("Stateful generator function should have two arguments", term.iterableSection)
+                        }
+                        val stateArgType = finalIterableType.types[0]
+                        val lastArgType = finalIterableType.types[1]
+
+                        constraints.add(Constraint(lastArgType, varTypes[0].second, term.varSections[0]))
+                        constraints.add(Constraint(initType, lastArgType, term.initSection))
+                        constraints.add(Constraint(stateType, stateArgType, term.stateSection))
+                    } else {
+                        // basic generator should have no arguments and return optional value
+                        if (finalIterableType.types.size != 1) {
+                            err("Generator function should have no arguments", term.iterableSection)
+                        }
+                    }
+
+                    // verify that both generator functions return an option
+                    val returnValue = finalIterableType.types.last()
+                    if (returnValue is HasTypeId && returnValue.getTypeId() == Type.optionTypeId) {
+                        val optionalType = (returnValue as Sum).removeType(Type.unit)
+                        constraints.add(Constraint(optionalType, varTypes[0].second, term.varSections[0]))
+                    } else {
+                        err("Generator function should return optional value (value or unit)", term.iterableSection)
+                    }
+                } else {
+                    err("Unsupported iterable type in for loop: $finalIterableType", term.iterableSection)
+                }
+
+
                 ctx.withNewLocalScope {
-                    term.vars.forEach {
-                        ctx.defineLocalSymbol(it, ctx.freshVariable(level))
+                    varTypes.forEach { (name, type) ->
+                        ctx.defineLocalSymbol(name, type)
                     }
                     typeTerm(term.body, level, constraints)
                 }

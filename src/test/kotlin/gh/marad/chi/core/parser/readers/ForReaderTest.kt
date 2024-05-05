@@ -15,7 +15,7 @@ class ForReaderTest {
 
         ast shouldHaveSize 1
         val loop = ast[0].shouldBeTypeOf<ParseFor>()
-        loop.vars shouldContainExactly  listOf("a")
+        loop.vars shouldContainExactly listOf("a")
         loop.iterable.shouldBeTypeOf<ParseCreateArray>()
     }
 
@@ -26,7 +26,20 @@ class ForReaderTest {
 
         ast shouldHaveSize 1
         val loop = ast[0].shouldBeTypeOf<ParseFor>()
-        loop.vars shouldContainExactly  listOf("k", "v")
+        loop.vars shouldContainExactly listOf("k", "v")
         loop.iterable.shouldBeTypeOf<ParseCreateArray>()
+    }
+
+    @Test
+    fun `parse extended generator form`() {
+        val code = "for x in { s, l -> s }, 1, 0 { }"
+        val ast = testParse(code)
+
+        ast shouldHaveSize 1
+        val loop = ast[0].shouldBeTypeOf<ParseFor>()
+        loop.vars shouldContainExactly listOf("x")
+        loop.iterable.shouldBeTypeOf<ParseLambda>()
+        loop.state.shouldBeTypeOf<LongValue>()
+        loop.init.shouldBeTypeOf<LongValue>()
     }
 }

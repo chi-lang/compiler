@@ -1,7 +1,13 @@
 package gh.marad.chi.runtime
 
+import gh.marad.chi.core.analyzer.TypeMismatch
+import gh.marad.chi.core.types.Type
+import gh.marad.chi.messages
 import gh.marad.chi.runtime.TestEnv.eval
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.jupiter.api.Test
 
 class ForLoopSpec {
@@ -19,16 +25,35 @@ class ForLoopSpec {
     }
 
     @Test
-    fun `should add add indexes for arrays`() {
-        val result = eval("""
-            var sum = 0
-            for idx, x in [5, 6, 7] {
-                sum += idx * x
+    fun `loop with array should check type for variable`() {
+        val msgs = messages("""
+            var wrong = 0
+            for s in ["hello", "world"] {
+                wrong = s
             }
-            sum
         """.trimIndent())
 
-        result shouldBe (1*5 + 2*6 + 3*7)
+        msgs shouldHaveSize 1
+        msgs[0].shouldBeTypeOf<TypeMismatch>().should {
+            it.expected shouldBe Type.int
+            it.actual shouldBe Type.string
+        }
+    }
+
+    @Test
+    fun `should add indexes for arrays`() {
+        // this example is convoluted because it also checks if types are inferred correctly
+        val result = eval("""
+            var idxsum = 0
+            var result = ""
+            for idx, x in ["hello", "world"] {
+                idxsum += idx
+                result += "${'$'}x;"
+            }
+            "${'$'}result ${'$'}idxsum"
+        """.trimIndent())
+
+        result shouldBe "hello;world; 3"
     }
 
     @Test
@@ -44,14 +69,11 @@ class ForLoopSpec {
         result shouldBe "a 1"
     }
 
-    // TODO error if only one var name is supplied
-    // TODO ignore one value with _
-
     @Test
     fun `should work with generator functions`() {
         val result = eval("""
             var x = 0
-            fn gen(s: any, last: int|unit): int|unit {
+            fn gen(s: {}, last: int): int|unit {
                 val x = if last is unit { 0 } else { last as int } + 1
                 return if x <= 3 {
                     x
@@ -61,7 +83,7 @@ class ForLoopSpec {
             }
             
             var sum = 0
-            for a in gen {
+            for a in gen, {}, 0 {
                 sum += a
             }
             sum
@@ -101,11 +123,24 @@ class ForLoopSpec {
                 sum += a 
             }
             sum
-        """.trimIndent(), showLuaCode = true)
+        """.trimIndent())
 
         result shouldBe 6
     }
 
-    // TODO: check generator function type
-    // TODO: fix variable types
+    @Test
+    fun `should work with state`() {
+        val result = eval("""
+            var sum = 0
+            for a in { state: { v:int } , last -> 
+                state.v = state.v + 1
+                if state.v < 4 { state.v } 
+            }, { v: 0 }, 0 {
+                sum += a
+            }
+            sum
+        """.trimIndent(), showLuaCode = true)
+
+        result shouldBe 6
+    }
 }

@@ -622,7 +622,14 @@ class LuaEmitter(val program: Program) {
         } else if (term.iterable.type is Record) {
             term.vars.joinToString(",") to "pairs($iterable)"
         } else if (term.iterable.type is Function) {
-            term.vars.joinToString(",") to iterable
+            if (term.state != null && term.init != null) {
+                val state = emitExpr(term.state)
+                val init = emitExpr(term.init)
+                term.vars.joinToString(",") to "$iterable,$state,$init"
+            } else {
+                // basic generator function
+                term.vars.joinToString(",") to iterable
+            }
         } else {
             throw RuntimeException("Not implemented for type ${term.iterable.type}")
         }
