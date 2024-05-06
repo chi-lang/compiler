@@ -108,8 +108,8 @@ object Compiler {
 
         // infer types
         // ===========
-        val (functions, code: List<Expression>) = run {
-            val groups = expressions.groupBy { it is NameDeclaration && it.value.type is Function }
+        val (functions, code) = run {
+            val groups = expressions.groupBy { it is NameDeclaration && it.value is Fn }
             Pair(groups[true] ?: emptyList(), groups[false] ?: emptyList())
         }
 
