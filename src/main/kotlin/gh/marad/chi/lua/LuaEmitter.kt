@@ -55,7 +55,7 @@ class LuaEmitter(val program: Program) {
 
         val iter = program.expressions.iterator()
         while(iter.hasNext()) {
-            val result = emitExpr(iter.next(), !iter.hasNext())
+            val result = emitExpr(iter.next())
             if (!iter.hasNext()) {
                 if (emitModule) {
                     emitCode("return __P_")
@@ -110,28 +110,28 @@ class LuaEmitter(val program: Program) {
     }
 
     /// Returns the value or name of local variable with the result
-    private fun emitExpr(term: Expression, needResult: Boolean = false): String {
+    private fun emitExpr(term: Expression): String {
         return when(term) {
-            is Atom -> emitAtom(term, needResult)
-            is NameDeclaration -> emitNameDeclaration(term, needResult)
-            is Fn -> emitFn(term, needResult)
-            is FnCall -> emitFnCall(term, needResult)
-            is Block -> emitBlock(term, needResult)
-            is VariableAccess -> emitVariableAccess(term, needResult)
-            is CreateArray -> emitCreateArray(term, needResult)
-            is CreateRecord -> emitCreateRecord(term, needResult)
-            is Assignment -> emitAssignment(term, needResult)
-            is IndexOperator -> emitIndexOperator(term, needResult)
-            is IndexedAssignment -> emitIndexAssignment(term, needResult)
-            is Cast -> emitCast(term, needResult)
-            is FieldAccess -> emitFieldAccess(term, needResult)
-            is FieldAssignment -> emitFieldAssignment(term, needResult)
-            is IfElse -> emitIfElse(term, needResult)
-            is InfixOp -> emitInfixOp(term, needResult)
-            is PrefixOp -> emitPrefixOp(term, needResult)
-            is InterpolatedString -> emitInterpolatedString(term, needResult)
-            is Is -> emitIs(term, needResult)
-            is WhileLoop -> emitWhile(term, needResult)
+            is Atom -> emitAtom(term)
+            is NameDeclaration -> emitNameDeclaration(term)
+            is Fn -> emitFn(term)
+            is FnCall -> emitFnCall(term)
+            is Block -> emitBlock(term)
+            is VariableAccess -> emitVariableAccess(term)
+            is CreateArray -> emitCreateArray(term)
+            is CreateRecord -> emitCreateRecord(term)
+            is Assignment -> emitAssignment(term)
+            is IndexOperator -> emitIndexOperator(term)
+            is IndexedAssignment -> emitIndexAssignment(term)
+            is Cast -> emitCast(term)
+            is FieldAccess -> emitFieldAccess(term)
+            is FieldAssignment -> emitFieldAssignment(term)
+            is IfElse -> emitIfElse(term)
+            is InfixOp -> emitInfixOp(term)
+            is PrefixOp -> emitPrefixOp(term)
+            is InterpolatedString -> emitInterpolatedString(term)
+            is Is -> emitIs(term)
+            is WhileLoop -> emitWhile(term)
             is ForLoop -> emitForLoop(term)
             is Break -> {
                 emitCode("break;")
@@ -143,7 +143,7 @@ class LuaEmitter(val program: Program) {
             }
             is Return -> {
                 if (term.value != null) {
-                    val result = emitExpr(term.value, true)
+                    val result = emitExpr(term.value)
                     emitCode("return $result;")
                 } else {
                     emitCode("return;")
@@ -202,7 +202,7 @@ class LuaEmitter(val program: Program) {
         name.replace(".", "_")
 
 
-    private fun emitAtom(term: Atom, needResult: Boolean): String {
+    private fun emitAtom(term: Atom): String {
         val value = if (term.type == Type.string) {
             // TODO: this should escape all the escaped codes like \n, ...
             "\"${term.value}\""
@@ -214,7 +214,7 @@ class LuaEmitter(val program: Program) {
         return "($value)"
     }
 
-    private fun emitNameDeclaration(term: NameDeclaration, needResult: Boolean): String {
+    private fun emitNameDeclaration(term: NameDeclaration): String {
         if (!inFunction && term.value is Fn) {
             emitCode("function __P_.${term.name}(")
             emitCode(term.value.parameters.joinToString(",") { it.name })
@@ -227,7 +227,7 @@ class LuaEmitter(val program: Program) {
             emitCode(" end;")
             return "nil"
         } else {
-            val value = emitExpr(term.value, true)
+            val value = emitExpr(term.value)
             val name = if (inFunction) "local ${term.name}" else topLevelName(term.name)
             emitCode(name)
             emitCode("=")
@@ -240,7 +240,7 @@ class LuaEmitter(val program: Program) {
     private var nextTmpId = 0
     private fun nextTmpName() = "tmp${nextTmpId++}"
 
-    private fun emitFn(term: Fn, needResult: Boolean): String {
+    private fun emitFn(term: Fn): String {
         val tmpName = nextTmpName()
         emitCode("local $tmpName=")
         emitCode("function(")
@@ -256,11 +256,11 @@ class LuaEmitter(val program: Program) {
         return tmpName
     }
 
-    private fun emitFnBody(block: Block): String = insideFunction { emitBlock(block,needResult = true) }
+    private fun emitFnBody(block: Block): String = insideFunction { emitBlock(block) }
 
     private val embedLuaTarget = PackageSymbol("std", "lang", "embedLua")
     private val luaExprTarget = PackageSymbol("std", "lang", "luaExpr")
-    private fun emitFnCall(term: FnCall, needResult: Boolean): String {
+    private fun emitFnCall(term: FnCall): String {
         val function = term.function
         if (function is VariableAccess && function.target == embedLuaTarget) {
             val codeParam = term.parameters.first()
@@ -280,18 +280,16 @@ class LuaEmitter(val program: Program) {
                 TODO("luaExpr function requires string parameter verbatim (not a variable)")
             }
         } else {
-            val fnName = emitExpr(term.function, true)
+            val fnName = emitExpr(term.function)
             val iter = term.parameters.iterator()
             val params = ArrayList<String>(term.parameters.size)
             while (iter.hasNext()) {
-                params.add(emitExpr(iter.next(), true))
+                params.add(emitExpr(iter.next()))
             }
 
 
             val tmpName = nextTmpName()
-            if (needResult) {
-                emitCode("local $tmpName=")
-            }
+            emitCode("local $tmpName=")
             emitCode(fnName)
             emitCode("(")
             emitCode(params.joinToString(","))
@@ -300,17 +298,17 @@ class LuaEmitter(val program: Program) {
         }
     }
 
-    private fun emitBlock(term: Block, needResult: Boolean): String {
+    private fun emitBlock(term: Block): String {
         val iter = term.body.iterator()
         var lastExprResult = "nil"
         while(iter.hasNext()) {
             val expr = iter.next()
-            lastExprResult = emitExpr(expr, needResult && !iter.hasNext())
+            lastExprResult = emitExpr(expr)
         }
         return lastExprResult
     }
 
-    private fun emitVariableAccess(term: VariableAccess, needResult: Boolean): String {
+    private fun emitVariableAccess(term: VariableAccess): String {
         return when(val target = term.target) {
             is LocalSymbol -> {
                 if (inFunction) {
@@ -332,9 +330,9 @@ class LuaEmitter(val program: Program) {
         }
     }
 
-    private fun emitCreateArray(term: CreateArray, needResult: Boolean): String {
+    private fun emitCreateArray(term: CreateArray): String {
         val contents = term.values.map {
-            emitExpr(it, true)
+            emitExpr(it)
         }.joinToString(",")
         val name = nextTmpName()
         emitCode("local $name={$contents};")
@@ -342,9 +340,9 @@ class LuaEmitter(val program: Program) {
         return name
     }
 
-    private fun emitCreateRecord(term: CreateRecord, needResult: Boolean): String {
+    private fun emitCreateRecord(term: CreateRecord): String {
         val contents = term.fields.map {
-            val value = emitExpr(it.value, true)
+            val value = emitExpr(it.value)
             "${it.name}=$value"
         }.joinToString(",")
 
@@ -354,7 +352,7 @@ class LuaEmitter(val program: Program) {
         return name
     }
 
-    private fun emitAssignment(term: Assignment, needResult: Boolean): String {
+    private fun emitAssignment(term: Assignment): String {
         val varName = when(term.target) {
             is LocalSymbol -> {
                 if (inFunction) {
@@ -374,7 +372,7 @@ class LuaEmitter(val program: Program) {
                 }
             }
         }
-        val valueName = emitExpr(term.value, true)
+        val valueName = emitExpr(term.value)
 
         emitCode(varName)
         emitCode("=")
@@ -383,9 +381,9 @@ class LuaEmitter(val program: Program) {
         return varName
     }
 
-    private fun emitIndexOperator(term: IndexOperator, needResult: Boolean): String {
-        val variable = emitExpr(term.variable, true)
-        val index = emitExpr(term.index, true)
+    private fun emitIndexOperator(term: IndexOperator): String {
+        val variable = emitExpr(term.variable)
+        val index = emitExpr(term.index)
         val name = nextTmpName()
         emitCode("local $name=")
         emitCode(variable)
@@ -395,10 +393,10 @@ class LuaEmitter(val program: Program) {
         return name
     }
 
-    private fun emitIndexAssignment(term: IndexedAssignment, needResult: Boolean): String {
-        val variable = emitExpr(term.variable, true)
-        val index = emitExpr(term.index, true)
-        val value = emitExpr(term.value, true)
+    private fun emitIndexAssignment(term: IndexedAssignment): String {
+        val variable = emitExpr(term.variable)
+        val index = emitExpr(term.index)
+        val value = emitExpr(term.value)
 
         emitCode(variable)
         emitCode("[")
@@ -410,8 +408,8 @@ class LuaEmitter(val program: Program) {
         return value
     }
 
-    private fun emitCast(term: Cast, needResult: Boolean): String {
-        val result = emitExpr(term.expression, true)
+    private fun emitCast(term: Cast): String {
+        val result = emitExpr(term.expression)
         val name = nextTmpName()
         return when (term.targetType) {
             Type.string -> {
@@ -426,7 +424,7 @@ class LuaEmitter(val program: Program) {
         }
     }
 
-    private fun emitFieldAccess(term: FieldAccess, needResult: Boolean): String {
+    private fun emitFieldAccess(term: FieldAccess): String {
         val target = term.target!!
         when(target) {
             DotTarget.Field -> {
@@ -438,7 +436,7 @@ class LuaEmitter(val program: Program) {
         }
     }
 
-    private fun emitFieldAssignment(term: FieldAssignment, needResult: Boolean): String {
+    private fun emitFieldAssignment(term: FieldAssignment): String {
         val receiverVar = emitExpr(term.receiver)
         val valueVar = emitExpr(term.value)
 
@@ -452,37 +450,31 @@ class LuaEmitter(val program: Program) {
         return valueVar
     }
 
-    private fun emitIfElse(term: IfElse, needResult: Boolean): String {
+    private fun emitIfElse(term: IfElse): String {
         val tmpName = nextTmpName()
-        if (needResult) {
-            emitCode("local $tmpName;")
-        }
-        val condition = emitExpr(term.condition, needResult = true)
+        emitCode("local $tmpName;")
+        val condition = emitExpr(term.condition)
         emitCode("if ")
         emitCode(condition)
         emitCode(" then ")
-        val thenResultName = emitBlock(term.thenBranch as Block, needResult = true)
-        if (needResult) {
-            emitCode("$tmpName = $thenResultName")
-        }
+        val thenResultName = emitBlock(term.thenBranch as Block)
+        emitCode("$tmpName = $thenResultName")
         if (term.elseBranch != null) {
             emitCode(" else ")
             val elseResultName = if (term.elseBranch is Block) {
-                emitBlock(term.elseBranch, needResult = true)
+                emitBlock(term.elseBranch)
             } else {
                 emitExpr(term.elseBranch)
             }
-            if (needResult) {
-                emitCode("$tmpName = $elseResultName")
-            }
+            emitCode("$tmpName = $elseResultName")
         }
         emitCode(" end;")
         return tmpName
     }
 
-    private fun emitInfixOp(term: InfixOp, needResult: Boolean): String {
-        val leftVar = emitExpr(term.left, true)
-        val rightVar = emitExpr(term.right, true)
+    private fun emitInfixOp(term: InfixOp): String {
+        val leftVar = emitExpr(term.left)
+        val rightVar = emitExpr(term.right)
         val op = mapInfixOperation(term.op, term.left.type)
         return "($leftVar $op $rightVar)"
     }
@@ -498,8 +490,8 @@ class LuaEmitter(val program: Program) {
             else -> op
         }
 
-    private fun emitPrefixOp(term: PrefixOp, needResult: Boolean): String {
-        val valueVar = emitExpr(term.expr, true)
+    private fun emitPrefixOp(term: PrefixOp): String {
+        val valueVar = emitExpr(term.expr)
         val resultName = nextTmpName()
         emitCode("local $resultName=")
         val op = when (term.op) {
@@ -512,8 +504,8 @@ class LuaEmitter(val program: Program) {
         return resultName
     }
 
-    private fun emitInterpolatedString(term: InterpolatedString, needResult: Boolean): String {
-        val partVars = term.parts.map { emitExpr(it, needResult = true) }
+    private fun emitInterpolatedString(term: InterpolatedString): String {
+        val partVars = term.parts.map { emitExpr(it) }
         val resultName = nextTmpName()
         emitCode("local $resultName=")
         emitCode(partVars.joinToString(" .. "))
@@ -521,11 +513,11 @@ class LuaEmitter(val program: Program) {
         return resultName
     }
 
-    private fun emitIs(term: Is, needResult: Boolean): String {
+    private fun emitIs(term: Is): String {
         return if (term.type == term.checkedType) {
             "true"
         } else {
-            val value = emitExpr(term.value, true)
+            val value = emitExpr(term.value)
             when (term.checkedType) {
                 Type.unit -> "type($value) == \"nil\""
                 Type.float, Type.int -> "type($value) == \"number\""
@@ -576,7 +568,7 @@ class LuaEmitter(val program: Program) {
         }
     }
 
-    private fun emitWhile(term: WhileLoop, needResult: Boolean): String {
+    private fun emitWhile(term: WhileLoop): String {
 //        val visitor = object : DefaultMappingVisitor() {
 //            override fun visitInfixOp(infixOp: InfixOp): Expression {
 //                return super.visitInfixOp(infixOp)
@@ -601,7 +593,7 @@ class LuaEmitter(val program: Program) {
 
         insideFunction {
             declarations.forEach {
-                    emitExpr(it, false)
+                    emitExpr(it)
             }
         }
         emitCode("while $condition do ")
