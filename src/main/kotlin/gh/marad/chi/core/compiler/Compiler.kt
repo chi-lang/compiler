@@ -109,19 +109,16 @@ object Compiler {
         // infer types
         // ===========
         val (functions, code) = run {
-            val groups = expressions.groupBy { it is NameDeclaration && it.value is Fn }
+            val groups = expressions.groupBy { it is NameDeclaration && it.value is Fn && it.expectedType != null }
             Pair(groups[true] ?: emptyList(), groups[false] ?: emptyList())
         }
 
-        val typer = Typer(InferenceContext(packageDefinition, ns, tables))
+        val ctx = InferenceContext(packageDefinition, ns, tables)
+        val typer = Typer(ctx)
         functions.forEach {
-            try {
-                val constraints = mutableListOf<Constraint>()
-                typer.typeTerm(it, 0, constraints)
-                val solutions = unify(constraints)
-                replaceTypes(it, solutions)
-            } catch (ex: CompilerMessage) {
-                resultMessages.add(ex.msg)
+            it as NameDeclaration
+            if (it.expectedType != null) {
+                ctx.defineLocalSymbol(it.name, PolyType(0, it.expectedType))
             }
         }
 
@@ -136,6 +133,17 @@ object Compiler {
             }
         } catch (ex: CompilerMessage) {
             resultMessages.add(ex.msg)
+        }
+
+        functions.forEach {
+            try {
+                val constraints = mutableListOf<Constraint>()
+                typer.typeTerm(it, 0, constraints)
+                val solutions = unify(constraints)
+                replaceTypes(it, solutions)
+            } catch (ex: CompilerMessage) {
+                resultMessages.add(ex.msg)
+            }
         }
 
 
