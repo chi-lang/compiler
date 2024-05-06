@@ -58,6 +58,11 @@ fun main(args: Array<String>) {
             )
             if (result != Lua.LuaError.OK) {
                 println("Error loading stdlib: ${env.lua.get().toJavaObject()}")
+            } else {
+                // If no error add additional imports
+                imports.add(Import("std", "lang.option", packageAlias = null, entries = listOf(
+                    Import.Entry("Option", alias = null, section = null)
+                ), section = null))
             }
         } else {
             println("WARN: Missing stdlib. Things might not work as expected!")
