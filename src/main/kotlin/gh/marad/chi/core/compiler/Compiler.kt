@@ -109,16 +109,21 @@ object Compiler {
         // infer types
         // ===========
         val (functions, code) = run {
-            val groups = expressions.groupBy { it is NameDeclaration && it.value is Fn && it.expectedType != null }
+            val groups = expressions.groupBy {
+                (it is NameDeclaration && it.value is Fn && it.expectedType != null)
+                        || it is EffectDefinition
+            }
             Pair(groups[true] ?: emptyList(), groups[false] ?: emptyList())
         }
 
         val ctx = InferenceContext(packageDefinition, ns, tables)
         val typer = Typer(ctx)
         functions.forEach {
-            it as NameDeclaration
-            if (it.expectedType != null) {
+            if (it is NameDeclaration && it.expectedType != null) {
                 ctx.defineLocalSymbol(it.name, PolyType(0, it.expectedType))
+            }
+            if (it is EffectDefinition) {
+                ctx.defineLocalSymbol(it.name, PolyType(0, it.type!!))
             }
         }
 

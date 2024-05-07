@@ -233,7 +233,7 @@ class LuaEmitter(val program: Program) {
             emitCode("=")
             emitCode(value)
             emitCode(";")
-            return name
+            return if (inFunction) term.name else topLevelName(term.name)
         }
     }
 
