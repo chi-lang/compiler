@@ -59,12 +59,15 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
         }
 
         lua.run("""
+            String = java.import('java.lang.String')
             function chi_tostring(value)
                 local t = type(value)
                 if t == 'function' then
                     return '<function>'
                 elseif t == 'nil' then
                     return 'unit'
+                elseif t == 'userdata' then
+                    return tostring(java.luaify(value))
                 else 
                     return tostring(value)
                 end

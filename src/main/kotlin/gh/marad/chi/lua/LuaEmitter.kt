@@ -203,13 +203,20 @@ class LuaEmitter(val program: Program) {
 
 
     private fun emitAtom(term: Atom): String {
-        val value = if (term.type == Type.string) {
-            // TODO: this should escape all the escaped codes like \n, ...
-            "\"${term.value}\""
-        } else if (term.type == Type.unit) {
-            "nil"
-        } else {
-            term.value
+        val value = when (term.type) {
+            Type.string -> {
+                // TODO: this should escape all the escaped codes like \n, ...
+                //"\"${term.value}\""
+                val tmp = nextTmpName()
+                emitCode("local $tmp = java.new(String,'${term.value}');")
+                tmp
+            }
+            Type.unit -> {
+                "nil"
+            }
+            else -> {
+                term.value
+            }
         }
         return "($value)"
     }

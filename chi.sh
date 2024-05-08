@@ -1,3 +1,5 @@
 #!/bin/bash
 
-$GRAALVM_HOME/bin/java -cp build/libs/chi-all.jar gh.marad.chi.MainKt $@
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+$GRAALVM_HOME/bin/java -cp $SCRIPT_DIR/build/libs/chi-all.jar gh.marad.chi.MainKt $@

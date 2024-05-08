@@ -1,0 +1,11 @@
+import std/lang { luaExpr }
+val s = "Hello"
+println(s)
+
+fn init() {
+    val String = luaExpr("java.import('java.lang.String')")
+    val t = luaExpr("java.new(String, 'hello')")
+    println(luaExpr("t:charAt(0)"))
+}
+
+init()
