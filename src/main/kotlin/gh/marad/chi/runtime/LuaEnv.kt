@@ -58,8 +58,12 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
             1
         }
 
-        lua.run("""
+        val result = lua.run("""
             String = java.import('java.lang.String')
+            chistr = require("gh.marad.chi.runtime.ChiString.open")
+            function chi_new_string(value)
+                return java.new(String,value)
+            end
             function chi_tostring(value)
                 local t = type(value)
                 if t == 'function' then
@@ -178,5 +182,10 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                 return chi_handle_effect(co, newArgs, handlers)
             end    
         """.trimIndent())
+        if (result != Lua.LuaError.OK) {
+            repeat(lua.top) {
+                println(lua.get().toJavaObject())
+            }
+        }
     }
 }

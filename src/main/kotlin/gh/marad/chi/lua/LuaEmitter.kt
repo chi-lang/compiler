@@ -311,6 +311,9 @@ class LuaEmitter(val program: Program) {
         while(iter.hasNext()) {
             val expr = iter.next()
             lastExprResult = emitExpr(expr)
+            if (expr is Return) {
+                break
+            }
         }
         return lastExprResult
     }
@@ -420,7 +423,7 @@ class LuaEmitter(val program: Program) {
         val name = nextTmpName()
         return when (term.targetType) {
             Type.string -> {
-                emitCode("local $name=tostring($result);")
+                emitCode("local $name=tostring(java.luaify($result));")
                 name
             }
             Type.int, Type.float -> {
@@ -465,15 +468,22 @@ class LuaEmitter(val program: Program) {
         emitCode(condition)
         emitCode(" then ")
         val thenResultName = emitBlock(term.thenBranch as Block)
-        emitCode("$tmpName = $thenResultName")
+        if (term.thenBranch.body.lastOrNull() !is Return) {
+            emitCode("$tmpName = $thenResultName")
+        }
         if (term.elseBranch != null) {
             emitCode(" else ")
-            val elseResultName = if (term.elseBranch is Block) {
-                emitBlock(term.elseBranch)
+            if (term.elseBranch is Block) {
+                val elseResultName = emitBlock(term.elseBranch)
+                if (term.elseBranch.body.lastOrNull() !is Return) {
+                    emitCode("$tmpName = $elseResultName")
+                }
             } else {
-                emitExpr(term.elseBranch)
+                val elseResultName = emitExpr(term.elseBranch)
+                if (term.elseBranch !is Return) {
+                    emitCode("$tmpName = $elseResultName")
+                }
             }
-            emitCode("$tmpName = $elseResultName")
         }
         emitCode(" end;")
         return tmpName
@@ -482,20 +492,22 @@ class LuaEmitter(val program: Program) {
     private fun emitInfixOp(term: InfixOp): String {
         val leftVar = emitExpr(term.left)
         val rightVar = emitExpr(term.right)
-        val op = mapInfixOperation(term.op, term.left.type)
-        return "($leftVar $op $rightVar)"
+        return mapInfixOperation(leftVar, rightVar, term.op, term.left.type)
     }
 
-    private fun mapInfixOperation(op: String, leftType: Type?): String =
-        when (op) {
+    private fun mapInfixOperation(leftVar: String, rightVar: String, op: String, leftType: Type?): String {
+        val mappedOp = when (op) {
             "!=" -> "~="
             "&&" -> "and"
             "||" -> "or"
             "+" -> if (leftType == Type.string) {
-                ".."
+                return "chistr.concat($leftVar, $rightVar)"
             } else op
+
             else -> op
         }
+        return "($leftVar $mappedOp $rightVar)"
+    }
 
     private fun emitPrefixOp(term: PrefixOp): String {
         val valueVar = emitExpr(term.expr)
@@ -515,7 +527,7 @@ class LuaEmitter(val program: Program) {
         val partVars = term.parts.map { emitExpr(it) }
         val resultName = nextTmpName()
         emitCode("local $resultName=")
-        emitCode(partVars.joinToString(" .. "))
+        emitCode("chistr.concat(${partVars.joinToString(",")})")
         emitCode(";")
         return resultName
     }
@@ -553,8 +565,7 @@ class LuaEmitter(val program: Program) {
                 val left = foo(term.left, bar)
                 val right = foo(term.right, bar)
                 //InfixOp(term.op, left, right, term.sourceSection)
-                val op = mapInfixOperation(term.op, term.left.type)
-                "($left $op $right)"
+                mapInfixOperation(left, right, term.op, term.left.type)
             }
             else -> {
                 val tmpName = nextTmpName()
