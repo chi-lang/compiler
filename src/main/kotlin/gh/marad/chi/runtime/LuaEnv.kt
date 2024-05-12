@@ -6,11 +6,11 @@ import gh.marad.chi.core.types.Variable
 import gh.marad.chi.lua.formatLuaCode
 import gh.marad.chi.runtime.TypeWriter.encodeType
 import party.iroiro.luajava.Lua
-import party.iroiro.luajava.lua54.Lua54
+import party.iroiro.luajava.luajit.LuaJit
 import java.nio.ByteBuffer
 
 class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
-    val lua = Lua54().also { init(it) }
+    val lua = LuaJit().also { init(it) }
 
     fun eval(code: String, showLuaCode: Boolean = false, dryRun: Boolean = false, emitModule: Boolean = true): Boolean {
         val luaCode = LuaCompiler(this).compileToLua(code, LuaCompiler.ErrorStrategy.PRINT, emitModule)
