@@ -46,6 +46,18 @@ internal object FuncReader {
         )
     }
 
+    fun readFnCallWithLambda(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.FnCallLambdaExprContext): ParseAst {
+        val args = listOf(readLambda(parser, source, ctx.lambda()))
+        return ParseFnCall(
+            name = ctx.expression().text,
+            function = ctx.expression().accept(parser),
+            concreteTypeParameters = ctx.callGenericParameters()?.type()
+                ?.map { TypeReader.readTypeRef(parser, source, it) } ?: emptyList(),
+            arguments = args,
+            section = getSection(source, ctx)
+        )
+    }
+
 }
 
 data class ParseLambda(

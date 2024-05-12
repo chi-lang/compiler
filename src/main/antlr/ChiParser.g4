@@ -93,6 +93,7 @@ expression
     | whenExpression # WhenExpr
     | '(' expression ')' # GroupExpr
     | expression callGenericParameters? '(' expr_comma_list ')' lambda? # FnCallExpr
+    | expression callGenericParameters? lambda # FnCallLambdaExpr
     | receiver=expression ws PERIOD memberName=ID # FieldAccessExpr
     | variable=expression '[' index=expression ']' # IndexOperator
     | func_with_name # FuncWithName

@@ -41,4 +41,13 @@ class FuncReaderFunctionCallTest {
             it[1].shouldBeTypeOf<ParseLambda>()
         }
     }
+
+    @Test
+    fun `arguments can be skipped when lambda is present`() {
+        val code = "hello { a -> a }"
+        val ast = testParse(code)
+
+        ast shouldHaveSize 1
+        println(ast)
+    }
 }

@@ -41,6 +41,9 @@ internal class ParserVisitor(private val source: ChiSource) : ChiParserBaseVisit
     override fun visitFnCallExpr(ctx: ChiParser.FnCallExprContext): ParseAst =
         FuncReader.readFnCall(this, source, ctx)
 
+    override fun visitFnCallLambdaExpr(ctx: ChiParser.FnCallLambdaExprContext): ParseAst =
+        FuncReader.readFnCallWithLambda(this, source, ctx)
+
     override fun visitBlock(ctx: ChiParser.BlockContext): ParseAst =
         BlockReader.read(this, source, ctx)
 
