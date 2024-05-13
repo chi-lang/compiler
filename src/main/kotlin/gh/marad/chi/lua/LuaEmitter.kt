@@ -6,6 +6,9 @@ import gh.marad.chi.core.types.Array
 import gh.marad.chi.core.types.Function
 import gh.marad.chi.core.types.Record
 import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.Type.Companion.float
+import gh.marad.chi.core.types.Type.Companion.int
+import gh.marad.chi.core.types.Type.Companion.string
 import gh.marad.chi.core.types.Variable
 import gh.marad.chi.runtime.TypeWriter.encodeType
 
@@ -204,7 +207,7 @@ class LuaEmitter(val program: Program) {
 
     private fun emitAtom(term: Atom): String {
         val value = when (term.type) {
-            Type.string -> {
+            string -> {
                 // TODO: this should escape all the escaped codes like \n, ...
                 //"\"${term.value}\""
                 val tmp = nextTmpName()
@@ -271,7 +274,7 @@ class LuaEmitter(val program: Program) {
         val function = term.function
         if (function is VariableAccess && function.target == embedLuaTarget) {
             val codeParam = term.parameters.first()
-            if (codeParam is Atom && codeParam.type == Type.string) {
+            if (codeParam is Atom && codeParam.type == string) {
                 val luaCode = codeParam.value.replace("\n", ";")
                 emitCode("$luaCode;")
                 return "nil"
@@ -280,7 +283,7 @@ class LuaEmitter(val program: Program) {
             }
         } else if (function is VariableAccess && function.target == luaExprTarget) {
             val codeParam = term.parameters.first()
-            if (codeParam is Atom && codeParam.type == Type.string) {
+            if (codeParam is Atom && codeParam.type == string) {
                 val luaCode = codeParam.value.replace("\n", ";")
                 return luaCode
             } else {
@@ -419,14 +422,21 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitCast(term: Cast): String {
-        val result = emitExpr(term.expression)
+        var result = emitExpr(term.expression)
+        if (term.targetType == term.expression.type) {
+            // no casting necessary
+            return result
+        }
+        if (term.expression.type == string && term.targetType != string) {
+           result = "java.luaify($result)"
+        }
         val name = nextTmpName()
         return when (term.targetType) {
-            Type.string -> {
-                emitCode("local $name=tostring(java.luaify($result));")
+            string -> {
+                emitCode("local $name=tostring($result);")
                 name
             }
-            Type.int, Type.float -> {
+            int, float -> {
                 emitCode("local $name=tonumber($result);")
                 name
             }
@@ -500,7 +510,7 @@ class LuaEmitter(val program: Program) {
             "!=" -> "~="
             "&&" -> "and"
             "||" -> "or"
-            "+" -> if (leftType == Type.string) {
+            "+" -> if (leftType == string) {
                 return "chistr.concat($leftVar, $rightVar)"
             } else op
 
@@ -539,9 +549,9 @@ class LuaEmitter(val program: Program) {
             val value = emitExpr(term.value)
             when (term.checkedType) {
                 Type.unit -> "type($value) == \"nil\""
-                Type.float, Type.int -> "type($value) == \"number\""
+                float, int -> "type($value) == \"number\""
                 Type.bool -> "type($value) == \"boolean\""
-                Type.string -> "type($value) == \"string\""
+                string -> "type($value) == \"string\""
 //                is Array -> {
 //                    TODO()
 //                }

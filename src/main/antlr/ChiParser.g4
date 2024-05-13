@@ -98,7 +98,6 @@ expression
     | variable=expression '[' index=expression ']' # IndexOperator
     | func_with_name # FuncWithName
     | name_declaration #NameDeclarationExpr
-    | string # StringExpr
     | MINUS expression # NegationExpr
     | expression BIT_SHL expression # BinOp
     | expression BIT_SHR expression # BinOp
@@ -119,13 +118,18 @@ expression
     | 'return' expression? # ReturnExpr
     | input=expression ws WEAVE ws template=expression ws # WeaveExpr
     | variable=ID opEqual value=expression # OpEqualExpr
-    | NUMBER # NumberExpr
-    | bool # BoolExpr
+    | atom # AtomExpr
     | ID # IdExpr
-    | UNIT # UnitValue
     | PLACEHOLDER # PlaceholderExpr
     | BREAK # BreakExpr
     | CONTINUE # ContinueExpr
+    ;
+
+atom
+    : string # CreateString
+    | NUMBER # CreateNumber
+    | bool   # CreateBool
+    | UNIT   # CreateUnit
     ;
 
 lambda: LBRACE ws (argumentsWithOptionalTypes '->')? ws (expression ws)* RBRACE;
