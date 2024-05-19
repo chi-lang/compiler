@@ -138,4 +138,15 @@ class LuaEnvTest {
 
     }
 
+    @Test
+    fun `should apply default arg values`() {
+        val result = eval("""
+            fn foo(a: int = 5): int {
+                a
+            }
+            foo()
+        """.trimIndent())
+
+        result shouldBe 5
+    }
 }
