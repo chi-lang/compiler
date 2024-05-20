@@ -433,7 +433,7 @@ class LuaEmitter(val program: Program) {
         val name = nextTmpName()
         return when (term.targetType) {
             string -> {
-                emitCode("local $name=tostring($result);")
+                emitCode("local $name=chi_tostring($result);")
                 name
             }
             int, float -> {

@@ -1,6 +1,7 @@
 package gh.marad.chi.runtime
 
 import party.iroiro.luajava.Lua
+import party.iroiro.luajava.Lua.LuaType
 
 class ChiString {
     companion object {
@@ -46,7 +47,15 @@ class ChiString {
                 val sb = StringBuilder()
                 val args = ArrayList<String>(l.top)
                 repeat(l.top) {
-                    args.add(l.get().toJavaObject() as String)
+                    val type = l.type(-1)
+                    val obj = l.get().toJavaObject()
+                    when {
+                        type == LuaType.USERDATA || type == LuaType.STRING ->
+                            args.add(obj as String)
+                        else -> {
+                            throw RuntimeException("chistr.concat expects argument to be a string but got $type. Object was $obj")
+                        }
+                    }
                 }
                 args.asReversed().forEach(sb::append)
                 l.push(sb.toString())
