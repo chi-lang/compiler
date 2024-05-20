@@ -36,7 +36,7 @@ class FunctionConversionsKtLambdaTest {
     fun `should transfer function parameters from lambda`() {
         // given
         val lambda = sampleLambda.copy(
-            formalArguments = listOf(FormalArgument("name", intTypeRef, sectionB))
+            formalArguments = listOf(FormalArgument("name", intTypeRef, section=sectionB))
         )
 
         // when

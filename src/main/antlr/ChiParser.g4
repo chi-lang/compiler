@@ -169,7 +169,7 @@ generic_type_definitions
 
 func_argument_definitions : '(' ws argumentsWithTypes? ')';
 argumentsWithTypes : argumentWithType ws (',' ws argumentWithType ws)*;
-argumentWithType : ID ':' type ('=' defaultArgValue)?;
+argumentWithType : ID ':' type ('=' defaultValue=expression)?;
 
 defaultArgValue
     : '{' (ws ID ws ':' ws defaultArgValue)? ws (','? | (',' ws ID ':' ws defaultArgValue ws)* ','?) ws '}' # CreateDefaultValueRecord

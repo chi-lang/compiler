@@ -104,7 +104,7 @@ class FunctionConversionsKtFuncWithNameTest {
         // given
         val funcWithName = sampleFuncWithName.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
-            formalArguments = listOf(FormalArgument("a", TypeNameRef(null, null, "T", sectionB), sectionC))
+            formalArguments = listOf(FormalArgument("a", TypeNameRef(null, null, "T", sectionB), section=sectionC))
         )
 
         // when

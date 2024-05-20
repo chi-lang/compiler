@@ -23,8 +23,8 @@ val defaultPackage = PackageName(CompilationDefaults.defaultPacakge, null)
 
 val intTypeRef = TypeNameRef(null, null, "int", sectionA)
 
-fun arg(name: String, typeName: String) = FormalArgument(name, TypeNameRef(null, null, typeName, sectionB), sectionA)
-fun intArg(name: String) = FormalArgument(name, intTypeRef, sectionA)
+fun arg(name: String, typeName: String) = FormalArgument(name, TypeNameRef(null, null, typeName, sectionB), section = sectionA)
+fun intArg(name: String) = FormalArgument(name, intTypeRef, section = sectionA)
 
 fun Expression.shouldBeVariable(name: String, section: ChiSource.Section? = null) {
     this.shouldBeTypeOf<VariableAccess>() should {
