@@ -68,9 +68,8 @@ class ExprConversionVisitor(
         val fnSymbolTable = FnSymbolTable(currentFnSymbolTable)
         val params = parseLambda.formalArguments.map {
             val type = it.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it) }
-            val defaultValue = it.defaultValue?.let { visit(it) }
             fnSymbolTable.addArgument(it.name, type)
-            FnParam(it.name, type, defaultValue, it.section)
+            FnParam(it.name, type, it.section)
         }
 
         val body = withFnSymbolTable(fnSymbolTable) {
@@ -90,11 +89,13 @@ class ExprConversionVisitor(
         val prevTypeSchemeVariables = currentTypeSchemeVariables
         currentTypeSchemeVariables = parseFuncWithName.typeParameters.map { it.name }
 
+        val defaultArgs = mutableListOf<Expression>()
+
         val params = parseFuncWithName.formalArguments.map {
             val type = resolveType(typeTable, currentTypeSchemeVariables, it.typeRef!!)
-            val defaultValue = it.defaultValue?.let { visit(it) }
+            it.defaultValue?.let { defaultArgs.add(visit(it)) }
             fnSymbolTable.addArgument(it.name, type)
-            FnParam(it.name, type, defaultValue, it.section)
+            FnParam(it.name, type, it.section)
         }
 
         val function = Fn(
@@ -123,16 +124,27 @@ class ExprConversionVisitor(
             expectedType = funcType,
             sourceSection = parseFuncWithName.section
         ).also {
-            addLocalSymbol(it.name, it.mutable, it.public, funcType)
+            addLocalSymbol(it.name, it.mutable, it.public, defaultArgs, funcType)
         }
     }
 
-    override fun visitFnCall(parseFnCall: ParseFnCall): Expression =
-        FnCall(
+    override fun visitFnCall(parseFnCall: ParseFnCall): Expression {
+        val arguments = parseFnCall.arguments.map { it.accept(this) }.toMutableList()
+        val symbol = tables.getLocalSymbol(parseFnCall.name)
+        if (symbol?.type != null
+            && symbol.type is Function
+            && symbol.defaultArgs.isNotEmpty()) {
+            val fnExpectedArgCount = symbol.type.types.size-1
+            val missingArgs = fnExpectedArgCount - arguments.size
+            val defaultArgsToAdd = symbol.defaultArgs.takeLast(missingArgs)
+            arguments.addAll(defaultArgsToAdd)
+        }
+        return FnCall(
             parseFnCall.function.accept(this),
-            parseFnCall.arguments.map { it.accept(this) }.toMutableList(),
+            arguments,
             parseFnCall.section
         )
+    }
 
     override fun visitAssignment(parseAssignment: ParseAssignment): Expression =
         Assignment(
@@ -208,11 +220,9 @@ class ExprConversionVisitor(
         currentTypeSchemeVariables = parseEffectDefinition.typeParameters.map { it.name }
 
         val params = parseEffectDefinition.formalArguments.map {
-            val defaultValue = it.defaultValue?.let { visit(it) }
             FnParam(
                 it.name,
                 resolveType(typeTable, currentTypeSchemeVariables, it.typeRef!!),
-                defaultValue,
                 it.section
             )
         }
@@ -233,7 +243,7 @@ class ExprConversionVisitor(
             sourceSection = parseEffectDefinition.section
         ).also {
             it.type = type
-            addLocalSymbol(it.name, isMutable = false, it.public, type)
+            addLocalSymbol(it.name, isMutable = false, it.public, type = type)
         }
     }
 
@@ -412,7 +422,7 @@ class ExprConversionVisitor(
     private fun FnSymbol.toLocalSymbol() = LocalSymbol(name)
     private fun Symbol.toPackageSymbol() = PackageSymbol(moduleName, packageName, name)
 
-    private fun addLocalSymbol(name: String, isMutable: Boolean, isPublic: Boolean, type: Type? = null) {
+    private fun addLocalSymbol(name: String, isMutable: Boolean, isPublic: Boolean, defaultArgs: List<Expression> = emptyList(), type: Type? = null) {
         val fnSymbolTable = currentFnSymbolTable
         if (fnSymbolTable != null) {
             // we are inside a function so we declare simple local
@@ -424,7 +434,9 @@ class ExprConversionVisitor(
                     packageName = pkg.packageName,
                     name = name,
                     type = type,
-                    isPublic, isMutable
+                    isPublic,
+                    isMutable,
+                    defaultArgs
                 )
             )
         }

@@ -1,5 +1,6 @@
 package gh.marad.chi.core.namespace
 
+import gh.marad.chi.core.Expression
 import gh.marad.chi.core.types.TypeScheme
 
 class SymbolTable {
@@ -28,6 +29,7 @@ data class Symbol(
     val name: String,
     val type: TypeScheme?,
     val public: Boolean,
-    val mutable: Boolean
+    val mutable: Boolean,
+    val defaultArgs: List<Expression>,
 )
 

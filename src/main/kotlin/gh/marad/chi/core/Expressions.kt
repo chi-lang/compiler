@@ -162,7 +162,6 @@ data class NameDeclaration(
 
 data class FnParam(val name: String,
                    var type: Type?,
-                   val defaultValue: Expression? = null,
                    val sourceSection: ChiSource.Section?)
 data class Fn(
     val parameters: List<FnParam>,

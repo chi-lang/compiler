@@ -76,7 +76,8 @@ fun TestCompilationEnv.addSymbolInDefaultPackage(name: String, type: TypeScheme?
             name,
             type,
             public = public,
-            mutable = mutable
+            mutable = mutable,
+            defaultArgs = emptyList()
         )
     )
 }
@@ -89,7 +90,8 @@ fun TestCompilationEnv.addSymbol(moduleName: String, packageName: String, name: 
             name,
             type,
             public = public,
-            mutable = mutable
+            mutable = mutable,
+            defaultArgs = emptyList()
         )
     )
 }

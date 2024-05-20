@@ -41,7 +41,9 @@ class LuaCompilationEnv(
                     symbolName,
                     type = (properties["type"] as String?)?.let { TypeWriter.decodeType(it) },
                     public = properties["public"] as Boolean,
-                    mutable = properties["mutable"] as Boolean
+                    mutable = properties["mutable"] as Boolean,
+                    // TODO: support default arguments for functions
+                    defaultArgs = emptyList()
                 )
             }
         }
