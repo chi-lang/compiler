@@ -10,7 +10,11 @@ import party.iroiro.luajava.luajit.LuaJit
 import java.nio.ByteBuffer
 
 class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
-    val lua = LuaJit().also { init(it) }
+    val lua = LuaJit()
+
+    init {
+        init()
+    }
 
     fun eval(code: String, showLuaCode: Boolean = false, dryRun: Boolean = false, emitModule: Boolean = true): Boolean {
         val luaCode = LuaCompiler(this).compileToLua(code, LuaCompiler.ErrorStrategy.PRINT, emitModule)
@@ -26,6 +30,9 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
         return if (status != Lua.LuaError.OK) {
             val errorMessage = lua.get().toJavaObject()
             println("Error: $errorMessage")
+            repeat(lua.top) {
+                println(lua.get().toJavaObject())
+            }
             false
         } else {
             true
@@ -44,7 +51,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
         }
     }
 
-    private fun init(lua: Lua) {
+    private fun init() {
         lua.openLibraries()
 
         lua.register("chi_compile") {
@@ -58,9 +65,9 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
             1
         }
 
-        val result = lua.run("""
-            String = java.import('java.lang.String')
-            chistr = require("gh.marad.chi.runtime.ChiString.open")
+        evalLua("String = java.import('java.lang.String')")
+        evalLua("chistr = require('gh.marad.chi.runtime.ChiString.open')")
+        evalLua("""
             function chi_new_string(value)
                 return java.new(String,value)
             end
@@ -76,7 +83,9 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                     return tostring(value)
                 end
             end
-            
+        """.trimIndent())
+
+        evalLua("""
             chi_print = function(to_show, flush)
                 io.write(chi_tostring(to_show))
                 if not flush then io.flush() end
@@ -86,7 +95,9 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                 io.write(chi_tostring(to_show), "\n")
                 if not flush then io.flush() end
             end
-            
+        """.trimIndent())
+
+        evalLua("""
             chi_reload_module = function(module)
                 package.loaded[module] = nil
                 require(module)
@@ -99,10 +110,17 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                 end
                 local r=f:read('a')
                 f:close()
-                local loader = load(r)
-                loader()
+                local loader, error = load(r)
+                if loader == nil then
+                    chi_println('Error loading ' .. path .. ':')
+                    chi_println(error)
+                else 
+                    loader()
+                end
             end
-            
+        """.trimIndent())
+
+        val result = lua.run("""
             chi = {}
             package.loaded['std/lang'] = {
                 _package = {
@@ -183,9 +201,22 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
             end    
         """.trimIndent())
         if (result != Lua.LuaError.OK) {
+            val sb = StringBuilder()
             repeat(lua.top) {
-                println(lua.get().toJavaObject())
+                sb.appendLine(lua.get().toJavaObject())
             }
+            throw RuntimeException(sb.toString())
+        }
+    }
+
+    fun evalLua(luaCode: String) {
+        val result = lua.run(luaCode)
+        if (result != Lua.LuaError.OK) {
+            val sb = StringBuilder()
+            repeat(lua.top) {
+                sb.appendLine(lua.get().toJavaObject())
+            }
+            throw RuntimeException(sb.toString())
         }
     }
 }
