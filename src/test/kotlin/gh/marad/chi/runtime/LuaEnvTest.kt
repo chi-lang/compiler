@@ -159,6 +159,7 @@ class LuaEnvTest {
         //  - support default args for method invocation style
         //  - typecheck the default arg with expected type
         //  - run type inference on default argument
+        //  - restrict allowed expressions for default values
         fail("Default arguments still need work!")
     }
 }
