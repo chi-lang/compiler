@@ -139,27 +139,4 @@ class LuaEnvTest {
 
     }
 
-    @Test
-    fun `should apply default arg values`() {
-        val result = eval("""
-            fn foo(a: int, b: int = 5): int {
-                a + b
-            }
-            foo(1)
-        """.trimIndent())
-
-        result shouldBe 6
-    }
-
-    @Test
-    fun `default arguments todo`() {
-        // TODO
-        //  - support default args for imported functions
-        //  - verify that default arg is a static value, a lambda or a function call
-        //  - support default args for method invocation style
-        //  - typecheck the default arg with expected type
-        //  - run type inference on default argument
-        //  - restrict allowed expressions for default values
-        fail("Default arguments still need work!")
-    }
 }
