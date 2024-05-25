@@ -14,12 +14,12 @@ import java.util.*
 
 object TypeWriter {
 
-    fun decodeType(spec: String): Type {
+    fun decodeType(spec: String): TypeScheme {
         val byteArray = Base64.getDecoder().decode(spec)
         return readType(DataInputStream(ByteArrayInputStream(byteArray)))
     }
 
-    fun encodeType(type: Type): String {
+    fun encodeType(type: TypeScheme): String {
         val baos = ByteArrayOutputStream()
         writeType(type, DataOutputStream(baos))
         return Base64.getEncoder().encodeToString(baos.toByteArray())

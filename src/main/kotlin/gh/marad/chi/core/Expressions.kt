@@ -1,6 +1,7 @@
 package gh.marad.chi.core
 
 import gh.marad.chi.core.expressionast.ExpressionVisitor
+import gh.marad.chi.core.namespace.SymbolTable
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.readers.Import
 import gh.marad.chi.core.types.Type
@@ -20,6 +21,7 @@ data class Program(
     val imports: List<Import>,
     val typeAliases: List<TypeAlias>,
     val expressions: List<Expression>,
+    val symbolTable: SymbolTable,
     val sourceSection: ChiSource.Section? = null)
 
 data class Package(val moduleName: String, val packageName: String)

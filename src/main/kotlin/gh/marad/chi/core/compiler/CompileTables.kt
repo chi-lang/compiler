@@ -33,6 +33,7 @@ class CompileTables(val currentPackage: Package,
         }
     }
 
+    fun getSymbolTable() = localSymbolTable
 
     fun getAliasedPackage(name: String): PackageDescriptor? {
         return packageAliasTable.get(name)

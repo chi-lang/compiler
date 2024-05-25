@@ -2,14 +2,12 @@ package gh.marad.chi.lua
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.expressionast.DefaultExpressionVisitor
+import gh.marad.chi.core.types.*
 import gh.marad.chi.core.types.Array
 import gh.marad.chi.core.types.Function
-import gh.marad.chi.core.types.Record
-import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.Type.Companion.float
 import gh.marad.chi.core.types.Type.Companion.int
 import gh.marad.chi.core.types.Type.Companion.string
-import gh.marad.chi.core.types.Variable
 import gh.marad.chi.runtime.TypeWriter.encodeType
 
 class LuaEmitter(val program: Program) {
@@ -81,25 +79,13 @@ class LuaEmitter(val program: Program) {
 
     private fun emitPackageInfo() {
         val descPath = "__S_"
-        val iter = program.expressions.filterIsInstance<NameDeclaration>().iterator()
+        val symbols = program.symbolTable.iterator()
 
-        while(iter.hasNext()) {
-            val it = iter.next()
+        while (symbols.hasNext()) {
+            val it = symbols.next()
             emitCode("$descPath.${it.name}={")
             emitCode("public=${it.public},")
             emitCode("mutable=${it.mutable},")
-            val type = it.type
-            if (type != null) {
-                emitCode("type=\"${encodeType(type)}\"")
-            }
-            emitCode("};")
-        }
-        val effects = program.expressions.filterIsInstance<EffectDefinition>().iterator()
-        while (effects.hasNext()) {
-            val it = effects.next()
-            emitCode("$descPath.${it.name}={")
-            emitCode("public=${it.public},")
-            emitCode("mutable=false,")
             val type = it.type
             if (type != null) {
                 emitCode("type=\"${encodeType(type)}\"")

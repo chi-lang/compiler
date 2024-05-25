@@ -7,6 +7,7 @@ import gh.marad.chi.core.namespace.CompilationEnv
 import gh.marad.chi.core.namespace.PackageDescriptor
 import gh.marad.chi.core.namespace.Symbol
 import gh.marad.chi.core.parser.readers.Import
+import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeId
 
 class LuaCompilationEnv(
@@ -42,8 +43,6 @@ class LuaCompilationEnv(
                     type = (properties["type"] as String?)?.let { TypeWriter.decodeType(it) },
                     public = properties["public"] as Boolean,
                     mutable = properties["mutable"] as Boolean,
-                    // TODO: support default arguments for functions
-                    defaultArgs = emptyList()
                 )
             }
         }
@@ -90,7 +89,7 @@ class LuaCompilationEnv(
             type as String
             return TypeAlias(
                 TypeId(moduleName, packageName, name),
-                TypeWriter.decodeType(type)
+                TypeWriter.decodeType(type) as Type
             )
         }
 

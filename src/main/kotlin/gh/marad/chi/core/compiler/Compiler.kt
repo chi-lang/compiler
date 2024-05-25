@@ -87,7 +87,7 @@ object Compiler {
         if (resultMessages.isNotEmpty()) {
             return CompilationResult(
                 refineMessages(resultMessages),
-                Program(packageDefinition, imports, definedTypeAliases, emptyList(), parsedProgram.section),
+                Program(packageDefinition, imports, definedTypeAliases, emptyList(), tables.getSymbolTable(), parsedProgram.section),
             )
         }
 
@@ -155,7 +155,7 @@ object Compiler {
         if (resultMessages.isNotEmpty()) {
             return CompilationResult(
                 refineMessages(resultMessages),
-                Program(packageDefinition, imports, definedTypeAliases, expressions, parsedProgram.section),
+                Program(packageDefinition, imports, definedTypeAliases, expressions, tables.getSymbolTable(), parsedProgram.section),
             )
         }
 
@@ -175,7 +175,7 @@ object Compiler {
 
         return CompilationResult(
             refineMessages(resultMessages),
-            Program(packageDefinition, imports, definedTypeAliases, expressions, parsedProgram.section),
+            Program(packageDefinition, imports, definedTypeAliases, expressions, tables.getSymbolTable(), parsedProgram.section),
         )
     }
 

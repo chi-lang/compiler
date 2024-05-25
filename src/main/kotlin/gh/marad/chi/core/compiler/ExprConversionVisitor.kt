@@ -124,21 +124,13 @@ class ExprConversionVisitor(
             expectedType = funcType,
             sourceSection = parseFuncWithName.section
         ).also {
-            addLocalSymbol(it.name, it.mutable, it.public, defaultArgs, funcType)
+            addLocalSymbol(it.name, it.mutable, it.public, funcType)
         }
     }
 
     override fun visitFnCall(parseFnCall: ParseFnCall): Expression {
         val arguments = parseFnCall.arguments.map { it.accept(this) }.toMutableList()
         val symbol = tables.getLocalSymbol(parseFnCall.name)
-        if (symbol?.type != null
-            && symbol.type is Function
-            && symbol.defaultArgs.isNotEmpty()) {
-            val fnExpectedArgCount = symbol.type.types.size-1
-            val missingArgs = fnExpectedArgCount - arguments.size
-            val defaultArgsToAdd = symbol.defaultArgs.takeLast(missingArgs)
-            arguments.addAll(defaultArgsToAdd)
-        }
         return FnCall(
             parseFnCall.function.accept(this),
             arguments,
@@ -422,7 +414,7 @@ class ExprConversionVisitor(
     private fun FnSymbol.toLocalSymbol() = LocalSymbol(name)
     private fun Symbol.toPackageSymbol() = PackageSymbol(moduleName, packageName, name)
 
-    private fun addLocalSymbol(name: String, isMutable: Boolean, isPublic: Boolean, defaultArgs: List<Expression> = emptyList(), type: Type? = null) {
+    private fun addLocalSymbol(name: String, isMutable: Boolean, isPublic: Boolean, type: Type? = null) {
         val fnSymbolTable = currentFnSymbolTable
         if (fnSymbolTable != null) {
             // we are inside a function so we declare simple local
@@ -436,7 +428,6 @@ class ExprConversionVisitor(
                     type = type,
                     isPublic,
                     isMutable,
-                    defaultArgs
                 )
             )
         }
