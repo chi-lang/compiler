@@ -67,7 +67,7 @@ data class Primitive(val id: TypeId) : Type, HasTypeId {
     override fun getTypeId(): TypeId = id
 }
 
-data class Function(val types: List<Type>, val typeParams: List<String> = emptyList()) : Type {
+data class Function(val types: List<Type>, val typeParams: List<String> = emptyList(), val defaultArgs: Int = 0) : Type {
     override val level: Int get() = types.maxOf { it.level }
     override fun <T> accept(visitor: TypeVisitor<T>): T =
         visitor.visitFunction(this)

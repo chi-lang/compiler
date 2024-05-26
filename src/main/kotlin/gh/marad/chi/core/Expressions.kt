@@ -44,6 +44,7 @@ data class Atom(val value: String,
         fun t(sourceSection: ChiSource.Section?) = Atom("true", Type.bool, sourceSection)
         fun f(sourceSection: ChiSource.Section?) = Atom("false", Type.bool, sourceSection)
         fun string(value: String, sourceSection: ChiSource.Section?) = Atom(value, Type.string, sourceSection)
+        fun defaultArg(type: Type) = Atom("@", type, null)
     }
 
     override fun <T> accept(visitor: ExpressionVisitor<T>): T = visitor.visitAtom(this)

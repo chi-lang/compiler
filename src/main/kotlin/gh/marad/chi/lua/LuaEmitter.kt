@@ -280,7 +280,12 @@ class LuaEmitter(val program: Program) {
             val iter = term.parameters.iterator()
             val params = ArrayList<String>(term.parameters.size)
             while (iter.hasNext()) {
-                params.add(emitExpr(iter.next()))
+                val param = iter.next()
+                if (param is Atom && param.value == "@") {
+                    // this is a default parameter - skip it
+                    continue
+                }
+                params.add(emitExpr(param))
             }
 
 

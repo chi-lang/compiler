@@ -114,6 +114,7 @@ object TypeWriter {
             stream.writeByte(BinaryTypeId.Fn.id().toInt())
             writeTypes(type.types, stream)
             writeStrings(type.typeParams, stream)
+            stream.writeShort(type.defaultArgs)
         } else if (type is Variable) {
             stream.writeByte(BinaryTypeId.TypeVariable.id().toInt())
             stream.writeUTF(type.name)
@@ -190,7 +191,8 @@ object TypeWriter {
             )
             BinaryTypeId.Fn -> Function(
                 readTypes(stream),
-                readStrings(stream)
+                readStrings(stream),
+                stream.readShort().toInt()
             )
             BinaryTypeId.Array -> Array(readType(stream), readStrings(stream))
             BinaryTypeId.TypeVariable -> Variable(stream.readUTF(), stream.readShort().toInt())

@@ -11,6 +11,7 @@ import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 import gh.marad.chi.core.types.Function
 import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.Variable
 
 class ExprConversionVisitor(
     private val pkg: Package,
@@ -91,18 +92,36 @@ class ExprConversionVisitor(
 
         val defaultArgs = mutableListOf<Expression>()
 
-        val params = parseFuncWithName.formalArguments.map {
-            val type = resolveType(typeTable, currentTypeSchemeVariables, it.typeRef!!)
-            it.defaultValue?.let { defaultArgs.add(visit(it)) }
-            fnSymbolTable.addArgument(it.name, type)
-            FnParam(it.name, type, it.section)
+        val params = parseFuncWithName.formalArguments.map { argument ->
+            val type = resolveType(typeTable, currentTypeSchemeVariables, argument.typeRef!!)
+            argument.defaultValue?.let {
+                val defaultValue = visit(it)
+                defaultArgs.add(defaultValue)
+                val section = it.section
+                val argumentTarget = LocalSymbol(argument.name)
+                defaultArgs.add(
+                    IfElse(
+                        InfixOp("==", VariableAccess(argumentTarget, section), Atom("nil", Variable(argument.name, 1), section), section),
+                        Block(listOf(
+                            Assignment(argumentTarget, defaultValue, section),
+                        ), section),
+                        null,
+                        section
+                    ))
+            }
+            fnSymbolTable.addArgument(argument.name, type)
+            FnParam(argument.name, type, argument.section)
         }
 
+        var functionBody = withFnSymbolTable(fnSymbolTable) { parseFuncWithName.body.accept(this) as Block }
+        if (defaultArgs.isNotEmpty()) {
+            functionBody = functionBody.copy(
+                body = defaultArgs + functionBody.body,
+            )
+        }
         val function = Fn(
             parameters = params,
-            body = withFnSymbolTable(fnSymbolTable) {
-                parseFuncWithName.body.accept(this) as Block
-            },
+            body = functionBody,
             parseFuncWithName.body.section
         )
 
@@ -112,7 +131,7 @@ class ExprConversionVisitor(
 
         val funcTypes = params.map { it.type!! } + returnType
 
-        val funcType = Function(types = funcTypes)
+        val funcType = Function(types = funcTypes, defaultArgs = defaultArgs.size)
 
         currentTypeSchemeVariables = prevTypeSchemeVariables
 
@@ -131,6 +150,21 @@ class ExprConversionVisitor(
     override fun visitFnCall(parseFnCall: ParseFnCall): Expression {
         val arguments = parseFnCall.arguments.map { it.accept(this) }.toMutableList()
         val symbol = tables.getLocalSymbol(parseFnCall.name)
+        if (symbol?.type != null
+            && symbol.type is Function) {
+            val defaultArgsPossible = symbol.type.defaultArgs
+            val fnExpectedArgCount = symbol.type.types.size-1
+            val requiredArgs = fnExpectedArgCount - defaultArgsPossible
+            if (arguments.size < requiredArgs) {
+                // skip adding parameters - this will fail compilation in other stage
+            } else {
+                val missingArgs = fnExpectedArgCount - arguments.size
+                repeat(missingArgs) { it ->
+                    val tv = Variable("@$it", 1)
+                    arguments.add(Atom.defaultArg(tv))
+                }
+            }
+        }
         return FnCall(
             parseFnCall.function.accept(this),
             arguments,
