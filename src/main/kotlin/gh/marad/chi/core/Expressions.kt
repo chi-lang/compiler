@@ -168,6 +168,7 @@ data class FnParam(val name: String,
                    val sourceSection: ChiSource.Section?)
 data class Fn(
     val parameters: List<FnParam>,
+    val defaultValues: Map<String, Expression>,
     val body: Block,
     override val sourceSection: ChiSource.Section?
 ) : Expression {

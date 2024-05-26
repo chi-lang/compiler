@@ -212,16 +212,7 @@ class LuaEmitter(val program: Program) {
 
     private fun emitNameDeclaration(term: NameDeclaration): String {
         if (!inFunction && term.value is Fn) {
-            emitCode("function __P_.${term.name}(")
-            emitCode(term.value.parameters.joinToString(",") { it.name })
-            emitCode(") ")
-            val result = emitFnBody(term.value.body)
-            if (term.value.body.body.lastOrNull() !is Return) {
-                // if the last expr is Return then it will emit this itself
-                emitCode("return $result")
-            }
-            emitCode(" end;")
-            return "nil"
+            return emitFn(term.value, name = term.name, topLevel = true)
         } else {
             val value = emitExpr(term.value)
             val name = if (inFunction) "local ${term.name}" else topLevelName(term.name)
@@ -236,12 +227,21 @@ class LuaEmitter(val program: Program) {
     private var nextTmpId = 0
     private fun nextTmpName() = "tmp${nextTmpId++}"
 
-    private fun emitFn(term: Fn): String {
-        val tmpName = nextTmpName()
-        emitCode("local $tmpName=")
-        emitCode("function(")
+    private fun emitFn(term: Fn, name: String? = null, topLevel: Boolean = false): String {
+        val tmpName = name ?: nextTmpName()
+        if (topLevel) {
+            emitCode("function __P_.$tmpName(")
+        } else {
+            emitCode("function $tmpName(")
+        }
         emitCode(term.parameters.joinToString(",") { it.name })
         emitCode(") ")
+        term.defaultValues.forEach { (name, value) ->
+            emitCode("if $name == nil then ")
+            val default = emitExpr(value)
+            emitCode("$name=$default;")
+            emitCode("end;")
+        }
         val result = emitFnBody(term.body)
 
         if (term.body.body.lastOrNull() !is Return) {
@@ -574,7 +574,7 @@ class LuaEmitter(val program: Program) {
                 // and add it to the list of declarations
                 bar.add(
                     NameDeclaration(false, tmpName, mutable = false, expectedType = null, sourceSection = null,
-                        value = Fn(emptyList(), sourceSection = null, body = Block(sourceSection = null, body = listOf(term))))
+                        value = Fn(emptyList(), emptyMap(), sourceSection = null, body = Block(sourceSection = null, body = listOf(term))))
                 )
                 // return a call to the declared function as an expression
 //                FnCall(
