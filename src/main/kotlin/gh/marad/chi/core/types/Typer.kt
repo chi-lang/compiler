@@ -48,6 +48,11 @@ class Typer(
                         } else {
                             fnParam.name to ctx.freshVariable(level)
                         }.also {
+                            val defaultValue = term.defaultValues[it.first]
+                            if (defaultValue != null) {
+                                val valueType = typeTerm(defaultValue, level, constraints)
+                                constraints.add(Constraint(it.second, valueType, defaultValue.sourceSection))
+                            }
                             ctx.defineLocalSymbol(it.first, it.second)
                         }
                     }

@@ -1,8 +1,15 @@
 package gh.marad.chi.runtime
 
+import gh.marad.chi.core.analyzer.TypeMismatch
+import gh.marad.chi.core.types.Type.Companion.int
+import gh.marad.chi.core.types.Type.Companion.string
+import gh.marad.chi.messages
 import gh.marad.chi.runtime.TestEnv.eval
 import io.kotest.assertions.fail
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.jupiter.api.Test
 
 class DefaultArgumentsSpec {
@@ -81,13 +88,26 @@ class DefaultArgumentsSpec {
         result shouldBe 6
     }
 
+    @Test
+    fun `should fail if default argument value type does not match`() {
+        val result = messages("""
+            fn foo(a: int, b: int = "hello"): int {
+                a + b
+            }
+            foo(1)
+        """.trimIndent())
+
+        result shouldHaveSize 1
+        result.first().shouldBeTypeOf<TypeMismatch>().should {
+            it.expected shouldBe int
+            it.actual shouldBe string
+        }
+    }
+
 
     @Test
     fun `default arguments todo`() {
         // TODO
-        //  - typecheck the default arg with expected type
-        //  - run type inference on default argument
-        //  - restrict allowed expressions for default values
         //  - add support for default arguments in lambda notation
         fail("Default arguments still need work!")
     }
