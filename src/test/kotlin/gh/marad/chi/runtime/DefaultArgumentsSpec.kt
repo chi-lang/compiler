@@ -104,6 +104,28 @@ class DefaultArgumentsSpec {
         }
     }
 
+    @Test
+    fun `default arguments should work on lambdas`() {
+        val result = eval("""
+            val foo = { a, b = 5 -> a + b }
+            foo(1)
+        """.trimIndent())
+
+        result shouldBe 6
+    }
+
+
+    @Test
+    fun `default arguments should work on lambdas in method invocation style call`() {
+        val result = eval("""
+            val foo = { a, b = 5 -> a + b }
+            1.foo()
+        """.trimIndent())
+
+        result shouldBe 6
+    }
+
+
 
     @Test
     fun `default arguments todo`() {

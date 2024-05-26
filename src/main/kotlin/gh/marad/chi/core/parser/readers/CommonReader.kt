@@ -37,7 +37,7 @@ internal object CommonReader {
             FormalArgument(
                 name = it.ID().text,
                 typeRef = it.type()?.let { readTypeRef(parser, source, it) },
-                defaultValue = null,
+                defaultValue = it.defaultValue?.let { parser.visit(it) },
                 getSection(source, it)
             )
         } ?: emptyList()

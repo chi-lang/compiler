@@ -134,7 +134,7 @@ atom
 
 lambda: LBRACE ws (argumentsWithOptionalTypes '->')? ws (expression ws)* RBRACE;
 argumentsWithOptionalTypes : argumentWithOptionalType ws (',' ws argumentWithOptionalType ws)*;
-argumentWithOptionalType : ID (':' type)?;
+argumentWithOptionalType : ID (':' type)? ('=' defaultValue=expression)?;
 block : LBRACE ws (expression ws)* RBRACE;
 
 divMul: DIV | MUL;
@@ -170,13 +170,6 @@ generic_type_definitions
 func_argument_definitions : '(' ws argumentsWithTypes? ')';
 argumentsWithTypes : argumentWithType ws (',' ws argumentWithType ws)*;
 argumentWithType : ID ':' type ('=' defaultValue=expression)?;
-
-defaultArgValue
-    : '{' (ws ID ws ':' ws defaultArgValue)? ws (','? | (',' ws ID ':' ws defaultArgValue ws)* ','?) ws '}' # CreateDefaultValueRecord
-    | '[' ws defaultArgValue? ws (',' ws defaultArgValue ws)* ']' # CreateDefaultValueArray
-    | atom   # CreateAtom
-    | lambda # CreateLambda
-    ;
 
 func_body : block;
 

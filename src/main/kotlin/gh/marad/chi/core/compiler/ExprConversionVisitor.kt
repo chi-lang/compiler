@@ -11,7 +11,9 @@ import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 import gh.marad.chi.core.types.Function
 import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.Variable
 import gh.marad.chi.core.utils.DefaultArguments
+import java.util.UUID
 
 class ExprConversionVisitor(
     private val pkg: Package,
@@ -67,11 +69,20 @@ class ExprConversionVisitor(
 
     override fun visitLambda(parseLambda: ParseLambda): Expression {
         val fnSymbolTable = FnSymbolTable(currentFnSymbolTable)
-        val params = parseLambda.formalArguments.map {
-            val type = it.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it) }
-            fnSymbolTable.addArgument(it.name, type)
-            FnParam(it.name, type, it.section)
+        val defaultArgs = mutableMapOf<String, Expression>()
+        val params = parseLambda.formalArguments.map { argument ->
+            val type = argument.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it) }
+            argument.defaultValue?.let { defaultArgs.put(argument.name, visit(it)) }
+            fnSymbolTable.addArgument(argument.name, type)
+            FnParam(argument.name, type, argument.section)
         }
+
+        val type = Function(
+            params.mapIndexed { index, param ->
+                param.type ?: Variable(UUID.randomUUID().toString(), 1)
+            } + Variable(UUID.randomUUID().toString(), 1),
+            defaultArgs = defaultArgs.size
+        )
 
         val body = withFnSymbolTable(fnSymbolTable) {
             parseLambda.body.map { it.accept(this) }
@@ -79,10 +90,12 @@ class ExprConversionVisitor(
 
         return Fn(
             parameters = params,
-            defaultValues = emptyMap(),
+            defaultValues = defaultArgs,
             body = Block(body, parseLambda.section),
             sourceSection = parseLambda.section
-        )
+        ).also {
+            it.type = type
+        }
     }
 
     override fun visitFuncWithName(parseFuncWithName: ParseFuncWithName): Expression {
@@ -95,10 +108,7 @@ class ExprConversionVisitor(
 
         val params = parseFuncWithName.formalArguments.map { argument ->
             val type = resolveType(typeTable, currentTypeSchemeVariables, argument.typeRef!!)
-            argument.defaultValue?.let {
-                val defaultValue = visit(it)
-                defaultArgs.put(argument.name, defaultValue)
-            }
+            argument.defaultValue?.let { defaultArgs.put(argument.name, visit(it)) }
             fnSymbolTable.addArgument(argument.name, type)
             FnParam(argument.name, type, argument.section)
         }
@@ -173,17 +183,20 @@ class ExprConversionVisitor(
             parseIndexOperator.section
         )
 
-    override fun visitNameDeclaration(parseNameDeclaration: ParseNameDeclaration): Expression =
-        NameDeclaration(
+    override fun visitNameDeclaration(parseNameDeclaration: ParseNameDeclaration): Expression {
+        val value = parseNameDeclaration.value.accept(this)
+        return NameDeclaration(
             public = parseNameDeclaration.public,
             mutable = parseNameDeclaration.mutable,
             name = parseNameDeclaration.symbol.name,
-            value = parseNameDeclaration.value.accept(this),
+            value = value,
             sourceSection = parseNameDeclaration.section,
-            expectedType = parseNameDeclaration.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it) },
+            expectedType = parseNameDeclaration.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it) }
         ).also {
-            addLocalSymbol(it.name, it.mutable, it.public)
+            val type = if (value is Fn) value.type else null
+            addLocalSymbol(it.name, it.mutable, it.public, type)
         }
+    }
 
     override fun visitFieldAccess(parseFieldAccess: ParseFieldAccess): Expression {
         val pkg = tables.getAliasedPackage(parseFieldAccess.receiverName)
