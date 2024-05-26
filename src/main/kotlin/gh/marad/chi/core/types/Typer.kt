@@ -5,6 +5,7 @@ import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.analyzer.MemberDoesNotExist
 import gh.marad.chi.core.analyzer.toCodePoint
 import gh.marad.chi.core.parser.ChiSource
+import gh.marad.chi.core.utils.DefaultArguments
 
 class TypingError(message: String) : RuntimeException(message)
 
@@ -76,15 +77,20 @@ class Typer(
                         DotTarget.Field -> dotOp
                         DotTarget.LocalFunction -> {
                             term.parameters.add(0, dotOp.receiver)
+                            val symbol = ctx.compileTables.getLocalSymbol(dotOp.fieldName)
+                            DefaultArguments.fill(term.parameters, symbol)
                             VariableAccess(LocalSymbol(dotOp.fieldName), dotOp.memberSection).also {
                                 it.type = dotOp.type
                             }
                         }
                         is DotTarget.PackageFunction -> {
                             term.parameters.add(0, dotOp.receiver)
-                            VariableAccess(PackageSymbol(
+                            val target = PackageSymbol(
                                 target.moduleName, target.packageName, target.name
-                            ), dotOp.memberSection).also {
+                            )
+                            val symbol = ctx.ns.getSymbol(target)
+                            DefaultArguments.fill(term.parameters, symbol)
+                            VariableAccess(target, dotOp.memberSection).also {
                                 it.type = dotOp.type
                             }
                         }

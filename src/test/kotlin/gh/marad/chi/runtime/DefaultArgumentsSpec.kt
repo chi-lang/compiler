@@ -63,9 +63,28 @@ class DefaultArgumentsSpec {
     }
 
     @Test
+    fun `should work for imported functions with method invocation syntax`() {
+        val env = LuaEnv()
+
+        eval("""
+            package bar/baz
+            pub fn foo(a: int, b: int = 5): int {
+                a + b
+            }
+        """.trimIndent(), env)
+
+        val result = eval("""
+            import bar/baz { foo }
+            1.foo()
+        """.trimIndent(), env)
+
+        result shouldBe 6
+    }
+
+
+    @Test
     fun `default arguments todo`() {
         // TODO
-        //  - support default args for method invocation style
         //  - typecheck the default arg with expected type
         //  - run type inference on default argument
         //  - restrict allowed expressions for default values
