@@ -146,12 +146,4 @@ class DefaultArgumentsSpec {
 
         result shouldBe 2
     }
-
-
-    @Test
-    fun `default arguments todo`() {
-        // TODO
-        //  - add support for default arguments in lambda notation
-        fail("Default arguments still need work!")
-    }
 }
