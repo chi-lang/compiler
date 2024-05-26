@@ -70,11 +70,19 @@ class ExprConversionVisitor(
     override fun visitLambda(parseLambda: ParseLambda): Expression {
         val fnSymbolTable = FnSymbolTable(currentFnSymbolTable)
         val defaultArgs = mutableMapOf<String, Expression>()
-        val params = parseLambda.formalArguments.map { argument ->
-            val type = argument.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it) }
-            argument.defaultValue?.let { defaultArgs.put(argument.name, visit(it)) }
-            fnSymbolTable.addArgument(argument.name, type)
-            FnParam(argument.name, type, argument.section)
+        val (params, body) = withFnSymbolTable(fnSymbolTable) {
+            val params = parseLambda.formalArguments.map { argument ->
+                val type = argument.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it) }
+                argument.defaultValue?.let { defaultArgs.put(argument.name, visit(it)) }
+                fnSymbolTable.addArgument(argument.name, type)
+                FnParam(argument.name, type, argument.section)
+            }
+
+            val body = withFnSymbolTable(fnSymbolTable) {
+                parseLambda.body.map { it.accept(this) }
+            }
+
+            params to body
         }
 
         val type = Function(
@@ -83,10 +91,6 @@ class ExprConversionVisitor(
             } + Variable(UUID.randomUUID().toString(), 1),
             defaultArgs = defaultArgs.size
         )
-
-        val body = withFnSymbolTable(fnSymbolTable) {
-            parseLambda.body.map { it.accept(this) }
-        }
 
         return Fn(
             parameters = params,
@@ -106,19 +110,21 @@ class ExprConversionVisitor(
 
         val defaultArgs = mutableMapOf<String, Expression>()
 
-        val params = parseFuncWithName.formalArguments.map { argument ->
-            val type = resolveType(typeTable, currentTypeSchemeVariables, argument.typeRef!!)
-            argument.defaultValue?.let { defaultArgs.put(argument.name, visit(it)) }
-            fnSymbolTable.addArgument(argument.name, type)
-            FnParam(argument.name, type, argument.section)
+        val (params, body) = withFnSymbolTable(fnSymbolTable) {
+            val params = parseFuncWithName.formalArguments.map { argument ->
+                val type = resolveType(typeTable, currentTypeSchemeVariables, argument.typeRef!!)
+                argument.defaultValue?.let { defaultArgs.put(argument.name, visit(it)) }
+                fnSymbolTable.addArgument(argument.name, type)
+                FnParam(argument.name, type, argument.section)
+            }
+            val body = parseFuncWithName.body.accept(this) as Block
+            params to body
         }
 
         val function = Fn(
             parameters = params,
             defaultValues = defaultArgs,
-            body = withFnSymbolTable(fnSymbolTable) {
-                parseFuncWithName.body.accept(this) as Block
-            },
+            body = body,
             parseFuncWithName.body.section
         )
 

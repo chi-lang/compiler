@@ -125,6 +125,27 @@ class DefaultArgumentsSpec {
         result shouldBe 6
     }
 
+    @Test
+    fun `should be able to use previous arguments as default values`() {
+        val result = eval("""
+            fn foo(a: int, b: int = a): int {
+                a + b
+            }
+            foo(1)
+        """.trimIndent(), showLuaCode = true)
+
+        result shouldBe 2
+    }
+
+    @Test
+    fun `should be able to use previous arguments as default values in lambda`() {
+        val result = eval("""
+            val foo = { a, b = a -> a + b }
+            foo(1)
+        """.trimIndent())
+
+        result shouldBe 2
+    }
 
 
     @Test

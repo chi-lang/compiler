@@ -236,11 +236,13 @@ class LuaEmitter(val program: Program) {
         }
         emitCode(term.parameters.joinToString(",") { it.name })
         emitCode(") ")
-        term.defaultValues.forEach { (name, value) ->
-            emitCode("if $name == nil then ")
-            val default = emitExpr(value)
-            emitCode("$name=$default;")
-            emitCode("end;")
+        insideFunction {
+            term.defaultValues.forEach { (name, value) ->
+                emitCode("if $name == nil then ")
+                val default = emitExpr(value)
+                emitCode("$name=$default;")
+                emitCode("end;")
+            }
         }
         val result = emitFnBody(term.body)
 
