@@ -184,8 +184,8 @@ object Compiler {
         val variable = createRecursiveVariable(id)
         val type = resolveType(typeTable, typeSchemeVariables, ref, id).let {
             when(it) {
-                is Record -> it.copy(id = id)
-                is Sum -> it.copy(id = id)
+                is Record -> it.copy(ids = listOf(id))
+                is Sum -> it.copy(ids = listOf(id))
                 else -> it
             }
         }
@@ -268,7 +268,7 @@ object Compiler {
             is SumTypeRef -> {
                 val lhs = resolveType(typeTable, typeSchemeVariables, ref.lhs, currentlyReadTypeId)
                 val rhs = resolveType(typeTable, typeSchemeVariables, ref.rhs, currentlyReadTypeId)
-                Sum.create(id = null, lhs, rhs, typeSchemeVariables.toList())
+                Sum.create(ids = emptyList(), lhs, rhs, typeSchemeVariables.toList())
             }
             is RecordTypeRef -> {
                 val fields = ref.fields.map {
@@ -277,7 +277,7 @@ object Compiler {
                         resolveType(typeTable, typeSchemeVariables, it.typeRef, currentlyReadTypeId)
                     )
                 }
-                Record(id = null, fields, typeSchemeVariables.toList())
+                Record(ids = emptyList(), fields, typeSchemeVariables.toList())
             }
         }
     }

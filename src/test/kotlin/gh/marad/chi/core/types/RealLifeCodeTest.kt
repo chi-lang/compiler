@@ -31,7 +31,7 @@ class RealLifeCodeTest {
     fun `should properly type a map function`() {
         val typeVar = Variable("T", 1)
         val arrayType = Type.array(typeVar)
-        val arrayTypeId = arrayType.getTypeId()
+        val arrayTypeId = arrayType.getTypeIds().first()
         val ns = TestCompilationEnv()
         ns.addSymbol(arrayTypeId.moduleName, arrayTypeId.packageName, "size",
             type = PolyType(0, Type.fn(arrayType, Type.int)), public = true)

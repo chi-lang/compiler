@@ -28,7 +28,7 @@ class Typer(
                 ctx.getTargetType(term.target, level, term.sourceSection)
 
             is CreateRecord ->
-                Record(null, term.fields.map { Record.Field(it.name, typeTerm(it.value, level, constraints)) })
+                Record(emptyList(), term.fields.map { Record.Field(it.name, typeTerm(it.value, level, constraints)) })
 
             is CreateArray -> {
                 val elementType = ctx.freshVariable(level)
@@ -261,7 +261,7 @@ class Typer(
 
                     // verify that both generator functions return an option
                     val returnValue = finalIterableType.types.last()
-                    if (returnValue is HasTypeId && returnValue.getTypeId() == Type.optionTypeId) {
+                    if (returnValue is HasTypeId && Type.optionTypeId in returnValue.getTypeIds()) {
                         val optionalType = (returnValue as Sum).removeType(Type.unit)
                         constraints.add(Constraint(optionalType, varTypes[0].second, term.varSections[0]))
                     } else {

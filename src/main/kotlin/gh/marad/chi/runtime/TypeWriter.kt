@@ -97,7 +97,7 @@ object TypeWriter {
             }
         } else if (type is Record) {
             stream.writeByte(BinaryTypeId.Record.id().toInt())
-            writeTypeId(type.getTypeId(), stream)
+            writeTypeIds(type.getTypeIds(), stream)
             stream.writeShort(type.fields.size)
             for ((name, type1) in type.fields) {
                 stream.writeUTF(name)
@@ -106,7 +106,7 @@ object TypeWriter {
             writeStrings(type.typeParams(), stream)
         } else if (type is Sum) {
             stream.writeByte(BinaryTypeId.Sum.id().toInt())
-            writeTypeId(type.getTypeId(), stream)
+            writeTypeIds(type.getTypeIds(), stream)
             writeType(type.lhs, stream)
             writeType(type.rhs, stream)
             writeStrings(type.typeParams(), stream)
@@ -133,11 +133,9 @@ object TypeWriter {
     }
 
     @Throws(IOException::class)
-    fun writeTypeId(id: TypeId?, stream: DataOutputStream) {
-        val hasId = id != null
-        stream.writeBoolean(hasId)
-
-        if (id != null) {
+    fun writeTypeIds(ids: List<TypeId>, stream: DataOutputStream) {
+        stream.writeByte(ids.size)
+        for (id in ids) {
             stream.writeUTF(id.moduleName)
             stream.writeUTF(id.packageName)
             stream.writeUTF(id.name)
@@ -145,16 +143,18 @@ object TypeWriter {
     }
 
     @Throws(IOException::class)
-    fun readTypeId(stream: DataInputStream): TypeId? {
-        return if (stream.readBoolean()) {
-            TypeId(
-                stream.readUTF(),
-                stream.readUTF(),
-                stream.readUTF()
-            )
-        } else {
-            null
+    fun readTypeIds(stream: DataInputStream): List<TypeId> {
+        val typeIdCount = stream.readByte().toInt()
+        val ids = mutableListOf<TypeId>()
+        repeat(typeIdCount) {
+            ids.add(
+                TypeId(
+                    stream.readUTF(),
+                    stream.readUTF(),
+                    stream.readUTF()
+                ))
         }
+        return ids
     }
 
     @Throws(IOException::class)
@@ -182,9 +182,9 @@ object TypeWriter {
             BinaryTypeId.Int -> int
             BinaryTypeId.String -> string
             BinaryTypeId.Unit -> unit
-            BinaryTypeId.Record -> Record(readTypeId(stream), readFields(stream), readStrings(stream))
+            BinaryTypeId.Record -> Record(readTypeIds(stream), readFields(stream), readStrings(stream))
             BinaryTypeId.Sum -> Sum(
-                readTypeId(stream),
+                readTypeIds(stream),
                 readType(stream),
                 readType(stream),
                 readStrings(stream)

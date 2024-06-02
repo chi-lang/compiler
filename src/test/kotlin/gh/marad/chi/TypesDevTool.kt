@@ -55,10 +55,10 @@ fun main() {
 
     val ns = TestCompilationEnv()
     ns.addSymbol("aoc", "lib", "load", Type.fn(Type.string, Type.string), public = true)
-    val stringTypeId = Type.string.getTypeId()
+    val stringTypeId = Type.string.getTypeIds().first()
     ns.addSymbol(stringTypeId.moduleName, stringTypeId.packageName, "split",
         type = PolyType(0, Type.fn(Type.string, Type.string, Type.int, Type.array(Type.string))), public = true)
-    val arrayTypeId = Type.array(Type.int).getTypeId()
+    val arrayTypeId = Type.array(Type.int).getTypeIds().first()
     ns.addSymbol(arrayTypeId.moduleName, arrayTypeId.packageName, "add",
         type = PolyType(0, Type.fn(Type.array(Variable("T", 1)), Variable("T", 1), Type.unit)), public = true)
     val result = Compiler.compile(code, ns)

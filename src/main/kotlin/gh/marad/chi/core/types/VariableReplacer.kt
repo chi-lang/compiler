@@ -14,7 +14,7 @@ class VariableReplacer(private val toReplace: Variable, private val substitution
         record.copy(fields = record.fields.map { it.copy(type = replace(it.type)) })
 
     override fun visitSum(sum: Sum): Type =
-        Sum.create(sum.id, replace(sum.lhs), replace(sum.rhs))
+        Sum.create(sum.ids, replace(sum.lhs), replace(sum.rhs))
 
     override fun visitArray(array: Array): Type =
         array.copy(elementType = replace(array.elementType))

@@ -36,12 +36,12 @@ sealed  interface Type : TypeScheme {
         @JvmStatic val string = Primitive(TypeId("std", "lang.string", "string"))
 
         @JvmStatic fun fn(vararg types: Type) = Function(types.toList())
-        @JvmStatic fun record(vararg fields: Pair<String, Type>): Record = Record(null, fields.map { Record.Field(it.first, it.second) })
-        @JvmStatic fun record(id: TypeId, vararg fields: Pair<String, Type>): Record = Record(id, fields.map { Record.Field(it.first, it.second) })
+        @JvmStatic fun record(vararg fields: Pair<String, Type>): Record = Record(emptyList(), fields.map { Record.Field(it.first, it.second) })
+        @JvmStatic fun record(id: TypeId, vararg fields: Pair<String, Type>): Record = Record(listOf(id), fields.map { Record.Field(it.first, it.second) })
         @JvmStatic fun array(elementType: Type) = Array(elementType)
         @JvmStatic fun union(id: TypeId?, vararg types: Type): Sum =
-            types.reduceRight { lhs, rhs -> Sum.create(id, lhs, rhs) } as Sum
-        @JvmStatic fun option(type: Type) = Sum.create(optionTypeId, type, unit)
+            types.reduceRight { lhs, rhs -> Sum.create(id?.let { listOf(id) } ?: emptyList(), lhs, rhs) } as Sum
+        @JvmStatic fun option(type: Type) = Sum.create(listOf(optionTypeId), type, unit)
     }
 }
 
@@ -53,7 +53,7 @@ data class TypeId(
 }
 
 interface HasTypeId {
-    fun getTypeId(): TypeId?
+    fun getTypeIds(): List<TypeId>
 }
 
 data class Primitive(val id: TypeId) : Type, HasTypeId {
@@ -64,7 +64,7 @@ data class Primitive(val id: TypeId) : Type, HasTypeId {
     override fun children(): List<Type> = emptyList()
     override fun typeParams(): List<String> = emptyList()
     override fun toString(): String = id.name
-    override fun getTypeId(): TypeId = id
+    override fun getTypeIds(): List<TypeId> = listOf(id)
 }
 
 data class Function(val types: List<Type>, val typeParams: List<String> = emptyList(), val defaultArgs: Int = 0) : Type {
@@ -76,7 +76,7 @@ data class Function(val types: List<Type>, val typeParams: List<String> = emptyL
     override fun toString(): String = "(" + types.joinToString(" -> ") + ")"
 }
 
-data class Record(val id: TypeId?, val fields: List<Field>, val typeParams: List<String> = emptyList()) : Type, HasTypeId {
+data class Record(val ids: List<TypeId>, val fields: List<Field>, val typeParams: List<String> = emptyList()) : Type, HasTypeId {
     data class Field(val name: String, val type: Type)
 
     override val level: Int get() = fields.maxOf { it.type.level }
@@ -88,8 +88,8 @@ data class Record(val id: TypeId?, val fields: List<Field>, val typeParams: List
     override fun typeParams(): List<String> = typeParams
     override fun toString(): String {
         val sb = StringBuilder()
-        if (id != null) {
-            sb.append(id)
+        ids.forEach {
+            sb.append(it)
         }
         sb.append('{')
         sb.append(fields.joinToString(", ") { it.name + ": " + it.type })
@@ -97,33 +97,33 @@ data class Record(val id: TypeId?, val fields: List<Field>, val typeParams: List
         return sb.toString()
     }
 
-    override fun getTypeId(): TypeId? = id
+    override fun getTypeIds(): List<TypeId> = ids
 }
 
-data class Sum(val id: TypeId?, val lhs: Type, val rhs: Type, val typeParams: List<String> = emptyList()) : Type, HasTypeId {
+data class Sum(val ids: List<TypeId>, val lhs: Type, val rhs: Type, val typeParams: List<String> = emptyList()) : Type, HasTypeId {
     override fun <T> accept(visitor: TypeVisitor<T>): T = visitor.visitSum(this)
     override fun children(): List<Type> = listOf(lhs, rhs)
     override fun typeParams(): List<String> = typeParams
     override fun toString(): String {
-        return if (id == Type.optionTypeId) {
+        return if (Type.optionTypeId in ids) {
             val subtypes = listTypes(this) - Type.unit
-            "$id[${subtypes.joinToString("|")}]"
+            "$ids[${subtypes.joinToString("|")}]"
         } else {
-            id?.toString() ?: "$lhs | $rhs"
+            ids.toString() ?: "$lhs | $rhs"
         }
     }
     override val level: Int = max(lhs.level, rhs.level)
     fun removeType(type: Type): Type {
         val types = listTypes(this) - Type.unit
-        return types.reduce { a, b -> Sum(id, a, b, typeParams) }
+        return types.reduce { a, b -> Sum(ids, a, b, typeParams) }
     }
 
     companion object {
-        fun create(lhs: Type, rhs: Type) = create(null, lhs, rhs)
+        fun create(lhs: Type, rhs: Type) = create(emptyList(), lhs, rhs)
 
-        fun create(id: TypeId?, lhs: Type, rhs: Type, typeParams: List<String> = emptyList()): Type {
+        fun create(ids: List<TypeId>, lhs: Type, rhs: Type, typeParams: List<String> = emptyList()): Type {
             val types = listTypes(lhs) + listTypes(rhs)
-            val finalId = id ?: if (types.contains(Type.unit)) Type.optionTypeId else null
+            val finalId: List<TypeId> = if (types.contains(Type.unit) && Type.optionTypeId !in ids) ids + Type.optionTypeId else ids
             return types.reduce { a, b -> Sum(finalId, a, b, typeParams)}
         }
 
@@ -133,7 +133,7 @@ data class Sum(val id: TypeId?, val lhs: Type, val rhs: Type, val typeParams: Li
         }
     }
 
-    override fun getTypeId(): TypeId? = id
+    override fun getTypeIds(): List<TypeId> = ids
 }
 
 data class Array(val elementType: Type, val typeParams: List<String> = emptyList()) : Type, HasTypeId {
@@ -141,7 +141,7 @@ data class Array(val elementType: Type, val typeParams: List<String> = emptyList
     override fun children(): List<Type> = listOf(elementType)
     override fun typeParams(): List<String> = typeParams
     override fun toString(): String = "array[$elementType]"
-    override fun getTypeId(): TypeId = TypeId("std", "lang.array", "array")
+    override fun getTypeIds(): List<TypeId> = listOf(TypeId("std", "lang.array", "array"))
     override val level: Int = elementType.level
 }
 
@@ -172,11 +172,11 @@ data class Recursive(
     val variable: Variable,
     val type: Type
 ) : Type, HasTypeId {
-    override fun getTypeId(): TypeId? {
+    override fun getTypeIds(): List<TypeId> {
         return if (type is HasTypeId) {
-            type.getTypeId()
+            type.getTypeIds()
         } else {
-            null
+            emptyList()
         }
     }
     override val level: Int = type.level

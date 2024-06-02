@@ -95,8 +95,8 @@ fun TestCompilationEnv.addSymbol(moduleName: String, packageName: String, name: 
 }
 
 fun TestCompilationEnv.addTypeDefinition(type: Type) {
-    if (type is HasTypeId && type.getTypeId() != null) {
-        val id = type.getTypeId()!!
+    if (type is HasTypeId && type.getTypeIds().isNotEmpty()) {
+        val id = type.getTypeIds().first()
         addTypeDefinition(TypeAlias(id, type))
     } else {
         throw RuntimeException("Type $type doesn't have an ID")

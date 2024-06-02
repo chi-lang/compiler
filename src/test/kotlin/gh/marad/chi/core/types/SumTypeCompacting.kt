@@ -20,9 +20,9 @@ class SumTypeCompacting {
 
     @Test
     fun `should automativally recognize Option type`() {
-        (Sum.create(int, unit) as HasTypeId).getTypeId() shouldBe Type.optionTypeId
-        (Sum.create(unit, int) as HasTypeId).getTypeId() shouldBe Type.optionTypeId
-        (Sum.create(Sum.create(int, string), unit) as HasTypeId).getTypeId() shouldBe Type.optionTypeId
-        (Sum.create(unit, Sum.create(int, string)) as HasTypeId).getTypeId() shouldBe Type.optionTypeId
+        (Sum.create(int, unit) as HasTypeId).getTypeIds() shouldBe listOf(Type.optionTypeId)
+        (Sum.create(unit, int) as HasTypeId).getTypeIds() shouldBe listOf(Type.optionTypeId)
+        (Sum.create(Sum.create(int, string), unit) as HasTypeId).getTypeIds() shouldBe listOf(Type.optionTypeId)
+        (Sum.create(unit, Sum.create(int, string)) as HasTypeId).getTypeIds() shouldBe listOf(Type.optionTypeId)
     }
 }

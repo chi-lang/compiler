@@ -74,6 +74,6 @@ class TypeResolvingSpec {
     }
 
     fun TypeTable.addTypeAlias(type: Record) {
-        add(TypeAlias(type.id!!, type))
+        add(TypeAlias(type.getTypeIds().first(), type))
     }
 }

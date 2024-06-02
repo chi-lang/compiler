@@ -102,11 +102,9 @@ class InferenceContext(
 
     fun listTypesPackageFunctionsForType(name: String, type: Type): List<Pair<DotTarget, TypeScheme>> {
         return if (type is HasTypeId) {
-            type.getTypeId()
-                ?.let {
-                    id -> ns.getSymbol(id.moduleName, id.packageName, name)
-                }
-                ?.let { symbol ->
+            type.getTypeIds()
+                .mapNotNull { id -> ns.getSymbol(id.moduleName, id.packageName, name) }
+                .flatMap { symbol ->
                     val symbolType: Type = when(val typeScheme = symbol.type!!) {
                         is PolyType -> typeScheme.body
                         is Type -> typeScheme
@@ -128,7 +126,6 @@ class InferenceContext(
                         emptyList()
                     }
                 }
-                ?: emptyList()
         } else {
             emptyList()
         }
