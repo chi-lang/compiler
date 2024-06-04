@@ -233,8 +233,14 @@ object Compiler {
                                     createdVars.add(it.name)
                                 }
                             } else {
-                                typeTable.getAlias(ref.typeName)?.type
+                                val alias = typeTable.getAlias(ref.typeName)
                                     ?: throw CompilerMessage.from("Type $ref not found", ref.section)
+                                val type = alias.type
+                                if (type is HasTypeId) {
+                                    type.withAddedTypeId(alias.typeId)
+                                } else {
+                                    type
+                                }
                             }
                         }
                     }

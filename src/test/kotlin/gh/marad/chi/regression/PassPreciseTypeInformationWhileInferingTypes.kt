@@ -17,8 +17,8 @@ class PassPreciseTypeInformationWhileInferingTypes {
             
             type CodePoint = int
             
-            fn a(s: string): CodePoint { 0 }
-            fn b(cp: CodePoint): bool { true }
+            pub fn a(s: string): CodePoint { 0 }
+            pub fn b(cp: CodePoint): bool { true }
         """.trimIndent(), env)
 
         val result = eval("""
@@ -27,5 +27,27 @@ class PassPreciseTypeInformationWhileInferingTypes {
         """.trimIndent(), env)
 
         result shouldBe true
+    }
+
+    @Test
+    fun `bar`() {
+        val env = LuaEnv()
+        eval("""
+            package std/lang.option
+            type Option[T] = T | unit
+        """.trimIndent(), env)
+
+        eval("""
+            import std/lang.option { Option }
+
+            fn range(from: int, to: int): () -> Option[int] {
+                var next = from
+                { 
+                    if next < to {
+                        (next += 1) - 1
+                    }
+                }
+            }
+        """.trimIndent(), env)
     }
 }

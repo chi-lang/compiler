@@ -12,6 +12,11 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
         when {
             expected == actual -> {}
             expected == Type.any -> {}
+            expected is Primitive && actual is Primitive -> {
+                if(expected.ids.intersect(actual.ids.toSet()).isEmpty()) {
+                    throw CompilerMessage(TypeMismatch(expected, actual, section.toCodePoint()))
+                }
+            }
             expected is Recursive -> {
                 queue.addFirst(Constraint(expected.unfold(), actual, section))
             }

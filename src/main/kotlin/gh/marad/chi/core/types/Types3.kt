@@ -28,12 +28,18 @@ sealed  interface Type : TypeScheme {
     companion object {
         @JvmStatic val optionTypeId = TypeId("std", "lang.option", "Option")
 
-        @JvmStatic val any = Primitive(TypeId("std", "lang.any", "any"))
-        @JvmStatic val unit = Primitive(TypeId("std", "lang.unit", "unit"))
-        @JvmStatic val bool = Primitive(TypeId("std", "lang.bool", "bool"))
-        @JvmStatic val int = Primitive(TypeId("std", "lang.int", "int"))
-        @JvmStatic val float = Primitive(TypeId("std", "lang.float", "float"))
-        @JvmStatic val string = Primitive(TypeId("std", "lang.string", "string"))
+        @JvmStatic val anyTypeId = TypeId("std", "lang.any", "any")
+        @JvmStatic val any = Primitive(listOf(anyTypeId))
+        @JvmStatic val unitTypeId = TypeId("std", "lang.unit", "unit")
+        @JvmStatic val unit = Primitive(listOf(unitTypeId))
+        @JvmStatic val boolTypeId = TypeId("std", "lang.bool", "bool")
+        @JvmStatic val bool = Primitive(listOf(boolTypeId))
+        @JvmStatic val intTypeId = TypeId("std", "lang.int", "int")
+        @JvmStatic val int = Primitive(listOf(intTypeId))
+        @JvmStatic val floatTypeId = TypeId("std", "lang.float", "float")
+        @JvmStatic val float = Primitive(listOf(floatTypeId))
+        @JvmStatic val stringTypeId = TypeId("std", "lang.string", "string")
+        @JvmStatic val string = Primitive(listOf(stringTypeId))
 
         @JvmStatic fun fn(vararg types: Type) = Function(types.toList())
         @JvmStatic fun record(vararg fields: Pair<String, Type>): Record = Record(emptyList(), fields.map { Record.Field(it.first, it.second) })
@@ -54,17 +60,37 @@ data class TypeId(
 
 interface HasTypeId {
     fun getTypeIds(): List<TypeId>
+    fun withAddedTypeId(id: TypeId): Type
+    fun withAddedTypeIds(ids: List<TypeId>): Type
 }
 
-data class Primitive(val id: TypeId) : Type, HasTypeId {
+data class Primitive(val ids: List<TypeId>) : Type, HasTypeId {
+    init {
+        if (ids.isEmpty()) throw AssertionError("Primitive type has to have at least one type id.")
+    }
+
+    fun getPrincipalTypeId() = ids.first()
+
     override val level: Int = 0
     override fun <T> accept(visitor: TypeVisitor<T>): T =
         visitor.visitPrimitive(this)
 
     override fun children(): List<Type> = emptyList()
     override fun typeParams(): List<String> = emptyList()
-    override fun toString(): String = id.name
-    override fun getTypeIds(): List<TypeId> = listOf(id)
+    override fun toString(): String = ids.first().name
+    override fun getTypeIds(): List<TypeId> = ids
+    override fun withAddedTypeId(id: TypeId): Type {
+        return if (id !in ids) {
+            copy(ids = ids + id)
+        } else {
+            this
+        }
+    }
+
+    override fun withAddedTypeIds(ids: List<TypeId>): Type {
+        return copy(ids = this.ids + ids)
+    }
+
 }
 
 data class Function(val types: List<Type>, val typeParams: List<String> = emptyList(), val defaultArgs: Int = 0) : Type {
@@ -98,6 +124,17 @@ data class Record(val ids: List<TypeId>, val fields: List<Field>, val typeParams
     }
 
     override fun getTypeIds(): List<TypeId> = ids
+    override fun withAddedTypeId(id: TypeId): Type {
+        return if (id !in ids) {
+            copy(ids = ids + id)
+        } else {
+            this
+        }
+    }
+
+    override fun withAddedTypeIds(ids: List<TypeId>): Type {
+        return copy(ids = this.ids + ids)
+    }
 }
 
 data class Sum(val ids: List<TypeId>, val lhs: Type, val rhs: Type, val typeParams: List<String> = emptyList()) : Type, HasTypeId {
@@ -124,7 +161,7 @@ data class Sum(val ids: List<TypeId>, val lhs: Type, val rhs: Type, val typePara
         fun create(ids: List<TypeId>, lhs: Type, rhs: Type, typeParams: List<String> = emptyList()): Type {
             val types = listTypes(lhs) + listTypes(rhs)
             val finalId: List<TypeId> = if (types.contains(Type.unit) && Type.optionTypeId !in ids) ids + Type.optionTypeId else ids
-            return types.reduce { a, b -> Sum(finalId, a, b, typeParams)}
+            return types.reduce { a, b -> Sum(finalId.toMutableList(), a, b, typeParams)}
         }
 
         private fun listTypes(type: Type): Set<Type> = when(type) {
@@ -134,15 +171,44 @@ data class Sum(val ids: List<TypeId>, val lhs: Type, val rhs: Type, val typePara
     }
 
     override fun getTypeIds(): List<TypeId> = ids
+    override fun withAddedTypeId(id: TypeId): Type {
+        return if (id !in ids) {
+            copy(ids = ids + id)
+        } else {
+            this
+        }
+    }
+
+    override fun withAddedTypeIds(ids: List<TypeId>): Type {
+        return copy(ids = this.ids + ids)
+    }
 }
 
 data class Array(val elementType: Type, val typeParams: List<String> = emptyList()) : Type, HasTypeId {
+    private val ids = mutableListOf(TypeId("std", "lang.array", "array"))
+    override val level: Int = elementType.level
     override fun <T> accept(visitor: TypeVisitor<T>): T = visitor.visitArray(this)
     override fun children(): List<Type> = listOf(elementType)
     override fun typeParams(): List<String> = typeParams
     override fun toString(): String = "array[$elementType]"
-    override fun getTypeIds(): List<TypeId> = listOf(TypeId("std", "lang.array", "array"))
-    override val level: Int = elementType.level
+    override fun getTypeIds(): List<TypeId> = ids
+    override fun withAddedTypeId(id: TypeId): Array {
+        return if (id !in ids) {
+            val result = copy()
+            result.ids.addAll(ids.drop(1))
+            result.ids.add(id)
+            result
+        } else {
+            this
+        }
+    }
+
+    override fun withAddedTypeIds(ids: List<TypeId>): Type {
+        val result = copy()
+        result.ids.addAll(this.ids.drop(1))
+        result.ids.addAll(ids)
+        return result
+    }
 }
 
 data class Variable(
@@ -179,6 +245,24 @@ data class Recursive(
             emptyList()
         }
     }
+
+    override fun withAddedTypeId(id: TypeId): Type {
+        return if (type is HasTypeId) {
+            type.withAddedTypeId(id)
+        } else {
+            type
+        }
+    }
+
+    override fun withAddedTypeIds(ids: List<TypeId>): Type {
+        return if (type is HasTypeId) {
+            type.withAddedTypeIds(ids)
+        } else {
+            type
+        }
+    }
+
+
     override val level: Int = type.level
     override fun <T> accept(visitor: TypeVisitor<T>): T = visitor.visitRecursive(this)
     override fun children(): List<Type> = listOf(type)

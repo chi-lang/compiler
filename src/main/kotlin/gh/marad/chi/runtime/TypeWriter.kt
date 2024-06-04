@@ -82,19 +82,24 @@ object TypeWriter {
     @Throws(IOException::class)
     fun writeType(type: TypeScheme, stream: DataOutputStream) {
         if (type is Primitive) {
-            if (any == type) {
+            val principalTypeId = type.getPrincipalTypeId()
+            if (Type.anyTypeId == principalTypeId) {
                 stream.writeByte(BinaryTypeId.Any.id().toInt())
-            } else if (bool == type) {
+            } else if (Type.boolTypeId == principalTypeId) {
                 stream.writeByte(BinaryTypeId.Bool.id().toInt())
-            } else if (float == type) {
+            } else if (Type.floatTypeId == principalTypeId) {
                 stream.writeByte(BinaryTypeId.Float.id().toInt())
-            } else if (int == type) {
+            } else if (Type.intTypeId == principalTypeId) {
                 stream.writeByte(BinaryTypeId.Int.id().toInt())
-            } else if (string == type) {
+            } else if (Type.stringTypeId == principalTypeId) {
                 stream.writeByte(BinaryTypeId.String.id().toInt())
-            } else if (unit == type) {
+            } else if (Type.unitTypeId == principalTypeId) {
                 stream.writeByte(BinaryTypeId.Unit.id().toInt())
+            } else {
+                throw TODO("Unsupported primitive type!")
             }
+            val typeIds = type.getTypeIds().drop(1)
+            writeTypeIds(typeIds, stream)
         } else if (type is Record) {
             stream.writeByte(BinaryTypeId.Record.id().toInt())
             writeTypeIds(type.getTypeIds(), stream)
@@ -123,6 +128,7 @@ object TypeWriter {
             stream.writeByte(BinaryTypeId.Array.id().toInt())
             writeType(type.elementType, stream)
             writeStrings(type.typeParams(), stream)
+            writeTypeIds(type.getTypeIds(), stream)
         } else if (type is PolyType) {
             stream.writeByte(BinaryTypeId.TypeScheme.id().toInt())
             stream.writeShort(type.level)
@@ -176,12 +182,12 @@ object TypeWriter {
     fun readTypeScheme(stream: DataInputStream): TypeScheme {
         val typeId = BinaryTypeId.fromId(stream.readByte().toInt())
         return when (typeId) {
-            BinaryTypeId.Any -> any
-            BinaryTypeId.Bool -> bool
-            BinaryTypeId.Float -> float
-            BinaryTypeId.Int -> int
-            BinaryTypeId.String -> string
-            BinaryTypeId.Unit -> unit
+            BinaryTypeId.Any -> any.withAddedTypeIds(readTypeIds(stream))
+            BinaryTypeId.Bool -> bool.withAddedTypeIds(readTypeIds(stream))
+            BinaryTypeId.Float -> float.withAddedTypeIds(readTypeIds(stream))
+            BinaryTypeId.Int -> int.withAddedTypeIds(readTypeIds(stream))
+            BinaryTypeId.String -> string.withAddedTypeIds(readTypeIds(stream))
+            BinaryTypeId.Unit -> unit.withAddedTypeIds(readTypeIds(stream))
             BinaryTypeId.Record -> Record(readTypeIds(stream), readFields(stream), readStrings(stream))
             BinaryTypeId.Sum -> Sum(
                 readTypeIds(stream),
@@ -192,9 +198,10 @@ object TypeWriter {
             BinaryTypeId.Fn -> Function(
                 readTypes(stream),
                 readStrings(stream),
-                stream.readShort().toInt()
+                defaultArgs = stream.readShort().toInt()
             )
             BinaryTypeId.Array -> Array(readType(stream), readStrings(stream))
+                .withAddedTypeIds(readTypeIds(stream))
             BinaryTypeId.TypeVariable -> Variable(stream.readUTF(), stream.readShort().toInt())
             BinaryTypeId.TypeScheme -> PolyType(stream.readShort().toInt(), readType(stream))
         }
