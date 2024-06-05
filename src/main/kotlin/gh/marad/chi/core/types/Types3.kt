@@ -105,7 +105,7 @@ data class Function(val types: List<Type>, val typeParams: List<String> = emptyL
 data class Record(val ids: List<TypeId>, val fields: List<Field>, val typeParams: List<String> = emptyList()) : Type, HasTypeId {
     data class Field(val name: String, val type: Type)
 
-    override val level: Int get() = fields.maxOf { it.type.level }
+    override val level: Int get() = fields.maxOfOrNull { it.type.level } ?: 0
 
     override fun <T> accept(visitor: TypeVisitor<T>): T =
         visitor.visitRecord(this)

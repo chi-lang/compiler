@@ -24,8 +24,10 @@ class Typer(
             is Atom ->
                 term.type!!
 
-            is VariableAccess ->
-                ctx.getTargetType(term.target, level, term.sourceSection)
+            is VariableAccess -> {
+                val result = ctx.getTargetType(term.target, level, term.sourceSection)
+                result.instantiate(level, ctx::freshVariable)
+            }
 
             is CreateRecord ->
                 Record(emptyList(), term.fields.map { Record.Field(it.name, typeTerm(it.value, level, constraints)) })

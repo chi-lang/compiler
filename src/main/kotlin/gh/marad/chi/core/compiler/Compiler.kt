@@ -74,7 +74,7 @@ object Compiler {
             val id = TypeId(packageDefinition.moduleName, packageDefinition.packageName, typeAliasDef.name)
             TypeAlias(
                 id,
-                resolveTypeAndWrapRecursive(tables.localTypeTable, typeSchemeVariables, typeAliasDef.type, id)
+                resolveTypeAndWrapRecursive(tables.localTypeTable, typeSchemeVariables, typeAliasDef.type, id, 0)
             ).also {
                 tables.defineTypeAlias(it)
             }
@@ -143,7 +143,7 @@ object Compiler {
         functions.forEach {
             try {
                 val constraints = mutableListOf<Constraint>()
-                typer.typeTerm(it, 1, constraints)
+                typer.typeTerm(it, 0, constraints)
                 val solutions = unify(constraints)
                 replaceTypes(it, solutions)
             } catch (ex: CompilerMessage) {
@@ -180,9 +180,9 @@ object Compiler {
     }
 
     private fun createRecursiveVariable(id: TypeId) = Variable(id.toString(), -1)
-    private fun resolveTypeAndWrapRecursive(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef, id: TypeId): Type {
+    private fun resolveTypeAndWrapRecursive(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef, id: TypeId, level: Int): Type {
         val variable = createRecursiveVariable(id)
-        val type = resolveType(typeTable, typeSchemeVariables, ref, id).let {
+        val type = resolveType(typeTable, typeSchemeVariables, ref, level, id).let {
             when(it) {
                 is Record -> it.copy(ids = listOf(id))
                 is Sum -> it.copy(ids = listOf(id))
@@ -208,16 +208,13 @@ object Compiler {
     }
 
     @Suppress("NAME_SHADOWING")
-    fun resolveType(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef, currentlyReadTypeId: TypeId? = null, createdVars: MutableList<String> = mutableListOf()): Type {
-        val level = 1 // this should probably come from the environment
+    fun resolveType(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef, level: Int, currentlyReadTypeId: TypeId? = null): Type {
         return when(ref) {
             is TypeParameterRef -> { // FIXME: here level should probably be passed from above
-                createdVars.add(ref.name)
                 Variable(ref.name, level)
             }
             is TypeNameRef ->
                 if (ref.typeName in typeSchemeVariables) {
-                    createdVars.add(ref.typeName)
                     Variable(ref.typeName, level)
                 } else {
                     when (ref.typeName) {
@@ -229,9 +226,7 @@ object Compiler {
                         "unit" -> Type.unit
                         else -> {
                             if (currentlyReadTypeId != null && ref.typeName == currentlyReadTypeId.name) {
-                                createRecursiveVariable(currentlyReadTypeId).also {
-                                    createdVars.add(it.name)
-                                }
+                                createRecursiveVariable(currentlyReadTypeId)
                             } else {
                                 val alias = typeTable.getAlias(ref.typeName)
                                     ?: throw CompilerMessage.from("Type $ref not found", ref.section)
@@ -250,14 +245,14 @@ object Compiler {
                     if (ref.typeParameters.size != 1) {
                         throw CompilerMessage.from("Array type must have exactly one type parameter!", ref.section)
                     }
-                    val elementType = resolveType(typeTable, typeSchemeVariables, ref.typeParameters.first(), currentlyReadTypeId)
+                    val elementType = resolveType(typeTable, typeSchemeVariables, ref.typeParameters.first(), level, currentlyReadTypeId)
                     return Type.array(elementType)
                 }
-                val base = resolveType(typeTable, typeSchemeVariables, ref.baseType, currentlyReadTypeId)
+                val base = resolveType(typeTable, typeSchemeVariables, ref.baseType, level, currentlyReadTypeId)
                 if (base is Variable && currentlyReadTypeId != null && base.name == createRecursiveVariable(currentlyReadTypeId).name) {
                     return base
                 }
-                val params = ref.typeParameters.map { resolveType(typeTable, typeSchemeVariables, it) }
+                val params = ref.typeParameters.map { resolveType(typeTable, typeSchemeVariables, it, level, currentlyReadTypeId) }
                 val typeParamNames = base.typeParams()
                 if (params.isNotEmpty() && params.size != typeParamNames.size) {
                     throw CompilerMessage.from("Provided type parameters count (${params.size}) is different then expected (${typeParamNames.size})", ref.section)
@@ -266,21 +261,20 @@ object Compiler {
                 mapType(base, replacements)
             }
             is FunctionTypeRef -> {
-                val createdVars = mutableListOf<String>()
-                val returnType = resolveType(typeTable, typeSchemeVariables, ref.returnType, currentlyReadTypeId, createdVars)
-                val params = ref.argumentTypeRefs.map { resolveType(typeTable, typeSchemeVariables, it, currentlyReadTypeId, createdVars) }
-                Function(params + listOf(returnType), createdVars.filter { it in typeSchemeVariables })
+                val returnType = resolveType(typeTable, typeSchemeVariables, ref.returnType, level, currentlyReadTypeId)
+                val params = ref.argumentTypeRefs.map { resolveType(typeTable, typeSchemeVariables, it, level, currentlyReadTypeId) }
+                Function(params + listOf(returnType),  typeSchemeVariables.toList())
             }
             is SumTypeRef -> {
-                val lhs = resolveType(typeTable, typeSchemeVariables, ref.lhs, currentlyReadTypeId)
-                val rhs = resolveType(typeTable, typeSchemeVariables, ref.rhs, currentlyReadTypeId)
+                val lhs = resolveType(typeTable, typeSchemeVariables, ref.lhs, level, currentlyReadTypeId)
+                val rhs = resolveType(typeTable, typeSchemeVariables, ref.rhs, level, currentlyReadTypeId)
                 Sum.create(ids = emptyList(), lhs, rhs, typeSchemeVariables.toList())
             }
             is RecordTypeRef -> {
                 val fields = ref.fields.map {
                     Record.Field(
                         it.name,
-                        resolveType(typeTable, typeSchemeVariables, it.typeRef, currentlyReadTypeId)
+                        resolveType(typeTable, typeSchemeVariables, it.typeRef, level, currentlyReadTypeId)
                     )
                 }
                 Record(ids = emptyList(), fields, typeSchemeVariables.toList())
