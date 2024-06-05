@@ -125,12 +125,12 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
 
         evalLua("""
             chi_print = function(to_show, flush)
-                io.write(chi_tostring(to_show))
+                io.write(java.luaify(chi_tostring(to_show)))
                 if not flush then io.flush() end
             end
             
             chi_println = function(to_show, flush)
-                io.write(chi_tostring(to_show), "\n")
+                io.write(java.luaify(chi_tostring(to_show)), "\n")
                 if not flush then io.flush() end
             end
         """.trimIndent())
@@ -198,6 +198,14 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                 loadModule = chi_load_module
             }
             
+            package.loaded['std/lang.any'] = {
+                _package = {
+                    toString = { public=true, mutable=false, type='${encodeType(Type.fn(Type.any, Type.string))}' }
+                },
+                _types = {},
+                toString = chi_tostring
+            }
+            
             package.loaded['user/default'] = {
                 _package = {},
                 _types = {}
@@ -209,18 +217,24 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                 __tostring = function(arr)
                     local s = {}
                     for _, v in ipairs(arr) do
-                        table.insert(s, chi_tostring(v))
+                        table.insert(s, java.luaify(chi_tostring(v)))
                     end
                     return "[" .. table.concat(s, ", ") .. "]"
                 end
             }
+            
+            function chi_new_array(...)
+                local array = { ... }
+                setmetatable(array, array_meta_table)
+                return array
+            end
             
             record_meta_table = {
                 isRecord = true,
                 __tostring = function(rec)
                     local s = {}
                     for k, v in pairs(rec) do
-                        table.insert(s, chi_tostring(k) .. ": " .. chi_tostring(v))
+                        table.insert(s, java.luaify(chi_tostring(k)) .. ": " .. java.luaify(chi_tostring(v)))
                     end
                     return "{" .. table.concat(s, ", ") .. "}"
                 end
