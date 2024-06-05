@@ -143,7 +143,7 @@ object Compiler {
         functions.forEach {
             try {
                 val constraints = mutableListOf<Constraint>()
-                typer.typeTerm(it, 0, constraints)
+                typer.typeTerm(it, 1, constraints)
                 val solutions = unify(constraints)
                 replaceTypes(it, solutions)
             } catch (ex: CompilerMessage) {
@@ -290,11 +290,12 @@ object Compiler {
 
     fun refineMessages(messages: List<Message>): List<Message> =
         messages.map {
-            if (it is TypeMismatch && it.expected is Array && it.actual !is Array) {
-                TypeIsNotIndexable(it.actual, it.codePoint)
-            } else if (it is TypeMismatch && it.actual is Array && it.expected !is Array) {
-                TypeIsNotIndexable(it.expected, it.codePoint)
-            } else if (it is TypeMismatch && it.expected is Function && it.actual !is Function) {
+//            if (it is TypeMismatch && it.expected is Array && it.actual !is Array) {
+//                TypeIsNotIndexable(it.actual, it.codePoint)
+//            } else if (it is TypeMismatch && it.actual is Array && it.expected !is Array) {
+//                TypeIsNotIndexable(it.expected, it.codePoint)
+//            } else
+                if (it is TypeMismatch && it.expected is Function && it.actual !is Function) {
                 NotAFunction(it.codePoint)
             }  else {
                 it
