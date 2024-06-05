@@ -429,26 +429,7 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitCast(term: Cast): String {
-        var result = emitExpr(term.expression)
-        if (term.targetType == term.expression.type) {
-            // no casting necessary
-            return result
-        }
-        if (term.expression.type == string && term.targetType != string) {
-           result = "java.luaify($result)"
-        }
-        val name = nextTmpName()
-        return when (term.targetType) {
-            string -> {
-                emitCode("local $name=chi_tostring($result);")
-                name
-            }
-            int, float -> {
-                emitCode("local $name=tonumber($result);")
-                name
-            }
-            else -> result
-        }
+        return emitExpr(term.expression)
     }
 
     private fun emitFieldAccess(term: FieldAccess): String {
@@ -541,7 +522,10 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitInterpolatedString(term: InterpolatedString): String {
-        val partVars = term.parts.map { emitExpr(it) }
+        val partVars = term.parts.map {
+            val result = emitExpr(it)
+            "chi_tostring($result)"
+        }
         val resultName = nextTmpName()
         emitCode("local $resultName=")
         emitCode("chistr.concat(${partVars.joinToString(",")})")
