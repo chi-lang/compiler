@@ -120,6 +120,21 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
             end
         """.trimIndent())
 
+        evalLua("""
+            function chi_record_pairs(record)
+                f,s,i = pairs(record)
+                local next = function(state,last)
+                    k,v = f(state,java.luaify(last))
+                    if k then 
+                        return chi_new_string(k),v
+                    else 
+                        return k,v
+                    end
+                end
+                return next,s,i
+            end
+        """.trimIndent())
+
         val result = lua.run("""
             chi = {}
             package.loaded['std/lang'] = {

@@ -631,7 +631,7 @@ class LuaEmitter(val program: Program) {
             }
             vars to "ipairs($iterable)"
         } else if (term.iterable.type is Record) {
-            term.vars.joinToString(",") to "pairs($iterable)"
+            term.vars.joinToString(",") to "chi_record_pairs($iterable)"
         } else if (term.iterable.type is Function) {
             if (term.state != null && term.init != null) {
                 val state = emitExpr(term.state)
