@@ -18,10 +18,10 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
                 }
             }
             expected is Recursive -> {
-                queue.addFirst(Constraint(expected.unfold(), actual, section))
+                queue.addFirst(Constraint(expected.unfold(), actual, section, history = constraint.toHistory()))
             }
             actual is Recursive -> {
-                queue.addFirst(Constraint(expected, actual.unfold(), section))
+                queue.addFirst(Constraint(expected, actual.unfold(), section, constraint.toHistory()))
             }
             expected is Variable -> {
                 solutions.add(expected to actual)
@@ -47,7 +47,7 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
                         // because we are not going to use the result anyway
                         return@forEachIndexed
                     }
-                    queue.addFirst(Constraint(expectedParam, actualParam, section))
+                    queue.addFirst(Constraint(expectedParam, actualParam, section, constraint.toHistory()))
                 }
             }
 
@@ -55,18 +55,18 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
                 expected.fields.forEach { expField ->
                     val actualField = actual.fields.firstOrNull { it.name == expField.name }
                         ?: err("Record $actual is missing expected field ${expField.name}", section)
-                    queue.addFirst(Constraint(expField.type, actualField.type, section))
+                    queue.addFirst(Constraint(expField.type, actualField.type, section, constraint.toHistory()))
                 }
             }
 
             expected is Array && actual is Array -> {
-                queue.addFirst(Constraint(expected.elementType, actual.elementType, section))
+                queue.addFirst(Constraint(expected.elementType, actual.elementType, section, constraint.toHistory()))
             }
 
             expected is Sum -> {
                 try {
                     // try to unify the *right* side because sum type associates left
-                    val partialSolution = unify(listOf(Constraint(expected.rhs, actual, section)))
+                    val partialSolution = unify(listOf(Constraint(expected.rhs, actual, section, constraint.toHistory())))
                     val replacers = partialSolution.map { VariableReplacer(it.first, it.second) }
                     val updatedQueue = replacers.fold(queue.toList()) { q, replacer ->
                         q.map { it.withReplacedVariable(replacer) }
@@ -77,9 +77,9 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
                     //        says the first type of the sum type does not match the actual
                     //        I think that Constraint should somehow accumulate the knowledge
                     //        that it comes from sum type comparison for better error message
-                    queue.addFirst(Constraint(expected.lhs, actual, section))
+                    queue.addFirst(Constraint(expected.lhs, actual, section, constraint.toHistory()))
                 } catch (ex: CompilerMessage) {
-                    queue.addFirst(Constraint(expected.lhs, actual, section))
+                    queue.addFirst(Constraint(expected.lhs, actual, section, constraint.toHistory()))
                 }
             }
 

@@ -35,7 +35,7 @@ class Typer(
             is CreateArray -> {
                 val elementType = ctx.freshVariable(level)
                 typeTerms(term.values, constraints, level).forEach {
-                    constraints.add(Constraint(elementType, it, term.sourceSection)) // FIXME - this should point at element type if possible
+                    constraints.add(Constraint(elementType, it, term.sourceSection, emptyList())) // FIXME - this should point at element type if possible
                 }
                 Array(elementType)
             }
@@ -53,7 +53,7 @@ class Typer(
                             val defaultValue = term.defaultValues[it.first]
                             if (defaultValue != null) {
                                 val valueType = typeTerm(defaultValue, level, constraints)
-                                constraints.add(Constraint(it.second, valueType, defaultValue.sourceSection))
+                                constraints.add(Constraint(it.second, valueType, defaultValue.sourceSection, emptyList()))
                             }
                             ctx.defineLocalSymbol(it.first, it.second)
                         }
@@ -63,7 +63,7 @@ class Typer(
                     val fnType = Function(
                         params.map { it.second } + returnType
                     )
-                    constraints.add(Constraint(returnType, bodyType, term.body.sourceSection))
+                    constraints.add(Constraint(returnType, bodyType, term.body.sourceSection, emptyList()))
                     fnType
                 }
             }
@@ -108,7 +108,7 @@ class Typer(
                     term.parameters.map { typeTerm(it, level, constraints) } + result
                 )
 
-                constraints.add(Constraint(definedFunctionType, callType, term.sourceSection))
+                constraints.add(Constraint(definedFunctionType, callType, term.sourceSection, emptyList()))
                 result
             }
 
@@ -118,7 +118,7 @@ class Typer(
                 if (finalReceiverType is Record && finalReceiverType.fields.any { it.name == term.fieldName }) {
                     val result = ctx.freshVariable(level)
                     term.target = DotTarget.Field
-                    constraints.add(Constraint(Type.record(term.fieldName to result), receiverType, term.memberSection))
+                    constraints.add(Constraint(Type.record(term.fieldName to result), receiverType, term.memberSection, emptyList()))
                     result
                 } else {
                     val function = ctx.listLocalFunctionsForType(term.fieldName, finalReceiverType).singleOrNull()
@@ -137,7 +137,7 @@ class Typer(
             is NameDeclaration -> {
                 val expectedType = term.expectedType ?: ctx.freshVariable(level+1)
                 val valueType = typeTerm(term.value, level + 1, constraints)
-                constraints.add(Constraint(expectedType, valueType, term.value.sourceSection))
+                constraints.add(Constraint(expectedType, valueType, term.value.sourceSection, emptyList()))
 
                 // generalization of the type
                 // for example val id = { a -> a } which by default gets type 'a1 -> 'a2
@@ -153,14 +153,14 @@ class Typer(
             is Assignment -> {
                 val variableType = ctx.getTargetType(term.target, level, term.sourceSection)
                 val valueType = typeTerm(term.value, level, constraints)
-                constraints.add(Constraint(variableType, valueType, term.value.sourceSection))
+                constraints.add(Constraint(variableType, valueType, term.value.sourceSection, emptyList()))
                 variableType
             }
 
             is IfElse -> {
                 val conditionType = typeTerm(term.condition, level, constraints)
                 val thenBranchType = typeTerm(term.thenBranch, level, constraints)
-                constraints.add(Constraint(Type.bool, conditionType, term.condition.sourceSection))
+                constraints.add(Constraint(Type.bool, conditionType, term.condition.sourceSection, emptyList()))
                 if (term.elseBranch != null) {
                     val elseBranchType = typeTerm(term.elseBranch, level, constraints)
                     Sum.create(thenBranchType, elseBranchType)
@@ -188,7 +188,7 @@ class Typer(
             is WhileLoop -> {
                 val conditionType = typeTerm(term.condition, level, constraints)
                 typeTerm(term.loop, level, constraints)
-                constraints.add(Constraint(Type.bool, conditionType, term.condition.sourceSection))
+                constraints.add(Constraint(Type.bool, conditionType, term.condition.sourceSection, emptyList()))
                 Type.unit
             }
 
@@ -211,19 +211,21 @@ class Typer(
                                 Constraint(
                                     finalIterableType.elementType,
                                     varTypes.first().second,
-                                    term.varSections.first()
+                                    term.varSections.first(),
+                                    emptyList()
                                 )
                             )
                         }
 
                         2 -> {
                             // type of the index variable is int, the second variable's type is the same as array element type
-                            constraints.add(Constraint(Type.int, varTypes[0].second, term.varSections[0]))
+                            constraints.add(Constraint(Type.int, varTypes[0].second, term.varSections[0], emptyList()))
                             constraints.add(
                                 Constraint(
                                     finalIterableType.elementType,
                                     varTypes[1].second,
-                                    term.varSections[1]
+                                    term.varSections[1],
+                                    emptyList()
                                 )
                             )
                         }
@@ -236,8 +238,8 @@ class Typer(
                     if (term.vars.size != 2) {
                         err("Iteration through record should have two variables", term.varSections[0])
                     }
-                    constraints.add(Constraint(Type.string, varTypes[0].second, term.varSections[0]))
-                    constraints.add(Constraint(Type.any, varTypes[1].second, term.varSections[1]))
+                    constraints.add(Constraint(Type.string, varTypes[0].second, term.varSections[0], emptyList()))
+                    constraints.add(Constraint(Type.any, varTypes[1].second, term.varSections[1], emptyList()))
                 } else if (finalIterableType is Function) {
                     if (term.vars.size != 1) {
                         err("Generator function requires only one variable", term.varSections[0])
@@ -251,9 +253,9 @@ class Typer(
                         val stateArgType = finalIterableType.types[0]
                         val lastArgType = finalIterableType.types[1]
 
-                        constraints.add(Constraint(lastArgType, varTypes[0].second, term.varSections[0]))
-                        constraints.add(Constraint(initType, lastArgType, term.initSection))
-                        constraints.add(Constraint(stateType, stateArgType, term.stateSection))
+                        constraints.add(Constraint(lastArgType, varTypes[0].second, term.varSections[0], emptyList()))
+                        constraints.add(Constraint(initType, lastArgType, term.initSection, emptyList()))
+                        constraints.add(Constraint(stateType, stateArgType, term.stateSection, emptyList()))
                     } else {
                         // basic generator should have no arguments and return optional value
                         if (finalIterableType.types.size != 1) {
@@ -265,7 +267,7 @@ class Typer(
                     val returnValue = finalIterableType.types.last()
                     if (returnValue is HasTypeId && Type.optionTypeId in returnValue.getTypeIds()) {
                         val optionalType = (returnValue as Sum).removeType(Type.unit)
-                        constraints.add(Constraint(optionalType, varTypes[0].second, term.varSections[0]))
+                        constraints.add(Constraint(optionalType, varTypes[0].second, term.varSections[0], emptyList()))
                     } else {
                         err("Generator function should return optional value (value or unit)", term.iterableSection)
                     }
@@ -289,8 +291,8 @@ class Typer(
                 val expectedType = Type.record(term.fieldName to valueType)
 
                 val result = ctx.freshVariable(level)
-                constraints.add(Constraint(valueType, result, term.value.sourceSection))
-                constraints.add(Constraint(expectedType, receiverType, term.receiver.sourceSection))
+                constraints.add(Constraint(valueType, result, term.value.sourceSection, emptyList()))
+                constraints.add(Constraint(expectedType, receiverType, term.receiver.sourceSection, emptyList()))
                 result
             }
 
@@ -301,7 +303,7 @@ class Typer(
             is Handle -> {
                 val result = ctx.freshVariable(level)
                 val bodyType = typeTerm(term.body, level, constraints)
-                constraints.add(Constraint(result, bodyType, term.body.sourceSection))
+                constraints.add(Constraint(result, bodyType, term.body.sourceSection, emptyList()))
                 term.cases.forEach { case ->
                     val effectType = ctx.getTargetType(PackageSymbol(case.moduleName, case.packageName, case.effectName), level, term.sourceSection)
                     if (effectType is Function) {
@@ -312,7 +314,7 @@ class Typer(
                             val effectReturnType = effectType.types.last()
                             ctx.defineLocalSymbol("resume", Function(listOf(effectReturnType, ctx.freshVariable(level))))
                             val caseBodyType = typeTerm(case.body, level, constraints)
-                            constraints.add(Constraint(result, caseBodyType, case.body.sourceSection))
+                            constraints.add(Constraint(result, caseBodyType, case.body.sourceSection, emptyList()))
                         }
                     } else {
                         err("Symbol ${case.effectName} has type $effectType but a function type was expected!", case.sourceSection)
@@ -325,8 +327,8 @@ class Typer(
                 val elementType = ctx.freshVariable(level)
                 val variableType = typeTerm(term.variable, level, constraints)
                 val indexType = typeTerm(term.index, level, constraints)
-                constraints.add(Constraint(variableType, Type.array(elementType), term.variable.sourceSection))
-                constraints.add(Constraint(Type.int, indexType, term.index.sourceSection))
+                constraints.add(Constraint(variableType, Type.array(elementType), term.variable.sourceSection, emptyList()))
+                constraints.add(Constraint(Type.int, indexType, term.index.sourceSection, emptyList()))
                 elementType
             }
 
@@ -335,9 +337,9 @@ class Typer(
                 val variableType = typeTerm(term.variable, level, constraints)
                 val valueType = typeTerm(term.value, level, constraints)
                 val indexType = typeTerm(term.index, level, constraints)
-                constraints.add(Constraint(elementType, valueType, term.value.sourceSection))
-                constraints.add(Constraint(variableType, Type.array(elementType), term.variable.sourceSection))
-                constraints.add(Constraint(Type.int, indexType, term.index.sourceSection))
+                constraints.add(Constraint(elementType, valueType, term.value.sourceSection, emptyList()))
+                constraints.add(Constraint(variableType, Type.array(elementType), term.variable.sourceSection, emptyList()))
+                constraints.add(Constraint(Type.int, indexType, term.index.sourceSection, emptyList()))
                 elementType
             }
 
@@ -346,11 +348,11 @@ class Typer(
                 val lhsType = typeTerm(term.left, level, constraints)
                 val rhsType = typeTerm(term.right, level, constraints)
                 if (term.op in listOf("<", "<=", ">", ">=", "==", "!=", "&&", "||")) {
-                    constraints.add(Constraint(lhsType, rhsType, term.right.sourceSection))
+                    constraints.add(Constraint(lhsType, rhsType, term.right.sourceSection, emptyList()))
                     Type.bool
                 } else {
-                    constraints.add(Constraint(result, lhsType, term.left.sourceSection))
-                    constraints.add(Constraint(result, rhsType, term.right.sourceSection))
+                    constraints.add(Constraint(result, lhsType, term.left.sourceSection, emptyList()))
+                    constraints.add(Constraint(result, rhsType, term.right.sourceSection, emptyList()))
                     result
                 }
             }
@@ -362,7 +364,7 @@ class Typer(
 
             is PrefixOp -> {
                 val valueType = typeTerm(term.expr, level, constraints)
-                constraints.add(Constraint(Type.bool, valueType, term.expr.sourceSection))
+                constraints.add(Constraint(Type.bool, valueType, term.expr.sourceSection, emptyList()))
                 Type.bool
             }
 

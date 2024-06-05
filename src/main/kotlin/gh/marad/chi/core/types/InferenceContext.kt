@@ -84,7 +84,7 @@ class InferenceContext(
             }
             val fitsRequirements = symbolType is Function && symbolType.types.size >= 2 && run {
                 try {
-                    unify(listOf(Constraint(symbolType.types.first(), type, null)))
+                    unify(listOf(Constraint(symbolType.types.first(), type, null, emptyList())))
                     true
                 } catch (ex: CompilerMessage) {
                     false
@@ -111,7 +111,7 @@ class InferenceContext(
                     }
                     if (symbolType is Function && symbolType.types.size >= 2) {
                         try {
-                            unify(listOf(Constraint(symbolType.types.first(), type, null)))
+                            unify(listOf(Constraint(symbolType.types.first(), type, null, listOf())))
                             listOf(
                                 DotTarget.PackageFunction(
                                     symbol.moduleName,

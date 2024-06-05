@@ -4,7 +4,7 @@ import gh.marad.chi.core.parser.ChiSource
 
 private const val debug = true
 
-data class Constraint(val expected: Type, val actual: Type, val section: ChiSource.Section?) {
+data class Constraint(val expected: Type, val actual: Type, val section: ChiSource.Section?, val history: List<Constraint>) {
     private var from: StackTraceElement? = run {
         if (debug) {
             val ex = RuntimeException()
@@ -15,6 +15,9 @@ data class Constraint(val expected: Type, val actual: Type, val section: ChiSour
             null
         }
     }
+
+    fun toHistory(): List<Constraint> = history + this
+
     override fun toString(): String = "$expected = $actual  ($from)"
 
     fun withReplacedVariable(replacer: VariableReplacer): Constraint {
