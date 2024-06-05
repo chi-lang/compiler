@@ -1,19 +1,22 @@
-
+import std/lang { luaExpr }
 // Make sure that string functions are working
-val s = "hello"
-println(s)
-println(s.len())
-println(s.find("ll"))
-println(s.findFrom("ll", 1))
-println(s.substring(1, 2))
-println(s.toLower())
-println(s.toUpper())
-println(s.replace("ll", "xx"))
-println(s.replaceAll("l", "x"))
-println(s.codePointAt(1))
-println(s.isEmpty())
-println(s.trim())
-println(s.contains("l"))
-println(s.startsWith("he"))
-println(s.endsWith("lo"))
-println(s.split("l"))
+{ 
+    val s = "hello"
+    println(s)
+    println(s.len())
+    println(s.find("ll"))
+    println(s.substring(1, 2))
+    println(s.toLower())
+    println(s.toUpper())
+    println(s.replace("ll", "xx"))
+    println(s.replaceAll("l", "x"))
+    println(s.codePointAt(1))
+    println(s.isEmpty())
+    println(s.trim())
+    println(s.contains("l"))
+    println(s.startsWith("he"))
+    println(s.endsWith("lo"))
+    println(s.split("l"))
+    val other = "other"
+    println(luaExpr("s:equals(other)"))
+}()
