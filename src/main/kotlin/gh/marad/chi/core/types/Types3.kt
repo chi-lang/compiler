@@ -151,7 +151,7 @@ data class Sum(val ids: List<TypeId>, val lhs: Type, val rhs: Type, val typePara
     }
     override val level: Int = max(lhs.level, rhs.level)
     fun removeType(type: Type): Type {
-        val types = listTypes(this) - Type.unit
+        val types = listTypes(this) - type
         return types.reduce { a, b -> Sum(ids, a, b, typeParams) }
     }
 
