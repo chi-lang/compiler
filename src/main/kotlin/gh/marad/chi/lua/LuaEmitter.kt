@@ -534,24 +534,23 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitIs(term: Is): String {
-        return if (term.type == term.checkedType) {
+        return if (term.value.type == term.checkedType) {
             "true"
         } else {
             val value = emitExpr(term.value)
             when (term.checkedType) {
                 Type.unit -> "type($value) == \"nil\""
-                float, int -> "type($value) == \"number\""
+                float -> "chi_is_float($value)"
+                int -> "chi_is_int($value)"
                 Type.bool -> "type($value) == \"boolean\""
-                string -> "type($value) == \"string\""
-//                is Array -> {
-//                    TODO()
-//                }
-//                is Record -> {
-//                    TODO()
-//                }
-//                is Function -> {
-//                    TODO()
-//                }
+                string -> "type($value) == \"userdata\""
+                // TODO: check the element type
+                is Array -> "chi_is_array($value)"
+                // TODO: checking field and field types
+                is Record -> "chi_is_record($value)"
+                // TODO: checking the argument and return types?
+                //       should this check be even possible?
+                is Function -> "type($value) == \"function\""
                 is Variable -> {
                     "false"
                 }

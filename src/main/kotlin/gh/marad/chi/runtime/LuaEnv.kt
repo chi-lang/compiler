@@ -78,10 +78,48 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                 elseif t == 'nil' then
                     return 'unit'
                 elseif t == 'userdata' then
-                    return tostring(java.luaify(value))
+                    return value
                 else 
                     return tostring(value)
                 end
+            end
+        """.trimIndent())
+
+        evalLua("""
+            function chi_is_float(value)
+                if type(value) == "number" then
+                    local f = value % 1
+                    if f ~= 0 then 
+                        return true
+                    end
+                end
+                return false
+            end
+            
+            function chi_is_int(value)
+                if type(value) == "number" then
+                    local f = value % 1
+                    if f == 0 then
+                        return true
+                    end
+                end
+                return false
+            end
+            
+            function chi_is_record(value)
+                local meta = getmetatable(value)
+                if meta then
+                    return meta.isRecord or false
+                end
+                return false
+            end
+            
+            function chi_is_array(value)
+                local meta = getmetatable(value)
+                if meta then
+                    return meta.isArray or false
+                end
+                return false
             end
         """.trimIndent())
 
@@ -167,6 +205,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
             
             
             array_meta_table = {
+                isArray = true,
                 __tostring = function(arr)
                     local s = {}
                     for _, v in ipairs(arr) do
@@ -177,6 +216,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
             }
             
             record_meta_table = {
+                isRecord = true,
                 __tostring = function(rec)
                     local s = {}
                     for k, v in pairs(rec) do
