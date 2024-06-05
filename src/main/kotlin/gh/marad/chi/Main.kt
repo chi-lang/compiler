@@ -1,6 +1,9 @@
 package gh.marad.chi
 
+import gh.marad.chi.core.compiler.Compiler
 import gh.marad.chi.core.parser.readers.Import
+import gh.marad.chi.core.utils.printAst
+import gh.marad.chi.runtime.LuaCompilationEnv
 import gh.marad.chi.runtime.LuaEnv
 import org.docopt.Docopt
 import party.iroiro.luajava.Lua
@@ -15,12 +18,13 @@ const val doc = """
 Usage:
   chi repl [ARGS ...]
   chi compile [FILE]
-  chi [-m MODULE ...] [-L OPT ...] [-l] [FILE] [ARGS ...]
+  chi [options] [FILE] [ARGS ...]
   
 Options:
   -m --module=MODULE       Module file or directory to load on startup
   -L --lang-opt=OPT        Language options
   -l                       Show emitted lua code
+  --print-ast              Prints the AST for given input file and exit
 
 Examples:
   chi -m std.chim program.chi
@@ -32,7 +36,8 @@ fun main(args: Array<String>) {
     val opts = Docopt(doc).parse(*args)
     val programArgs = opts["ARGS"] as ArrayList<String>
     val file = opts["FILE"] as String?
-    val modules = opts["--module"] as ArrayList<String>
+    //val modules = opts["--module"] as ArrayList<String>
+    val modules = ArrayList<String>()
 
     val imports = mutableListOf<Import>()
     imports.add(Import("std", "lang", packageAlias = null, entries = listOf(
@@ -68,6 +73,7 @@ fun main(args: Array<String>) {
             println("WARN: Missing stdlib. Things might not work as expected!")
         }
     }
+
     evalModules(env, modules)
 
     if (opts["compile"] == true) {
@@ -107,7 +113,19 @@ fun main(args: Array<String>) {
         if (file.endsWith(".chi")) {
             val source = Files.readString(Path.of(file))
             val showLuaCode = opts["-l"] as Boolean
-            env.eval(source, showLuaCode = showLuaCode, dryRun = showLuaCode)
+            val printAst = opts["--print-ast"] as Boolean
+            if (printAst) {
+                val ns = LuaCompilationEnv(env)
+                val result = Compiler.compile(source, ns)
+                if (result.hasErrors()) {
+                    result.messages.forEach { message ->
+                        println(Compiler.formatCompilationMessage(source, message))
+                    }
+                }
+                printAst(result.program.expressions)
+            } else {
+                env.eval(source, showLuaCode = showLuaCode, dryRun = showLuaCode)
+            }
         } else if (file.endsWith(".chic")) {
             println("Running compiled code")
         } else {

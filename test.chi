@@ -1,15 +1,2 @@
 
-import std/lang { luaExpr }
-
-fn tmp() {
-    val String = luaExpr("java.import('java.lang.String')")
-    val s = luaExpr("java.new(String, 'Hello World')")
-    println(String)
-    println(5)
-    println({5})
-    println(s)
-    println(luaExpr("type(s:codePointAt(0))"))
-    println(luaExpr("java.luaify(s) .. '!!'"))
-}
-
-tmp()
+println("Hello!")
