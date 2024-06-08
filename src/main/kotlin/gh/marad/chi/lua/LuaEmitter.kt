@@ -501,7 +501,9 @@ class LuaEmitter(val program: Program) {
             "+" -> if (leftType == string) {
                 return "chistr.concat($leftVar, $rightVar)"
             } else op
-
+            "==" -> if (leftType == string) {
+                return "$leftVar:equals($rightVar)"
+            } else op
             else -> op
         }
         return "($leftVar $mappedOp $rightVar)"
