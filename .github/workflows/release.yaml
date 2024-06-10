@@ -2,7 +2,10 @@
 #  push:
 #    tags:
 #      - 'v[0-9]+.*'
-on: push
+on:
+  push:
+    tags:
+      - 'test'
 
 jobs:
   create_release:
