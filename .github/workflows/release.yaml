@@ -40,6 +40,10 @@ jobs:
         uses: actions/checkout@v2
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1.2.1
+        with:
+          version: '22.3.0'
+          java-version: '17'
+          components: 'native-image'
       - name: Build shadow jar
         run: ./gradlew shadowJar
       - name: Run seed with native agent
