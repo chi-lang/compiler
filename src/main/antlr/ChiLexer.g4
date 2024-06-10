@@ -12,6 +12,7 @@ ELSE : 'else';
 AS : 'as';
 WHILE : 'while';
 FOR : 'for';
+IN : 'in';
 PACKAGE : 'package';
 IMPORT : 'import';
 DATA : 'data';
@@ -24,6 +25,9 @@ EFFECT : 'effect';
 HANDLE : 'handle';
 WITH : 'with';
 RETURN : 'return';
+TRAIT : 'trait';
+TYPE : 'type';
+UNIT : 'unit';
 
 ARROW : '->' ;
 COLON : ':' ;
@@ -84,8 +88,8 @@ fragment EOL : ('\r'? '\n' | '\r');
 NEWLINE : EOL;
 WS : [ \t]+ -> skip;
 
-SINGLE_LINE_COMMENT : '//' ~[\r\n]* EOL -> skip ;
-MULTI_LINE_COMMENT : '/*' .*? '*/' EOL? -> skip ;
+SINGLE_LINE_COMMENT : '//' ~[\r\n]* (EOL|EOF) -> skip ;
+MULTI_LINE_COMMENT : '/*' .*? '*/' (EOL|EOF)? -> skip ;
 
 //    : '$' ID
 //    | '$' '{' STRING_TEXT

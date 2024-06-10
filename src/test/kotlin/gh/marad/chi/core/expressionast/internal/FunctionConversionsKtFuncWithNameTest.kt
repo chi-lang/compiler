@@ -2,12 +2,12 @@ package gh.marad.chi.core.expressionast.internal
 
 import gh.marad.chi.core.Fn
 import gh.marad.chi.core.NameDeclaration
-import gh.marad.chi.core.Type
-import gh.marad.chi.core.namespace.SymbolType
 import gh.marad.chi.core.parser.readers.*
+import gh.marad.chi.core.types.Function
+import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.Variable
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -18,7 +18,6 @@ class FunctionConversionsKtFuncWithNameTest {
     @Test
     fun `named function should be converted to name declaration`() {
         // given
-        val context = defaultContext()
         val funcWithName = sampleFuncWithName.copy(
             public = true,
             name = "funcName",
@@ -26,7 +25,7 @@ class FunctionConversionsKtFuncWithNameTest {
         )
 
         // when
-        val result = convertFuncWithName(context, funcWithName)
+        val result = convertAst(funcWithName)
 
         // then
         val nameDecl = result.shouldBeTypeOf<NameDeclaration>()
@@ -34,113 +33,87 @@ class FunctionConversionsKtFuncWithNameTest {
         nameDecl.mutable.shouldBeFalse()
         nameDecl.name shouldBe "funcName"
         nameDecl.value.shouldBeTypeOf<Fn>()
-        nameDecl.enclosingScope shouldBe context.currentScope
     }
 
     @Test
     fun `when return type is not provided it is set to unit`() {
         // given
-        val context = defaultContext()
         val funcWithName = sampleFuncWithName.copy(
             returnTypeRef = null
         )
 
         // when
-        val fn = convertFuncWithName(context, funcWithName)
-            .shouldBeTypeOf<NameDeclaration>().value
-            .shouldBeTypeOf<Fn>()
+        val fn = convertAst(funcWithName)
 
         // then
-        fn.returnType shouldBe Type.unit
-    }
-
-    @Test
-    fun `should define arguments in function scope`() {
-        // given
-        val context = defaultContext()
-        val funcWithName = sampleFuncWithName.copy(
-            formalArguments = listOf(
-                intArg("a"),
-                stringArg("b")
-            )
-        )
-
-        // when
-        val fn = convertFuncWithName(context, funcWithName)
-            .shouldBeTypeOf<NameDeclaration>().value
-            .shouldBeTypeOf<Fn>()
-
-        // then
-        with(fn.fnScope) {
-            getSymbol("a").shouldNotBeNull() should {
-                it.type shouldBe Type.intType
-                it.symbolType shouldBe SymbolType.Argument
-            }
-            getSymbol("b").shouldNotBeNull() should {
-                it.type shouldBe Type.string
-                it.symbolType shouldBe SymbolType.Argument
-            }
+        fn.shouldBeTypeOf<NameDeclaration>().should {
+            it.expectedType shouldBe Type.fn(Type.unit)
+            it.value.shouldBeTypeOf<Fn>()
         }
     }
 
     @Test
     fun `type parameters should be resolved in return type`() {
         // given
-        val context = defaultContext()
         val funcWithName = sampleFuncWithName.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
-            returnTypeRef = TypeNameRef("T", sectionB)
+            returnTypeRef = TypeNameRef(null, null, "T", sectionB)
         )
 
         // when
-        val fn = convertFuncWithName(context, funcWithName)
-            .shouldBeTypeOf<NameDeclaration>().value
-            .shouldBeTypeOf<Fn>()
+        val fn = convertAst(funcWithName)
 
         // then
-        fn.returnType shouldBe Type.typeParameter("T")
+        val T = Variable("T", 0)
+        fn.shouldBeTypeOf<NameDeclaration>().should {
+            it.value.shouldBeTypeOf<Fn>()
+            it.expectedType shouldBe Function(
+                    listOf(T)
+            )
+        }
+
     }
 
     @Test
     fun `type parameters should be resolved in body`() {
         // given
-        val context = defaultContext()
         val funcWithName = sampleFuncWithName.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
             body = ParseBlock(
                 listOf(
                     sampleNameDeclaration.copy(
-                        typeRef = TypeNameRef("T", sectionB)
+                        typeRef = TypeNameRef(null, null, "T", sectionB)
                     )
                 ), testSection
             )
         )
 
         // when
-        val fn = convertFuncWithName(context, funcWithName)
-            .shouldBeTypeOf<NameDeclaration>().value
-            .shouldBeTypeOf<Fn>()
+        val fn = convertAst(funcWithName)
 
         // then
-        fn.body.body.first().shouldBeTypeOf<NameDeclaration>()
-            .expectedType shouldBe Type.typeParameter("T")
+        fn.shouldBeTypeOf<NameDeclaration>().value
+            .shouldBeTypeOf<Fn>().should {
+                it.body.body.first().shouldBeTypeOf<NameDeclaration>()
+                    .expectedType shouldBe Variable("T", 3)
+            }
     }
 
     @Test
     fun `type parameters should be resolved in arguments`() {
         // given
-        val context = defaultContext()
         val funcWithName = sampleFuncWithName.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
-            formalArguments = listOf(FormalArgument("a", TypeNameRef("T", sectionB), sectionC))
+            formalArguments = listOf(FormalArgument("a", TypeNameRef(null, null, "T", sectionB), section=sectionC))
         )
 
         // when
-        val fn = convertFuncWithName(context, funcWithName)
+        val fn = convertAst(funcWithName)
             .shouldBeTypeOf<NameDeclaration>().value
             .shouldBeTypeOf<Fn>()
 
-        fn.parameters.first().type shouldBe Type.typeParameter("T")
+        // then
+        fn.parameters.first().type shouldBe Variable("T", 0)
     }
 
 
@@ -158,7 +131,7 @@ class FunctionConversionsKtFuncWithNameTest {
         public = false,
         mutable = false,
         symbol = Symbol("x", sectionA),
-        typeRef = TypeNameRef("int", sectionC),
+        typeRef = TypeNameRef(null, null, "int", sectionC),
         value = LongValue(10),
         sectionB
     )

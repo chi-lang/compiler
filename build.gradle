@@ -4,6 +4,7 @@ plugins {
     id 'distribution'
     id 'antlr'
     id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id("pl.allegro.tech.build.axion-release") version "1.15.4"
 }
 
@@ -37,13 +38,23 @@ application {
     mainClass = 'gh.marad.chi.MainKt'
 }
 
+run {
+    standardInput = System.in
+
+}
+
 repositories {
     mavenCentral()
 }
 
 dependencies {
     antlr "org.antlr:antlr4:4.12.0"
-    implementation 'org.jgrapht:jgrapht-core:1.5.1'
+//    implementation 'org.jgrapht:jgrapht-core:1.5.1'
+    implementation 'party.iroiro.luajava:luajit:3.5.0'
+    runtimeOnly 'party.iroiro.luajava:luajit-platform:3.5.0:natives-desktop'
+    implementation 'party.iroiro.luajava:luajava:3.5.0'
+//    implementation 'party.iroiro.luajava:lua54:3.5.0'
+//    runtimeOnly 'party.iroiro.luajava:lua54-platform:3.5.0:natives-desktop'
     testImplementation 'io.kotest:kotest-runner-junit5:5.0.0.M3'
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
@@ -58,14 +69,14 @@ generateGrammarSource {
 }
 
 compileJava {
-    sourceCompatibility = JavaVersion.VERSION_1_9
-    targetCompatibility = JavaVersion.VERSION_1_9
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 compileKotlin {
     dependsOn(generateGrammarSource)
     kotlinOptions {
-        jvmTarget = '9'
+        jvmTarget = '11'
     }
 }
 
@@ -75,4 +86,8 @@ compileTestKotlin {
 
 sourcesJar {
     dependsOn(generateGrammarSource)
+}
+
+shadowJar {
+    archiveFileName = "chi-all.jar"
 }

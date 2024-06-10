@@ -1,11 +1,13 @@
 package gh.marad.chi.core.parser.readers
 
+import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.antlr.ChiLexer
 import gh.marad.chi.core.antlr.ChiParser
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
 import gh.marad.chi.core.parser.mergeSections
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 import org.antlr.v4.runtime.tree.TerminalNode
 
 internal object AtomReader {
@@ -18,8 +20,10 @@ internal object AtomReader {
             ChiLexer.FALSE -> BoolValue(false, section)
             ChiLexer.ID -> VariableReader.readVariable(source, node)
             ChiLexer.PLACEHOLDER -> ParseWeavePlaceholder(section)
-            else ->
-                TODO("Unsupported terminal type ${node.symbol.type}: '${node.symbol.text}'")
+            ChiLexer.UNIT -> UnitValue(section)
+            else -> throw CompilerMessage.from(
+                "Unsupported terminal type ${node.symbol.type}: '${node.symbol.text}'",
+                getSection(source, node.symbol))
         }
     }
 
@@ -74,7 +78,7 @@ internal object AtomReader {
                 part.ESCAPED_CR() != null -> sb.append("\r")
                 part.ESCAPED_SLASH() != null -> sb.append("\\")
                 part.ESCAPED_TAB() != null -> sb.append("\t")
-                else -> TODO("Unsupported string part!")
+                else -> CompilerMessage.from("Unsupported string part: $part!", getSection(source, ctx))
             }
         }
 
@@ -97,20 +101,47 @@ internal object AtomReader {
     }
 }
 
-data class LongValue(val value: Long, override val section: ChiSource.Section? = null) : ParseAst
+data class UnitValue(override val section: ChiSource.Section?) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitUnit(this)
 
-data class FloatValue(val value: Float, override val section: ChiSource.Section? = null) : ParseAst
+    override fun children(): List<ParseAst> = emptyList()
+}
 
-data class BoolValue(val value: Boolean, override val section: ChiSource.Section? = null) : ParseAst
+data class LongValue(val value: Long, override val section: ChiSource.Section? = null) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitLong(this)
+    override fun children(): List<ParseAst> = emptyList()
+}
 
-data class StringValue(val value: String, override val section: ChiSource.Section? = null) : ParseAst
+data class FloatValue(val value: Float, override val section: ChiSource.Section? = null) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitFloat(this)
+    override fun children(): List<ParseAst> = emptyList()
+}
+
+data class BoolValue(val value: Boolean, override val section: ChiSource.Section? = null) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitBool(this)
+    override fun children(): List<ParseAst> = emptyList()
+}
+
+data class StringValue(val value: String, override val section: ChiSource.Section? = null) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitString(this)
+    override fun children(): List<ParseAst> = emptyList()
+}
 
 sealed interface StringPart : ParseAst
-data class StringText(val text: String, override val section: ChiSource.Section?) : StringPart
+data class StringText(val text: String, override val section: ChiSource.Section?) : StringPart {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitInterpolatedStringText(this)
+    override fun children(): List<ParseAst> = emptyList()
+}
 
-data class ParseInterpolation(val value: ParseAst, override val section: ChiSource.Section?) : StringPart
+data class ParseInterpolation(val value: ParseAst, override val section: ChiSource.Section?) : StringPart {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitStringInterpolation(this)
+    override fun children(): List<ParseAst> = listOf(value)
+}
 
 data class ParseInterpolatedString(
     val parts: List<StringPart>,
     override val section: ChiSource.Section?
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitInterpolatedString(this)
+    override fun children(): List<ParseAst> = parts
+}

@@ -11,13 +11,13 @@ import org.junit.jupiter.api.Test
 class IsReaderTest {
     @Test
     fun `parse is operator`() {
-        val code = "foo is Nothing"
+        val code = "foo is int"
         val ast = testParse(code)
 
         ast shouldHaveSize 1
         val isOp = ast[0].shouldBeTypeOf<ParseIs>()
         isOp.value.shouldBeVariable("foo")
-        isOp.typeName shouldBe "Nothing"
+        isOp.typeRef shouldBe TypeNameRef("","","int", null)
         isOp.section?.getCode() shouldBe code
     }
 }

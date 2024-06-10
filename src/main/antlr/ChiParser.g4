@@ -2,30 +2,30 @@ parser grammar ChiParser;
 
 options { tokenVocab=ChiLexer; }
 
-program : (package_definition ws)? (ws import_definition)* ws (expression | variantTypeDefinition)? (newline (expression | variantTypeDefinition))* ws EOF ;
+program : (package_definition ws)? (ws import_definition)* ws (typealias | expression | variantTypeDefinition | traitDefinition)? (newline (typealias | expression | variantTypeDefinition))* ws EOF ;
 
 newline : NEWLINE+;
 
 // ====================================================================================================
 // Package and import definitions
 // ====================================================================================================
-package_definition : 'package' module_name? '/' package_name?;
-import_definition : 'import' module_name '/' package_name ('as' package_import_alias)? (LBRACE (import_entry ','?)+ RBRACE)?;
+package_definition : 'package' moduleName? '/' packageName?;
+import_definition : 'import' moduleName '/' packageName ('as' package_import_alias)? (LBRACE ws (import_entry ','? ws)+ ws RBRACE)?;
 
 package_import_alias : ID;
 import_entry : import_name ('as' name_import_alias)?;
 import_name : ID;
 name_import_alias : ID;
 
-module_name : ID ('.' ID)*;
-package_name : ID ('.' ID)*;
+moduleName : ID ('.' ID)*;
+packageName : ID ('.' ID)*;
 
 // ====================================================================================================
 // Variant type definitions
 // ====================================================================================================
 variantTypeDefinition : fullVariantTypeDefinition | simplifiedVariantTypeDefinition;
-fullVariantTypeDefinition: 'data' typeName=ID generic_type_definitions? '=' ws variantTypeConstructors;
-simplifiedVariantTypeDefinition : 'data' PUB? typeName=ID generic_type_definitions? ('(' variantFields? ')')?;
+fullVariantTypeDefinition: 'data' name=ID generic_type_definitions? '=' ws variantTypeConstructors;
+simplifiedVariantTypeDefinition : 'data' PUB? name=ID generic_type_definitions? ('(' variantFields? ')')?;
 
 variantTypeConstructors : variantTypeConstructor (ws '|' ws variantTypeConstructor)*;
 variantTypeConstructor : PUB? variantName=ID ('(' variantFields? ')')? ;
@@ -51,23 +51,53 @@ handleCaseEffectParam : ID;
 handleCaseBody : block | expression;
 
 // ====================================================================================================
+// Traits
+// ====================================================================================================
+
+traitDefinition : 'trait' name=ID generic_type_definitions? '{' ws traitFunctionDefinition* '}';
+traitFunctionDefinition : FN funcName=ID arguments=func_argument_definitions (COLON func_return_type)? ws;
+
+// ====================================================================================================
+// Types
+// ====================================================================================================
+typealias : TYPE name=ID generic_type_definitions? '=' type;
+
+type
+    : typeName '[' type (',' type)* ']'                     #TypeConstructorRef
+    | '(' type? (COMMA type)* ')' ARROW func_return_type    #FunctionTypeRef
+    | '{' ws recordField? (ws ',' ws recordField)* ws '}'               #RecordType
+    | type '|' type                                         #SumType
+    | typeName                                              #TypeNameRef
+    | UNIT                                                  #UnitTypeRef
+    ;
+
+typeName: simpleName | qualifiedName;
+recordField : ws name=ID ws ':' ws type ws;
+
+simpleName: name=ID;
+qualifiedName: moduleName qualifierSeparator packageName qualifierSeparator name=ID;
+qualifierSeparator: ':' ':';
+
+// ====================================================================================================
 // Expressions
 // ====================================================================================================
 expression
     : expression AS type # Cast
+    | '{' (ws ID ws ':' ws expression)? ws (','? | (',' ws ID ':' ws expression ws)* ','?) ws '}' # CreateRecord
+    | '[' ws expression? ws (',' ws expression ws)* ']' # CreateArray
+    | expression IS type  # IsExpr
     | effectDefinition # EffectDef
     | handleExpression # HandleExpr
-    | expression IS variantName=ID  # IsExpr
+    | 'for' ID (',' ID)? 'in' iterable=expression (',' state=expression ',' init=expression)? ws block # ForLoop
     | 'while' expression block # WhileLoopExpr
     | whenExpression # WhenExpr
     | '(' expression ')' # GroupExpr
-    | expression callGenericParameters? '(' expr_comma_list ')' # FnCallExpr
+    | expression callGenericParameters? '(' expr_comma_list ')' lambda? # FnCallExpr
+    | expression callGenericParameters? lambda # FnCallLambdaExpr
+    | receiver=expression ws PERIOD memberName=ID # FieldAccessExpr
     | variable=expression '[' index=expression ']' # IndexOperator
     | func_with_name # FuncWithName
     | name_declaration #NameDeclarationExpr
-    | string # StringExpr
-    | receiver=expression ws PERIOD methodName=ID callGenericParameters? '(' arguments=expr_comma_list ')' # MethodInvocation
-    | receiver=expression ws PERIOD memberName=ID # FieldAccessExpr
     | MINUS expression # NegationExpr
     | expression BIT_SHL expression # BinOp
     | expression BIT_SHR expression # BinOp
@@ -88,15 +118,23 @@ expression
     | 'return' expression? # ReturnExpr
     | input=expression ws WEAVE ws template=expression ws # WeaveExpr
     | variable=ID opEqual value=expression # OpEqualExpr
-    | NUMBER # NumberExpr
-    | bool # BoolExpr
+    | atom # AtomExpr
     | ID # IdExpr
     | PLACEHOLDER # PlaceholderExpr
     | BREAK # BreakExpr
     | CONTINUE # ContinueExpr
     ;
 
-lambda: LBRACE ws (argumentsWithTypes '->')? ws (expression ws)* RBRACE;
+atom
+    : string # CreateString
+    | NUMBER # CreateNumber
+    | bool   # CreateBool
+    | UNIT   # CreateUnit
+    ;
+
+lambda: LBRACE ws (argumentsWithOptionalTypes '->')? ws (expression ws)* RBRACE;
+argumentsWithOptionalTypes : argumentWithOptionalType ws (',' ws argumentWithOptionalType ws)*;
+argumentWithOptionalType : ID (':' type)? ('=' defaultValue=expression)?;
 block : LBRACE ws (expression ws)* RBRACE;
 
 divMul: DIV | MUL;
@@ -117,11 +155,6 @@ assignment
     : ID EQUALS value=expression
     ;
 
-type : typeNameRef | functionTypeRef | typeConstructorRef;
-typeNameRef : (packageName=ID '.')? name=ID;
-functionTypeRef : '(' type? (COMMA type)* ')' ARROW func_return_type;
-typeConstructorRef : typeNameRef '[' type (',' type)* ']';
-
 name_declaration
     : PUB? (VAL | VAR) ID (COLON type)? EQUALS expression
     ;
@@ -136,7 +169,7 @@ generic_type_definitions
 
 func_argument_definitions : '(' ws argumentsWithTypes? ')';
 argumentsWithTypes : argumentWithType ws (',' ws argumentWithType ws)*;
-argumentWithType : ID ':' type;
+argumentWithType : ID ':' type ('=' defaultValue=expression)?;
 
 func_body : block;
 

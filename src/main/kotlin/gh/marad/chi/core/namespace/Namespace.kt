@@ -1,31 +1,61 @@
 package gh.marad.chi.core.namespace
 
 import gh.marad.chi.core.CompilationDefaults
+import gh.marad.chi.core.Package
+import gh.marad.chi.core.PackageSymbol
+import gh.marad.chi.core.TypeAlias
+import gh.marad.chi.core.parser.readers.Import
 
-class GlobalCompilationNamespace(private val prelude: List<PreludeImport> = emptyList()) {
-    private val modules: MutableMap<String, ModuleDescriptor> = mutableMapOf()
-    val typeResolver = TypeResolver()
+interface CompilationEnv {
+    fun getPreludeImports(): List<Import>
+    fun getOrCreatePackage(moduleName: String, packageName: String): PackageDescriptor
+    fun getOrCreatePackage(pkg: Package): PackageDescriptor
+    fun getSymbol(moduleName: String, packageName: String, symbolName: String): Symbol?
+    fun getSymbol(target: PackageSymbol): Symbol?
+    fun getTypeAlias(moduleName: String, packageName: String, typeAliasName: String): TypeAlias?
+}
+
+interface PackageDescriptor {
+    val moduleName: String
+    val packageName: String
+    fun getTypeAlias(name: String): TypeAlias?
+}
+
+class TestCompilationEnv(private val imports: List<Import> = emptyList()) : CompilationEnv {
+    private val modules: MutableMap<String, TestModuleDescriptor> = mutableMapOf()
 
     init {
-        getDefaultPackage().typeRegistry
+        getDefaultPackage()
     }
 
-    fun setPackageScope(moduleName: String, packageName: String, scope: CompilationScope) {
-        getOrCreateModule(moduleName).setPackageScope(packageName, scope)
-    }
-
-    fun createCompileTimeImports(): CompileTimeImports =
-        CompileTimeImports(this).also {
-            prelude.forEach(it::addPreludeImport)
-        }
+    override fun getPreludeImports(): List<Import> = imports
 
     fun getDefaultPackage() =
         getOrCreatePackage(CompilationDefaults.defaultModule, CompilationDefaults.defaultPacakge)
 
-    fun getOrCreatePackage(moduleName: String, packageName: String): PackageDescriptor =
+    override fun getOrCreatePackage(moduleName: String, packageName: String): TestPackageDescriptor =
         getOrCreateModule(moduleName).getOrCreatePackage(packageName)
 
-    private fun getOrCreateModule(moduleName: String) = modules.getOrPut(moduleName) { ModuleDescriptor(moduleName) }
+    override fun getOrCreatePackage(pkg: Package): TestPackageDescriptor =
+        getOrCreateModule(pkg.moduleName).getOrCreatePackage(pkg.packageName)
+
+    override fun getSymbol(moduleName: String, packageName: String, symbolName: String) =
+        getOrCreatePackage(moduleName, packageName).getSymbol(symbolName)
+
+    override fun getSymbol(target: PackageSymbol) =
+        getOrCreatePackage(target.moduleName, target.packageName)
+            .getSymbol(target.name)
+
+    override fun getTypeAlias(moduleName: String, packageName: String, typeAliasName: String) =
+        getOrCreatePackage(moduleName, packageName)
+            .getTypeAlias(typeAliasName)
+
+    private fun getOrCreateModule(moduleName: String) = modules.getOrPut(moduleName) { TestModuleDescriptor(moduleName) }
+
+    fun addSymbol(symbol: Symbol) {
+        val descriptor = getOrCreatePackage(symbol.moduleName, symbol.packageName)
+        descriptor.symbols.add(symbol)
+    }
 }
 
 
@@ -34,25 +64,32 @@ data class PreludeImport(
     val packageName: String,
     val name: String,
     val alias: String?
-)
-
-class ModuleDescriptor(
-    val moduleName: String,
-    private val packageDescriptors: MutableMap<String, PackageDescriptor> = mutableMapOf()
 ) {
-    fun getOrCreatePackage(packageName: String): PackageDescriptor =
-        packageDescriptors.getOrPut(packageName) {
-            PackageDescriptor(moduleName, packageName)
-        }
-
-    fun setPackageScope(packageName: String, scope: CompilationScope) =
-        packageDescriptors.put(packageName, getOrCreatePackage(packageName).copy(scope = scope))
+    fun toImport() = Import(moduleName, packageName, packageAlias = null,
+        entries = listOf(
+            Import.Entry(name, alias, section = null)
+        ),
+        section = null
+    )
 }
 
-data class PackageDescriptor(
+class TestModuleDescriptor(
     val moduleName: String,
-    val packageName: String,
-    val scope: CompilationScope = CompilationScope(ScopeType.Package),
-    val typeRegistry: TypeRegistry = TypeRegistry(),
-)
+    private val packageDescriptors: MutableMap<String, TestPackageDescriptor> = mutableMapOf()
+) {
+    fun getOrCreatePackage(packageName: String): TestPackageDescriptor =
+        packageDescriptors.getOrPut(packageName) {
+            TestPackageDescriptor(moduleName, packageName)
+        }
+}
+
+data class TestPackageDescriptor(
+    override val moduleName: String,
+    override val packageName: String,
+    val symbols: SymbolTable = SymbolTable(),
+    val types: TypeTable = TypeTable(),
+) : PackageDescriptor {
+    fun getSymbol(name: String) = symbols.get(name)
+    override fun getTypeAlias(name: String) = types.getAlias(name)
+}
 

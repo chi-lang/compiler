@@ -5,6 +5,7 @@ import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
 import gh.marad.chi.core.parser.readers.TypeReader.readTypeRef
+import gh.marad.chi.core.parser.visitor.ParseAstVisitor
 
 internal object NameDeclarationReader {
     fun read(
@@ -29,4 +30,7 @@ data class ParseNameDeclaration(
     val typeRef: TypeRef?,
     val value: ParseAst,
     override val section: ChiSource.Section?
-) : ParseAst
+) : ParseAst {
+    override fun <T> accept(visitor: ParseAstVisitor<T>): T = visitor.visitNameDeclaration(this)
+    override fun children(): List<ParseAst> = listOf(value)
+}

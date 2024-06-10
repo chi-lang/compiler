@@ -1,14 +1,13 @@
 package gh.marad.chi.core.weaveexpr
 
+import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.core.*
-import gh.marad.chi.core.Type.Companion.string
-import gh.marad.chi.core.expressionast.ConversionContext
-import gh.marad.chi.core.expressionast.generateExpressionAst
-import gh.marad.chi.core.namespace.GlobalCompilationNamespace
-import gh.marad.chi.core.namespace.SymbolType
+import gh.marad.chi.core.expressionast.internal.convertAst
+import gh.marad.chi.core.namespace.TestCompilationEnv
 import gh.marad.chi.core.parser.readers.*
 import gh.marad.chi.core.parser.shouldBeStringValue
 import gh.marad.chi.core.parser.testParse
+import gh.marad.chi.core.types.Type
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -24,7 +23,7 @@ class WeaveExprSpec {
 
         ast[0].shouldBeTypeOf<ParseWeave>() should { weave ->
             weave.value.shouldBeStringValue("hello")
-            weave.opTemplate.shouldBeTypeOf<ParseMethodInvocation>() should { call ->
+            weave.opTemplate.shouldBeTypeOf<ParseFnCall>() should { call ->
                 call.arguments.first().shouldBeTypeOf<ParseWeavePlaceholder>()
             }
             weave.section?.getCode() shouldBe code
@@ -49,7 +48,7 @@ class WeaveExprSpec {
             val op3 = weave3.opTemplate
 
             weave1.value.shouldBeStringValue("2hello")
-            op1.shouldBeTypeOf<ParseMethodInvocation>()
+            op1.shouldBeTypeOf<ParseFnCall>()
             op2.shouldBeTypeOf<ParseCast>()
             op3.shouldBeTypeOf<ParseBinaryOp>()
         }
@@ -57,24 +56,26 @@ class WeaveExprSpec {
 
     @Test
     fun `converting to expression`() {
+        val ns = TestCompilationEnv()
+        ns.addSymbolInDefaultPackage("toUpper")
         val code = """
-            "hello" ~> str.toUpper(_)
+            "hello" ~> toUpper(_)
         """.trimIndent()
         val ast = testParse(code)
-        val ctx = ConversionContext(GlobalCompilationNamespace())
-        ctx.imports.addImport(Import("std", "string", "str", emptyList(), withinSameModule = true, null))
-        val expr = generateExpressionAst(ctx, ast[0])
+        val expr = convertAst(ast[0], ns)
 
         val body = expr.shouldBeTypeOf<Block>().body
         val tempVar = body[0].shouldBeTypeOf<NameDeclaration>()
         body[1].shouldBeTypeOf<FnCall>() should {
             it.parameters.first().shouldBeTypeOf<VariableAccess>()
-                .name shouldBe tempVar.name
+                .target.name shouldBe tempVar.name
         }
     }
 
     @Test
     fun `converting chain to expressions`() {
+        val ns = TestCompilationEnv()
+        ns.addSymbolInDefaultPackage("toUpper")
         val code = """
             "2hello" 
                 ~> toUpper(_)
@@ -82,13 +83,11 @@ class WeaveExprSpec {
                 ~> 2 + _
         """.trimIndent()
         val ast = testParse(code)
-        val ctx = ConversionContext(GlobalCompilationNamespace())
-        ctx.currentScope.addSymbol("toUpper", Type.fn(string, string), SymbolType.Local)
-        val expr = generateExpressionAst(ctx, ast[0])
+        val expr = convertAst(ast[0], ns)
 
         val body = expr.shouldBeTypeOf<Block>().body
         body[0].shouldBeTypeOf<NameDeclaration>()
-            .value.shouldBeAtom("2hello", string)
+            .value.shouldBeAtom("2hello", Type.string)
         val body2 = body[1].shouldBeTypeOf<Block>().body
         body2[0].shouldBeTypeOf<NameDeclaration>()
             .value.shouldBeTypeOf<FnCall>()

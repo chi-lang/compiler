@@ -1,6 +1,7 @@
 package gh.marad.chi.core.parser.readers
 
-import gh.marad.chi.core.antlr.ChiParser
+import gh.marad.chi.core.analyzer.CompilerMessage
+import gh.marad.chi.core.antlr.ChiParser.*
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
@@ -8,44 +9,65 @@ import java.util.*
 
 internal object TypeReader {
 
-    fun readTypeRef(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.TypeContext): TypeRef {
-        return if (ctx.typeNameRef() != null) {
-            readTypeName(source, ctx.typeNameRef())
-        } else if (ctx.functionTypeRef() != null) {
-            readFunctionType(parser, source, ctx.functionTypeRef())
-        } else if (ctx.typeConstructorRef() != null) {
-            readGenericType(parser, source, ctx.typeConstructorRef())
-        } else {
-            TODO("Unexpected type at ${getSection(source, ctx)}")
+    fun readTypeRef(parser: ParserVisitor, source: ChiSource, ctx: TypeContext): TypeRef {
+        return when (ctx) {
+            is TypeNameRefContext -> readTypeName(source, ctx.typeName())
+            is FunctionTypeRefContext -> readFunctionType(parser, source, ctx)
+            is RecordTypeContext -> readRecordType(parser, source, ctx)
+            is SumTypeContext -> readSumType(parser, source, ctx)
+            is TypeConstructorRefContext -> readGenericType(parser, source, ctx)
+            is UnitTypeRefContext -> TypeRef.unit
+            else -> throw CompilerMessage.from("Unsupported kind of type definition: $ctx", getSection(source, ctx))
         }
     }
 
-    private fun readTypeName(source: ChiSource, ctx: ChiParser.TypeNameRefContext): TypeNameRef {
-        if (ctx.packageName != null) {
-            TODO("Resolving type from package is not supported.")
+    private fun readTypeName(source: ChiSource, typeName: TypeNameContext): TypeNameRef {
+        val section = getSection(source, typeName)
+        return if (typeName.simpleName() != null) {
+            TypeNameRef(null, null, typeName.simpleName().name.text, section)
+        } else if (typeName.qualifiedName() != null) {
+            TypeNameRef(
+                moduleName = typeName.qualifiedName().moduleName().text,
+                packageName = typeName.qualifiedName().packageName().text,
+                typeName = typeName.qualifiedName().name.text,
+                section
+            )
+        } else {
+            throw CompilerMessage.from("Unsupported kind of type name: $typeName", section)
         }
-        return TypeNameRef(
-            typeName = ctx.name.text,
-            getSection(source, ctx)
-        )
     }
 
     private fun readFunctionType(
         parser: ParserVisitor,
         source: ChiSource,
-        ctx: ChiParser.FunctionTypeRefContext
+        ctx: FunctionTypeRefContext
     ): TypeRef {
         val argTypes = ctx.type().map { readTypeRef(parser, source, it) }
         val returnType = readTypeRef(parser, source, ctx.func_return_type().type())
         return FunctionTypeRef(emptyList(), argTypes, returnType, getSection(source, ctx))
     }
 
+    private fun readRecordType(parser: ParserVisitor, source: ChiSource, ctx: RecordTypeContext): TypeRef =
+        RecordTypeRef(
+            ctx.recordField().map {
+                RecordTypeRef.Field(it.name.text, readTypeRef(parser, source, it.type()))
+            },
+            getSection(source, ctx)
+        )
+
+    private fun readSumType(parser: ParserVisitor, source: ChiSource, ctx: SumTypeContext): SumTypeRef =
+        SumTypeRef(
+            lhs = readTypeRef(parser, source, ctx.type(0)),
+            rhs = readTypeRef(parser, source, ctx.type(1)),
+            getSection(source, ctx)
+        )
+
     private fun readGenericType(
         parser: ParserVisitor,
         source: ChiSource,
-        ctx: ChiParser.TypeConstructorRefContext
+        ctx: TypeConstructorRefContext
     ): TypeRef {
-        val typeName = readTypeName(source, ctx.typeNameRef())
+        val typeName = readTypeName(source, ctx.typeName())
         val typeParameters = ctx.type().map { readTypeRef(parser, source, it) }
         return TypeConstructorRef(
             typeName, typeParameters, getSection(source, ctx)
@@ -54,16 +76,24 @@ internal object TypeReader {
 }
 
 sealed interface TypeRef {
+    fun findTypeNames(): Set<String>
+    val section: ChiSource.Section?
     companion object {
-        val unit = TypeNameRef("unit", null)
+        val unit = TypeNameRef(null, null, "unit", null)
     }
 }
 
-data class TypeParameterRef(val name: String, val section: ChiSource.Section?) : TypeRef
+data class TypeParameterRef(val name: String, override val section: ChiSource.Section?) : TypeRef {
+    override fun findTypeNames(): Set<String> = setOf(name)
+
+}
 data class TypeNameRef(
+    val moduleName: String?,
+    val packageName: String?,
     val typeName: String,
-    val section: ChiSource.Section?
+    override val section: ChiSource.Section?
 ) : TypeRef {
+    override fun findTypeNames(): Set<String> = setOf(typeName)
     override fun equals(other: Any?): Boolean = other != null && other is TypeNameRef && typeName == other.typeName
     override fun hashCode(): Int = Objects.hash(typeName)
 }
@@ -72,8 +102,10 @@ data class FunctionTypeRef(
     val typeParameters: List<TypeRef>,
     val argumentTypeRefs: List<TypeRef>,
     val returnType: TypeRef,
-    val section: ChiSource.Section?
+    override val section: ChiSource.Section?
 ) : TypeRef {
+    override fun findTypeNames(): Set<String> = argumentTypeRefs.flatMap { it.findTypeNames() }.toSet() + returnType.findTypeNames()
+
     override fun equals(other: Any?): Boolean =
         other != null && other is FunctionTypeRef
                 && argumentTypeRefs == other.argumentTypeRefs
@@ -82,29 +114,27 @@ data class FunctionTypeRef(
     override fun hashCode(): Int = Objects.hash(argumentTypeRefs, returnType)
 }
 
+
+data class RecordTypeRef(val fields: List<Field>, override val section: ChiSource.Section?): TypeRef {
+    data class Field(val name: String, val typeRef: TypeRef)
+    override fun findTypeNames(): Set<String> = fields.flatMap { it.typeRef.findTypeNames() }.toSet()
+}
+
+data class SumTypeRef(val lhs: TypeRef, val rhs: TypeRef, override val section: ChiSource.Section?) : TypeRef {
+    override fun findTypeNames(): Set<String> = lhs.findTypeNames() + rhs.findTypeNames()
+}
+
+
 data class TypeConstructorRef(
     val baseType: TypeRef,
     val typeParameters: List<TypeRef>,
-    val section: ChiSource.Section?
+    override val section: ChiSource.Section?
 ) : TypeRef {
+    override fun findTypeNames(): Set<String> = baseType.findTypeNames()
+
     override fun equals(other: Any?): Boolean =
         other != null && other is TypeConstructorRef
                 && baseType == other.baseType
 
     override fun hashCode(): Int = Objects.hash(baseType)
-}
-
-data class VariantNameRef(
-    val variantType: TypeRef,
-    val variantName: String,
-    val variantFields: List<FormalField>,
-    val section: ChiSource.Section?
-) : TypeRef {
-    override fun equals(other: Any?): Boolean =
-        other != null && other is VariantNameRef
-                && variantType == other.variantType
-                && variantFields == other.variantFields
-                && variantName == other.variantName
-
-    override fun hashCode(): Int = Objects.hash(variantType, variantFields, variantName)
 }

@@ -6,18 +6,18 @@ import gh.marad.chi.core.parser.ParserVisitor
 import gh.marad.chi.core.parser.getSection
 
 internal object ProgramReader {
-    fun read(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.ProgramContext): Program {
-        val split = ctx.expression().groupBy { isFunctionDeclaration(it) }
-
-        return Program(
+    fun read(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.ProgramContext): ParseProgram {
+        return ParseProgram(
             packageDefinition = ctx.package_definition()?.let { PackageReader.read(source, it) },
             imports = ctx.import_definition().map { ImportReader.read(source, it) },
+            typeAliases = ctx.`typealias`().map {
+                TypeAliasReader.read(parser, source, it)
+            },
             typeDefinitions = ctx.variantTypeDefinition().map {
                 VariantTypeDefinitionReader.read(parser, source, it)
             },
-            functions = split[true]?.map { it.accept(parser) } ?: emptyList(),
-            topLevelCode = split[false]?.map { it.accept(parser) } ?: emptyList(),
-            section = getSection(source, ctx)
+            code = ctx.expression().map { it.accept(parser) },
+            getSection(source, ctx)
         )
     }
 
@@ -26,11 +26,11 @@ internal object ProgramReader {
 
 }
 
-data class Program(
-    val packageDefinition: ParsePackageDefinition?,
-    val imports: List<ParseImportDefinition>,
+data class ParseProgram(
+    val packageDefinition: PackageDefinition?,
+    val imports: List<Import>,
+    val typeAliases: List<ParseTypeAlias>,
     val typeDefinitions: List<ParseVariantTypeDefinition>,
-    val functions: List<ParseAst>,
-    val topLevelCode: List<ParseAst>,
-    override val section: ChiSource.Section?
-) : ParseAst
+    val code: List<ParseAst>,
+    val section: ChiSource.Section?
+)

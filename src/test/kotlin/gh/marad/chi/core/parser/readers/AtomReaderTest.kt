@@ -14,6 +14,15 @@ import org.junit.jupiter.api.Test
 class AtomReaderTest {
 
     @Test
+    fun `should parse unit value`() {
+        val code = "unit"
+        val ast = testParse(code)
+
+        ast shouldHaveSize 1
+        ast[0].shouldBeTypeOf<UnitValue>()
+    }
+
+    @Test
     fun `should parse an int`() {
         val code = "10"
         val ast = testParse(code)
@@ -122,7 +131,7 @@ class AtomReaderTest {
             it.parts[0].shouldBeTypeOf<StringText>()
                 .text shouldBe "simple "
             it.parts[1].shouldBeTypeOf<ParseInterpolation>()
-                .value.shouldBeTypeOf<ParseMethodInvocation>()
+                .value.shouldBeTypeOf<ParseFnCall>()
         }
     }
 

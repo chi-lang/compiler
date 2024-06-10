@@ -1,6 +1,8 @@
 package gh.marad.chi.core.parser.readers
 
-import gh.marad.chi.core.parser.testParse
+import gh.marad.chi.core.parser.ChiSource
+import gh.marad.chi.core.parser.ParserVisitor
+import gh.marad.chi.core.parser.parser
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -12,10 +14,8 @@ class VariantTypeDefinitionReaderTest {
 
     @Test
     fun `parse variant type definition`() {
-        val code = "data Result[V, E] = Ok(value: V) | Err(error: E)"
-        val ast = testParse(code)
-        ast shouldHaveSize 1
-        ast[0].shouldBeTypeOf<ParseVariantTypeDefinition>() should {
+        val def = parseVariant("data Result[V, E] = Ok(value: V) | Err(error: E)")
+        def should {
             it.typeName shouldBe "Result"
             it.typeParameters.map { it.name } shouldBe listOf("V", "E")
 
@@ -44,10 +44,8 @@ class VariantTypeDefinitionReaderTest {
 
     @Test
     fun `parse simplified variant type definition`() {
-        val code = "data Test[T, U](t: T, u: U)"
-        val ast = testParse(code)
-        ast shouldHaveSize 1
-        ast[0].shouldBeTypeOf<ParseVariantTypeDefinition>() should {
+        val def = parseVariant("data Test[T, U](t: T, u: U)")
+        def should {
             it.typeName shouldBe "Test"
             it.typeParameters.map { it.name } shouldBe listOf("T", "U")
 
@@ -77,10 +75,9 @@ class VariantTypeDefinitionReaderTest {
             )
         """.trimIndent()
 
-        val ast = testParse(code)
+        val def = parseVariant(code)
 
-        ast shouldHaveSize 1
-        ast[0].shouldBeTypeOf<ParseVariantTypeDefinition>() should {
+        def should {
             it.typeName shouldBe "Test"
             it.variantConstructors.shouldHaveSize(1)
         }
@@ -92,7 +89,10 @@ class VariantTypeDefinitionReaderTest {
         val code = """
             data Foo = pub A() | B()
         """.trimIndent()
-        testParse(code)[0].shouldBeTypeOf<ParseVariantTypeDefinition>() should {
+
+        val def = parseVariant(code)
+
+        def should {
             it.variantConstructors[0].public shouldBe true
             it.variantConstructors[1].public shouldBe false
         }
@@ -100,28 +100,34 @@ class VariantTypeDefinitionReaderTest {
 
     @Test
     fun `should read constructor visibility in simplified definition`() {
-        testParse("data Foo()")[0].shouldBeTypeOf<ParseVariantTypeDefinition>() should {
+
+        parseVariant("data Foo()") should {
             it.variantConstructors[0].public shouldBe false
         }
-        testParse("data pub Foo()")[0].shouldBeTypeOf<ParseVariantTypeDefinition>() should {
+        parseVariant("data pub Foo()") should {
             it.variantConstructors[0].public shouldBe true
         }
     }
 
     @Test
     fun `reading public and non-public fields`() {
-        testParse("data Foo(pub i: int, f: float)")[0].shouldBeTypeOf<ParseVariantTypeDefinition>() should {
+        parseVariant("data Foo(pub i: int, f: float)") should {
             it.variantConstructors[0].formalFields should { fields ->
                 fields[0].public shouldBe true
                 fields[1].public shouldBe false
             }
         }
 
-        testParse("data Foo = Foo(pub i: int, f: float)")[0].shouldBeTypeOf<ParseVariantTypeDefinition>() should {
+        parseVariant("data Foo = Foo(pub i: int, f: float)") should {
             it.variantConstructors[0].formalFields should { fields ->
                 fields[0].public shouldBe true
                 fields[1].public shouldBe false
             }
         }
+    }
+
+    fun parseVariant(code: String): ParseVariantTypeDefinition {
+        val source = ChiSource(code)
+        return VariantTypeDefinitionReader.read(ParserVisitor(source), source, parser(source).variantTypeDefinition())
     }
 }

@@ -16,7 +16,7 @@ internal object VariantTypeDefinitionReader {
             readFullDefinition(parser, source, ctx.fullVariantTypeDefinition())
         else if (ctx.simplifiedVariantTypeDefinition() != null)
             readSimplifiedDefinition(parser, source, ctx.simplifiedVariantTypeDefinition())
-        else TODO("Unsupported type definition syntax!")
+        else throw RuntimeException("Unsupported type definition syntax!")
 
     private fun readSimplifiedDefinition(
         parser: ParserVisitor,
@@ -24,12 +24,12 @@ internal object VariantTypeDefinitionReader {
         ctx: ChiParser.SimplifiedVariantTypeDefinitionContext
     ) =
         ParseVariantTypeDefinition(
-            typeName = ctx.typeName.text,
+            typeName = ctx.name.text,
             typeParameters = readTypeParameters(source, ctx.generic_type_definitions()),
             variantConstructors = listOf(
                 ParseVariantTypeDefinition.Constructor(
                     public = ctx.PUB() != null,
-                    name = ctx.typeName.text,
+                    name = ctx.name.text,
                     formalFields = readFields(parser, source, ctx.variantFields()),
                     section = getSection(source, ctx)
                 )
@@ -39,7 +39,7 @@ internal object VariantTypeDefinitionReader {
 
     fun readFullDefinition(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.FullVariantTypeDefinitionContext) =
         ParseVariantTypeDefinition(
-            typeName = ctx.typeName.text,
+            typeName = ctx.name.text,
             typeParameters = readTypeParameters(source, ctx.generic_type_definitions()),
             variantConstructors = readConstructors(parser, source, ctx.variantTypeConstructors()),
             section = getSection(source, ctx)
@@ -72,7 +72,6 @@ internal object VariantTypeDefinitionReader {
     }
 
     private fun readField(parser: ParserVisitor, source: ChiSource, ctx: ChiParser.VariantFieldContext): FormalField {
-//        TODO()
         return FormalField(
             public = ctx.PUB() != null,
             name = ctx.name.text,
@@ -86,8 +85,8 @@ data class ParseVariantTypeDefinition(
     val typeName: String,
     val typeParameters: List<TypeParameterRef>,
     val variantConstructors: List<Constructor>,
-    override val section: ChiSource.Section?
-) : ParseAst {
+    val section: ChiSource.Section?
+) {
     data class Constructor(
         val public: Boolean,
         val name: String,

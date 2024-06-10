@@ -1,10 +1,13 @@
 package gh.marad.chi.core.expressionast.internal
 
+import gh.marad.chi.core.CompilationDefaults
 import gh.marad.chi.core.EffectDefinition
-import gh.marad.chi.core.Type
+import gh.marad.chi.core.namespace.TestCompilationEnv
 import gh.marad.chi.core.parser.readers.ParseEffectDefinition
 import gh.marad.chi.core.parser.readers.TypeNameRef
 import gh.marad.chi.core.parser.readers.TypeParameterRef
+import gh.marad.chi.core.types.Function
+import gh.marad.chi.core.types.Variable
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
@@ -16,52 +19,57 @@ class EffectConversionsKtDefinitionTest {
     @Test
     fun `should be defined in current package`() {
         // given
-        val context = defaultContext()
+        val ns = TestCompilationEnv()
 
         // when
-        val result = convertEffectDefinition(context, sampleEffectDefinition)
-            .shouldBeTypeOf<EffectDefinition>()
+        val result = convertAst(sampleEffectDefinition, ns)
 
         // then
-        result.moduleName shouldBe context.currentModule
-        result.packageName shouldBe context.currentPackage
+        result.shouldBeTypeOf<EffectDefinition>()
+        result.moduleName shouldBe CompilationDefaults.defaultModule
+        result.packageName shouldBe CompilationDefaults.defaultPacakge
         result.name shouldBe sampleEffectDefinition.name
     }
 
     @Test
     fun `type parameters should be resolved in arguments`() {
         // given
+        val ns = TestCompilationEnv()
         val definition = sampleEffectDefinition.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
             formalArguments = listOf(arg("t", typeName = "T"))
         )
 
         // when
-        val result = convertEffectDefinition(defaultContext(), definition)
+        val result = convertAst(definition, ns)
             .shouldBeTypeOf<EffectDefinition>()
 
         // then
         result.parameters shouldHaveSize 1
         result.parameters.first() should {
             it.name shouldBe "t"
-            it.type shouldBe Type.typeParameter("T")
+            it.type shouldBe Variable("T", 0)
         }
     }
 
     @Test
     fun `type prameters should be resolved in return type`() {
         // given
+        val ns = TestCompilationEnv()
         val definition = sampleEffectDefinition.copy(
             typeParameters = listOf(TypeParameterRef("T", sectionA)),
-            returnTypeRef = TypeNameRef("T", sectionB)
+            returnTypeRef = TypeNameRef(null, null, "T", sectionB)
         )
 
         // when
-        val result = convertEffectDefinition(defaultContext(), definition)
+        val result = convertAst(definition, ns)
             .shouldBeTypeOf<EffectDefinition>()
 
         // then
-        result.returnType shouldBe Type.typeParameter("T")
+        val T = Variable("T", 0)
+        result.type shouldBe Function(
+            listOf(T),
+        )
     }
 
     private val sampleEffectDefinition = ParseEffectDefinition(

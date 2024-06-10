@@ -3,47 +3,29 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.ast
-import gh.marad.chi.core.AnyType
 import gh.marad.chi.core.NameDeclaration
-import gh.marad.chi.core.VariantType
-import gh.marad.chi.core.analyzer.analyze
-import io.kotest.core.spec.style.FunSpec
+import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldBeEmpty
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
+import org.junit.jupiter.api.Test
 
-class AnyTypeSpec : FunSpec({
-    test("should read 'any' type") {
+class AnyTypeSpec {
+    @Test
+    fun `should read 'any' type`() {
         ast(
             """
                 val x: any = 1
             """.trimIndent(), ignoreCompilationErrors = true
         ).shouldBeTypeOf<NameDeclaration>() should {
-            it.expectedType
-                .shouldNotBeNull()
-                .shouldBeTypeOf<AnyType>()
+            it.expectedType shouldBe Type.any
         }
     }
 
-    test("'any' type should be matched by any other type") {
-        val msgs = analyze(ast("val x: any = 1", ignoreCompilationErrors = true))
+    @Test
+    fun `'any' type should be matched by any other type`() {
+        val msgs = messages("val x: any = 1")
         msgs.shouldBeEmpty()
     }
-
-    test("foo") {
-        ast(
-            """
-                data Foo = Foo(i: int)
-                fn f(param: any): Foo { param as Foo }
-                val foo = f(Foo(10))
-            """.trimIndent()
-        ).shouldBeTypeOf<NameDeclaration>() should {
-            it.type.shouldBeTypeOf<VariantType>() should {
-                it.name shouldBe "user/default.Foo"
-            }
-        }
-    }
-
-})
+}

@@ -1,44 +1,41 @@
 package gh.marad.chi.core
 
+import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.ast
-import gh.marad.chi.core.Type.Companion.fn
-import gh.marad.chi.core.Type.Companion.intType
-import gh.marad.chi.core.namespace.CompilationScope
-import gh.marad.chi.core.namespace.ScopeType
-import gh.marad.chi.core.namespace.SymbolType
-import io.kotest.core.spec.style.FunSpec
+import gh.marad.chi.core.namespace.TestCompilationEnv
+import gh.marad.chi.core.types.Type
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
+import org.junit.jupiter.api.Test
 
 @Suppress("unused")
-class ParserSpec : FunSpec({
+class ParserSpec {
 
-    test("should read lambda function invocation expression") {
-        val scope = CompilationScope(ScopeType.Package)
-        ast("({ 1 })()", scope)
+    @Test
+    fun `should read lambda function invocation expression`() {
+        ast("{ 1 }()")
             .shouldBeTypeOf<FnCall>()
             .should {
-                it.function.shouldBeTypeOf<Group>().should { group ->
-                    group.value.shouldBeFn { fn ->
-                        fn.parameters shouldBe emptyList()
-                        fn.returnType shouldBe intType
-                        fn.body.shouldBeBlock { block ->
-                            block.body[0].shouldBeAtom("1", intType)
-                        }
+                it.function.shouldBeTypeOf<Fn>().should { fn ->
+                    fn.parameters shouldBe emptyList()
+                    fn.type shouldBe Type.fn(Type.int)
+                    fn.body.shouldBeBlock { block ->
+                        block.body[0].shouldBeAtom("1", Type.int)
                     }
                 }
                 it.parameters shouldBe emptyList()
             }
     }
 
-    test("should read nested function invocations") {
-        val scope = CompilationScope(ScopeType.Package)
-        scope.addSymbol("a", fn(intType, intType), SymbolType.Local)
-        scope.addSymbol("b", fn(intType, intType), SymbolType.Local)
-        scope.addSymbol("x", intType, SymbolType.Local)
-        ast("a(b(x))", scope)
+    @Test
+    fun `should read nested function invocations`() {
+        val ns = TestCompilationEnv()
+        ns.addSymbolInDefaultPackage("a", Type.fn(Type.int, Type.int))
+        ns.addSymbolInDefaultPackage("b", Type.fn(Type.int, Type.int))
+        ns.addSymbolInDefaultPackage("x", Type.int)
+        ast("a(b(x))", ns)
             .shouldBeTypeOf<FnCall>()
             .should { aFnCall ->
                 aFnCall.parameters
@@ -50,9 +47,9 @@ class ParserSpec : FunSpec({
                             .first()
                             .shouldBeTypeOf<VariableAccess>()
                             .should {
-                                it.name.shouldBe("x")
+                                it.target.name.shouldBe("x")
                             }
                     }
             }
     }
-})
+}
