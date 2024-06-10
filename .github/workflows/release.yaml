@@ -1,0 +1,53 @@
+#on:
+#  push:
+#    tags:
+#      - 'v[0-9]+.*'
+on: push
+
+jobs:
+  create_release:
+    name: Create release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release $${{ github.ref }}
+          draft: false
+          prerelease: false
+  nix_assets:
+    name: Release *nix assets
+    needs: create_release
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      matrix:
+        config:
+          - os: ubuntu-latest
+          - os: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1.2.1
+      - name: Build shadow jar
+        run: ./gradlew shadowJar
+      - name: Run seed with native agent
+        run: native/run_with_agent.sh
+      - name: Build native executable
+        run: native/build.sh
+      - name: Upload release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ./chi
+          asset_name: chi-${{ matrix.config.os }}
+          asset_content_type: application/octet-stream
+  #windows_assets:
