@@ -41,7 +41,7 @@ jobs:
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1.2.1
         with:
-          version: '22.3.0'
+          distribution: 'graalvm'
           java-version: '21'
           components: 'native-image'
       - name: Build shadow jar
