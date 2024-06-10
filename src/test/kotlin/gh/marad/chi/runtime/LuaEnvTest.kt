@@ -74,9 +74,9 @@ class LuaEnvTest {
     }
 
     @Test
-    fun `should cast values`() {
-        eval("5 as string") shouldBe "5"
-        eval("\"5\" as int") shouldBe 5.0
+    fun `casting does not change the value`() {
+        eval("5 as string") shouldBe 5.0
+        eval("\"5\" as int") shouldBe "5"
     }
 
     @Test

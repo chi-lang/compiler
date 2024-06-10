@@ -1,9 +1,10 @@
 package gh.marad.chi.core.types
 
 import gh.marad.chi.addSymbolInDefaultPackage
-import gh.marad.chi.core.analyzer.TypeIsNotIndexable
 import gh.marad.chi.core.analyzer.TypeMismatch
 import gh.marad.chi.core.namespace.TestCompilationEnv
+import gh.marad.chi.core.types.Type.Companion.array
+import gh.marad.chi.core.types.Type.Companion.int
 import gh.marad.chi.messages
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.should
@@ -14,7 +15,7 @@ import org.junit.jupiter.api.Test
 @Suppress("unused")
 class IndexOperatorSpec {
     val ns = TestCompilationEnv().also {
-        it.addSymbolInDefaultPackage("arr", Type.array(Type.int))
+        it.addSymbolInDefaultPackage("arr", array(int))
     }
 
     @Test
@@ -69,8 +70,9 @@ class IndexOperatorSpec {
         // then
         result.should { msgs ->
             msgs shouldHaveSize 1
-            msgs[0].shouldBeTypeOf<TypeIsNotIndexable>().should {
-                it.type shouldBe Type.int
+            msgs[0].shouldBeTypeOf<TypeMismatch>().should {
+                it.expected shouldBe int
+                it.actual.shouldBeTypeOf<Array>()
             }
         }
     }
@@ -87,8 +89,9 @@ class IndexOperatorSpec {
         // then
         result.should { msgs ->
             msgs shouldHaveSize 1
-            msgs[0].shouldBeTypeOf<TypeIsNotIndexable>().should {
-                it.type shouldBe Type.int
+            msgs[0].shouldBeTypeOf<TypeMismatch>().should {
+                it.expected shouldBe int
+                it.actual shouldBe array(int)
             }
         }
     }

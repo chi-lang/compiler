@@ -20,7 +20,7 @@ class TypeResolvingSpec {
         typeTable.addTypeAlias(type)
 
         // when
-        val result = Compiler.resolveType(typeTable, emptyList(), TypeNameRef(null, null, "Type", null))
+        val result = Compiler.resolveType(typeTable, emptyList(), TypeNameRef(null, null, "Type", null), 0)
 
         // then
         result shouldBe type
@@ -29,8 +29,8 @@ class TypeResolvingSpec {
 
     @Test
     fun `should resolve type variables`() {
-        Compiler.resolveType(TypeTable(), listOf("T"), TypeNameRef(null, null, "T", null)) shouldBe Variable("T", 1)
-        Compiler.resolveType(TypeTable(), listOf(), TypeParameterRef("T", null)) shouldBe Variable("T", 1)
+        Compiler.resolveType(TypeTable(), listOf("T"), TypeNameRef(null, null, "T", null), 1) shouldBe Variable("T", 1)
+        Compiler.resolveType(TypeTable(), listOf(), TypeParameterRef("T", null), 1) shouldBe Variable("T", 1)
     }
 
     @Test
@@ -47,7 +47,7 @@ class TypeResolvingSpec {
         )
 
         // when
-        var result = Compiler.resolveType(typeTable, listOf("T"), ref)
+        var result = Compiler.resolveType(typeTable, listOf("T"), ref, 1)
 
         // then
         result shouldBe type
@@ -64,7 +64,7 @@ class TypeResolvingSpec {
         )
 
         // when
-        val result = Compiler.resolveType(TypeTable(), emptyList(), ref)
+        val result = Compiler.resolveType(TypeTable(), emptyList(), ref, 1)
 
         // then
         val T = Variable("T", 1)

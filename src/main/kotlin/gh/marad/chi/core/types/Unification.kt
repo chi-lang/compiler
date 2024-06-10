@@ -72,13 +72,11 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
                         q.map { it.withReplacedVariable(replacer) }
                     }
                     queue = ArrayDeque(updatedQueue)
-                } catch (ex: TypingError) {
+                } catch (ex: CompilerMessage) {
                     // FIXME: this causes weird errors when it finishes because it
                     //        says the first type of the sum type does not match the actual
                     //        I think that Constraint should somehow accumulate the knowledge
                     //        that it comes from sum type comparison for better error message
-                    queue.addFirst(Constraint(expected.lhs, actual, section, constraint.toHistory()))
-                } catch (ex: CompilerMessage) {
                     queue.addFirst(Constraint(expected.lhs, actual, section, constraint.toHistory()))
                 }
             }

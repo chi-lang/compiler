@@ -74,7 +74,7 @@ object Compiler {
             val id = TypeId(packageDefinition.moduleName, packageDefinition.packageName, typeAliasDef.name)
             TypeAlias(
                 id,
-                resolveTypeAndWrapRecursive(tables.localTypeTable, typeSchemeVariables, typeAliasDef.type, id, 0)
+                resolveTypeAndWrapRecursive(tables.localTypeTable, typeSchemeVariables, typeAliasDef.type, id, 1)
             ).also {
                 tables.defineTypeAlias(it)
             }
