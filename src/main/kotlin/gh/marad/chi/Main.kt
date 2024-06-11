@@ -50,24 +50,12 @@ fun main(args: Array<String>) {
 
     val env = LuaEnv(imports)
 
-    val chiHome = System.getenv("CHI_HOME")
-    if (!noStd && chiHome != null) {
-        if (Files.exists(Path.of(chiHome, "lib", "std.chim"))) {
-            val result = env.lua.run(
-                """
-                    chi_load_module("$chiHome/lib/std.chim")
-                """.trimIndent()
-            )
-            if (result != Lua.LuaError.OK) {
-                println("Error loading stdlib: ${env.lua.get().toJavaObject()}")
-            } else {
-                // If no error add additional imports
-                imports.add(Import("std", "lang.option", packageAlias = null, entries = listOf(
-                    Import.Entry("Option", alias = null, section = null)
-                ), section = null))
-            }
-        } else {
-            println("WARN: Missing stdlib. Things might not work as expected!")
+    if (!noStd) {
+        if (findAndLoadStdlib(env)) {
+            // If no error add additional imports
+            imports.add(Import("std", "lang.option", packageAlias = null, entries = listOf(
+                Import.Entry("Option", alias = null, section = null)
+            ), section = null))
         }
     }
 
@@ -132,6 +120,36 @@ fun main(args: Array<String>) {
             exitProcess(1)
         }
     }
+}
+
+fun findAndLoadStdlib(env: LuaEnv): Boolean {
+    val stdLibPath = sequenceOf(
+        // ./lib/std.chim
+        { Path.of("lib", "std.chim") },
+        // $CHI_HOME/lib/std.chim
+        {
+            val chiHome = System.getenv("CHI_HOME")
+            Path.of(chiHome, "lib", "std.chim")
+        }
+    ).map { it() }.firstOrNull { it.exists() }
+
+    if (stdLibPath != null) {
+        val escapedStdLibPath = stdLibPath.absolute().toString().replace("\\", "\\\\")
+        val result = env.lua.run(
+            """
+                chi_load_module("$escapedStdLibPath")
+            """.trimIndent()
+        )
+        if (result != Lua.LuaError.OK) {
+            println("Error loading stdlib: ${env.lua.get().toJavaObject()}")
+        } else {
+            return true
+        }
+    }
+    else {
+        println("WARN: Missing stdlib. Things might not work as expected!")
+    }
+    return false
 }
 
 fun evalModules(env: LuaEnv, modules: java.util.ArrayList<String>) {
