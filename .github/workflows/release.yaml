@@ -36,7 +36,9 @@ jobs:
       matrix:
         config:
           - os: ubuntu-latest
+            name: linux
           - os: macos-latest
+            name: macos
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -64,6 +66,40 @@ jobs:
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
           asset_path: ./chi
-          asset_name: chi-${{ matrix.config.os }}
+          asset_name: chi-${{ matrix.config.name }}
           asset_content_type: application/octet-stream
-  #windows_assets:
+  windows_assets:
+    name: Release Windows assets
+    permissions:
+      contents: write
+    needs: create_release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Checkout stdlib
+        uses: actions/checkout@v4
+        with:
+          repository: 'chi-lang/stdlib'
+          path: 'stdlib'
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1.2.1
+        with:
+          distribution: 'graalvm'
+          java-version: '21'
+          components: 'native-image'
+      - name: Build shadow jar
+        run: ./gradlew.bat shadowJar
+      - name: Run seed with native agent
+        run: native/run_with_agent.bat -m stdlib/std.chim
+      - name: Build native executable
+        run: native/build.bat
+      - name: Upload release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ./chi.exe
+          asset_name: chi-win.exe
+          asset_content_type: application/octet-stream
