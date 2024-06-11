@@ -52,7 +52,6 @@ jobs:
         with:
           distribution: 'graalvm'
           java-version: '21'
-          components: 'native-image'
       - name: Build shadow jar
         run: ./gradlew shadowJar
       - name: Run seed with native agent
