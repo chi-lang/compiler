@@ -123,17 +123,15 @@ fun main(args: Array<String>) {
 }
 
 fun findAndLoadStdlib(env: LuaEnv): Boolean {
-    val stdLibPath = sequenceOf(
-        // ./lib/std.chim
+    val stdLibPath = sequenceOf<() -> Path?>(
         { Path.of("lib", "std.chim") },
-        // $CHI_HOME/lib/std.chim
         {
             val chiHome = System.getenv("CHI_HOME")
             chiHome?.let {
                 Path.of(it, "lib", "std.chim")
             }
         }
-    ).filterNotNull().map { it() }.firstOrNull { it.exists() }
+    ).map { it() }.filterNotNull().firstOrNull { it.exists() }
 
     if (stdLibPath != null) {
         val escapedStdLibPath = stdLibPath.absolute().toString().replace("\\", "\\\\")
