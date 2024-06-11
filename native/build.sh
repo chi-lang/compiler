@@ -7,7 +7,6 @@ $GRAALVM_HOME/bin/native-image \
     --no-fallback \
     -Ob \
     -march=native \
-    --gc=G1 \
     -H:+UnlockExperimentalVMOptions \
     -H:ReflectionConfigurationFiles=config/linux/reflect-config.json \
     -H:JNIConfigurationFiles=config/linux/jni-config.json \
