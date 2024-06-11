@@ -59,18 +59,18 @@ jobs:
       - name: Build native executable
         run: native/build.sh
       - run: |
-          mkdir -p chi-${{ matrix.config.name }}-${{ github.ref }}/lib
-          cp chi chi-${{ matrix.config.name }}-${{ github.ref }}
-          cp stdlib/std.chim chi-${{ matrix.config.name }}-${{ github.ref }}/lib
-          zip -r chi-${{ matrix.config.name }}-${{ github.ref }}.zip chi-${{ matrix.config.name }}-${{ github.ref }}
+          mkdir -p chi-${{ matrix.config.name }}-${{ github.ref_name }}/lib
+          cp chi chi-${{ matrix.config.name }}-${{ github.ref_name }}
+          cp stdlib/std.chim chi-${{ matrix.config.name }}-${{ github.ref_name }}/lib
+          zip -r chi-${{ matrix.config.name }}-${{ github.ref_name }}.zip chi-${{ matrix.config.name }}-${{ github.ref_name }}
       - name: Upload release assets
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: chi-${{ matrix.config.name }}-${{ github.ref }}.zip
-          asset_name: chi-${{ matrix.config.name }}-${{ github.ref }}.zip
+          asset_path: chi-${{ matrix.config.name }}-${{ github.ref_name }}.zip
+          asset_name: chi-${{ matrix.config.name }}-${{ github.ref_name }}.zip
           asset_content_type: application/zip
   windows_assets:
     name: Release Windows assets
@@ -98,12 +98,19 @@ jobs:
         run: native/run_with_agent.bat -m stdlib/std.chim
       - name: Build native executable
         run: native/build.bat
+      - shell: pwsh
+        run: |
+          mkdir chi-${{ matrix.config.name }}-${{ github.ref_name }}
+          mkdir chi-${{ matrix.config.name }}-${{ github.ref_name }}/lib
+          cp chi.exe chi-${{ matrix.config.name }}-${{ github.ref_name }}/
+          cp stdlib/std.chim chi-${{ matrix.config.name }}-${{ github.ref_name }}/lib/
+          7z a chi-${{ matrix.config.name }}-${{ github.ref_name }}.zip chi-${{ matrix.config.name }}-${{ github.ref_name }}
       - name: Upload release assets
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ./chi.exe
-          asset_name: chi-win.exe
-          asset_content_type: application/octet-stream
+          asset_path: chi-${{ matrix.config.name }}-${{ github.ref_name }}.zip
+          asset_name: chi-${{ matrix.config.name }}-${{ github.ref_name }}.zip
+          asset_content_type: application/zip
