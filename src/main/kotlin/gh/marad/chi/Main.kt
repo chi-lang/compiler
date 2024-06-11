@@ -138,11 +138,15 @@ fun evalModules(env: LuaEnv, modules: java.util.ArrayList<String>) {
     modules.forEach {
         val path = Path.of(it)
         if (path.exists()) {
-            env.lua.run(
+            val escapedPath = path.absolute().toString().replace("\\", "\\\\")
+            val result = env.lua.run(
                 """
-                    chi_load_module("${path.absolute()}")
+                    chi_load_module("$escapedPath")
                 """.trimIndent()
             )
+            if (result != Lua.LuaError.OK) {
+                println("Error loading module $path: ${env.lua.get().toJavaObject()}")
+            }
         } else {
             println("File does not exist: $it ")
         }
