@@ -59,15 +59,20 @@ jobs:
         run: native/run_with_agent.sh -m stdlib/std.chim
       - name: Build native executable
         run: native/build.sh
+      - run: |
+          mkdir -p chi-${{ matrix.config.name }}-${{ github.ref }}/lib
+          cp chi chi-${{ matrix.config.name }}-${{ github.ref }}
+          cp stdlib/std.chim chi-${{ matrix.config.name }}-${{ github.ref }}/lib
+          zip -r chi-${{ matrix.config.name }}-${{ github.ref }}.zip chi-${{ matrix.config.name }}-${{ github.ref }}
       - name: Upload release assets
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ./chi
-          asset_name: chi-${{ matrix.config.name }}
-          asset_content_type: application/octet-stream
+          asset_path: chi-${{ matrix.config.name }}-${{ github.ref }}.zip
+          asset_name: chi-${{ matrix.config.name }}-${{ github.ref }}.zip
+          asset_content_type: application/zip
   windows_assets:
     name: Release Windows assets
     permissions:
