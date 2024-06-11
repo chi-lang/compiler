@@ -9,6 +9,7 @@ import org.docopt.Docopt
 import party.iroiro.luajava.Lua
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlin.io.path.absolute
 import kotlin.io.path.exists
 import kotlin.io.path.extension
 import kotlin.io.path.name
@@ -16,12 +17,12 @@ import kotlin.system.exitProcess
 
 const val doc = """
 Usage:
-  chi repl [ARGS ...]
-  chi compile [FILE]
-  chi [options] [FILE] [ARGS ...]
+  chi [-m MODULE]... repl [ARGS ...]
+  chi [-m MODULE]... compile [FILE]
+  chi [-m MODULE]... [options] [FILE] [ARGS ...]
   
 Options:
-  -m --module=MODULE       Module file or directory to load on startup
+  -m --module=MODULE       Module file or directory to load on startup 
   -L --lang-opt=OPT        Language options
   -l                       Show emitted lua code
   --print-ast              Prints the AST for given input file and exit
@@ -36,8 +37,8 @@ fun main(args: Array<String>) {
     val opts = Docopt(doc).parse(*args)
     val programArgs = opts["ARGS"] as ArrayList<String>
     val file = opts["FILE"] as String?
-    //val modules = opts["--module"] as ArrayList<String>
-    val modules = ArrayList<String>()
+    val modules = opts["--module"] as ArrayList<String>?
+    //val modules = ArrayList<String>()
 
     val imports = mutableListOf<Import>()
     imports.add(Import("std", "lang", packageAlias = null, entries = listOf(
@@ -74,7 +75,9 @@ fun main(args: Array<String>) {
         }
     }
 
-    evalModules(env, modules)
+    if (modules != null) {
+        evalModules(env, modules)
+    }
 
     if (opts["compile"] == true) {
         val path = Path.of(file!!)
@@ -139,8 +142,11 @@ fun evalModules(env: LuaEnv, modules: java.util.ArrayList<String>) {
     modules.forEach {
         val path = Path.of(it)
         if (path.exists()) {
-            println(path.extension)
-            env.eval(Files.readString(path))
+            env.lua.run(
+                """
+                    chi_load_module("${path.absolute()}")
+                """.trimIndent()
+            )
         } else {
             println("File does not exist: $it ")
         }
