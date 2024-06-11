@@ -5,6 +5,7 @@
     --report-unsupported-elements-at-runtime ^
     --initialize-at-run-time=party.iroiro ^
     --no-fallback ^
+    -H:+UnlockExperimentalVMOptions ^
     -H:ReflectionConfigurationFiles=config/reflect-config.json ^
     -H:JNIConfigurationFiles=config/jni-config.json ^
     -H:DynamicProxyConfigurationFiles=config/proxy-config.json ^

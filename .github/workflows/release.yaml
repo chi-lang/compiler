@@ -100,11 +100,11 @@ jobs:
         run: native/build.bat
       - shell: pwsh
         run: |
-          mkdir chi-${{ matrix.config.name }}-${{ github.ref_name }}
-          mkdir chi-${{ matrix.config.name }}-${{ github.ref_name }}/lib
-          cp chi.exe chi-${{ matrix.config.name }}-${{ github.ref_name }}/
-          cp stdlib/std.chim chi-${{ matrix.config.name }}-${{ github.ref_name }}/lib/
-          7z a chi-${{ matrix.config.name }}-${{ github.ref_name }}.zip chi-${{ matrix.config.name }}-${{ github.ref_name }}
+          mkdir chi-win-${{ github.ref_name }}
+          mkdir chi-win-${{ github.ref_name }}/lib
+          cp chi.exe chi-win-${{ github.ref_name }}/
+          cp stdlib/std.chim chi-win-${{ github.ref_name }}/lib/
+          7z a chi-win-${{ github.ref_name }}.zip chi-win-${{ github.ref_name }}
       - name: Upload release assets
         uses: actions/upload-release-asset@v1
         env:
