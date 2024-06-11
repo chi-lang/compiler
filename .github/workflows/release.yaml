@@ -28,6 +28,8 @@ jobs:
           prerelease: false
   nix_assets:
     name: Release *nix assets
+    permissions:
+      contents: write
     needs: create_release
     runs-on: ${{ matrix.config.os }}
     strategy:
@@ -37,7 +39,12 @@ jobs:
           - os: macos-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+      - name: Checkout stdlib
+        uses: actions/checkout@v4
+        with:
+          repository: 'chi-lang/stdlib'
+          path: 'stdlib'
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1.2.1
         with:
@@ -47,7 +54,7 @@ jobs:
       - name: Build shadow jar
         run: ./gradlew shadowJar
       - name: Run seed with native agent
-        run: native/run_with_agent.sh
+        run: native/run_with_agent.sh -m stdlib/std.chim
       - name: Build native executable
         run: native/build.sh
       - name: Upload release assets
