@@ -26,6 +26,7 @@ Options:
   -L --lang-opt=OPT        Language options
   -l                       Show emitted lua code
   --print-ast              Prints the AST for given input file and exit
+  --no-std                 Prevents loading stdlib
 
 Examples:
   chi -m std.chim program.chi
@@ -38,7 +39,7 @@ fun main(args: Array<String>) {
     val programArgs = opts["ARGS"] as ArrayList<String>
     val file = opts["FILE"] as String?
     val modules = opts["--module"] as ArrayList<String>?
-    //val modules = ArrayList<String>()
+    val noStd = opts["--no-std"] as Boolean
 
     val imports = mutableListOf<Import>()
     imports.add(Import("std", "lang", packageAlias = null, entries = listOf(
@@ -50,12 +51,7 @@ fun main(args: Array<String>) {
     val env = LuaEnv(imports)
 
     val chiHome = System.getenv("CHI_HOME")
-    if (chiHome != null) {
-//        env.setModuleLoader(
-//            ModuleLoader(
-//                LuaCompiler(env), Path.of(chiHome,"lib")
-//            )
-//        )
+    if (!noStd && chiHome != null) {
         if (Files.exists(Path.of(chiHome, "lib", "std.chim"))) {
             val result = env.lua.run(
                 """
