@@ -71,24 +71,21 @@ fun occursIn(variable: Variable, type: Type): Boolean = when (type) {
 
 ---
 
-## BUG-03 [CRITICAL] Missing `throw` in AtomReader — unrecognized string parts silently dropped
+## BUG-03 [CRITICAL] ~~Missing `throw` in AtomReader — unrecognized string parts silently dropped~~ ALREADY FIXED
+
+**Status:** The `throw` keyword is already present in the current codebase at `AtomReader.kt:81`.
+The bug report was written against an older version or the fix was applied before this review.
 
 **File:** `src/main/kotlin/gh/marad/chi/core/parser/readers/AtomReader.kt:81`
 
-**What happens:** The `else` branch in string part parsing creates a `CompilerMessage` but
-never throws it:
-
+**Current code (correct):**
 ```kotlin
-else -> CompilerMessage.from("Unsupported string part: $part!", getSection(source, ctx))
+else -> throw CompilerMessage.from("Unsupported string part: $part!", getSection(source, ctx))
 ```
 
-Compare with correct usage elsewhere (e.g., line 24-26 in the same file where
-`throw CompilerMessage.from(...)` is used).
-
-**User impact:** Any unrecognized string escape or part type is silently dropped from the
-string value. The user gets a truncated/corrupted string with no error message.
-
-**Fix guidance:** Add `throw` before `CompilerMessage.from(...)`. This is a one-word fix.
+**Note:** No existing tests cover this defensive branch. The `else` branch cannot be
+triggered through normal Chi source with the current ANTLR grammar — it guards against
+future grammar changes introducing new string part token types.
 
 ---
 
