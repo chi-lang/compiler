@@ -261,7 +261,7 @@ class LuaEmitter(val program: Program) {
         if (topLevel) {
             emitCode("function __P_.$tmpName(")
         } else {
-            emitCode("function $tmpName(")
+            emitCode("local function $tmpName(")
         }
         emitCode(term.parameters.joinToString(",") { it.name })
         emitCode(") ")
