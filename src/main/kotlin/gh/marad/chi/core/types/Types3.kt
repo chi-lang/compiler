@@ -256,9 +256,9 @@ data class Recursive(
 
     override fun withAddedTypeIds(ids: List<TypeId>): Type {
         return if (type is HasTypeId) {
-            type.withAddedTypeIds(ids)
+            copy(type = type.withAddedTypeIds(ids))
         } else {
-            type
+            this
         }
     }
 
