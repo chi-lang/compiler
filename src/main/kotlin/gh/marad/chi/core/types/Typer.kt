@@ -347,7 +347,11 @@ class Typer(
                 val result = ctx.freshVariable(level)
                 val lhsType = typeTerm(term.left, level, constraints)
                 val rhsType = typeTerm(term.right, level, constraints)
-                if (term.op in listOf("<", "<=", ">", ">=", "==", "!=", "&&", "||")) {
+                if (term.op in listOf("&&", "||")) {
+                    constraints.add(Constraint(Type.bool, lhsType, term.left.sourceSection, emptyList()))
+                    constraints.add(Constraint(Type.bool, rhsType, term.right.sourceSection, emptyList()))
+                    Type.bool
+                } else if (term.op in listOf("<", "<=", ">", ">=", "==", "!=")) {
                     constraints.add(Constraint(lhsType, rhsType, term.right.sourceSection, emptyList()))
                     Type.bool
                 } else {
