@@ -263,7 +263,7 @@ data class ForLoop(val vars: List<String>, val iterable: Expression, val state: 
         visitor.visitForLoop(this)
 
     override fun children(): List<Expression> =
-        listOf(iterable, body)
+        listOfNotNull(iterable, state, init, body)
 }
 
 data class Break(override val sourceSection: ChiSource.Section?) : Expression {

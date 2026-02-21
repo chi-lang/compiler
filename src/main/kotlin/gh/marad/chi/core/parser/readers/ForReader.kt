@@ -41,5 +41,5 @@ data class ParseFor(
     }
 
     override fun children(): List<ParseAst> =
-        listOf(iterable, body)
+        listOfNotNull(iterable, state, init, body)
 }
