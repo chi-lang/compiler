@@ -2,6 +2,7 @@ package gh.marad.chi.core.analyzer
 
 import gh.marad.chi.core.parser.ChiSource
 import gh.marad.chi.core.types.Type
+import gh.marad.chi.core.types.Variable
 
 enum class Level { ERROR }
 
@@ -98,5 +99,12 @@ data class MemberDoesNotExist(val type: Type, val member: String, override val c
     override val level: Level = Level.ERROR
     override val message: String
         get() = "Type $type does not have field '$member'. If this should be a function call then consider adding explicit type."
+}
+
+data class InfiniteType(val variable: Variable, val type: Type, override val codePoint: CodePoint?) :
+    Message {
+    override val level: Level = Level.ERROR
+    override val message: String =
+        "Infinite type: cannot construct the infinite type '$variable' = '$type' at $codePoint"
 }
 

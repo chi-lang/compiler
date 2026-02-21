@@ -2,6 +2,11 @@ package gh.marad.chi.core.types
 
 import gh.marad.chi.core.analyzer.*
 
+fun occursIn(variable: Variable, type: Type): Boolean = when (type) {
+    is Variable -> type == variable
+    else -> type.children().any { occursIn(variable, it) }
+}
+
 fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
     var queue = ArrayDeque(constraints.sortedBy { it.expected !is Variable })
     val solutions = mutableListOf<Pair<Variable, Type>>()
@@ -24,12 +29,18 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
                 queue.addFirst(Constraint(expected, actual.unfold(), section, constraint.toHistory()))
             }
             expected is Variable -> {
+                if (occursIn(expected, actual)) {
+                    throw CompilerMessage(InfiniteType(expected, actual, section.toCodePoint()))
+                }
                 solutions.add(expected to actual)
                 val replacer = VariableReplacer(expected, actual)
                 queue = ArrayDeque(queue.map { it.withReplacedVariable(replacer) })
             }
 
             actual is Variable -> {
+                if (occursIn(actual, expected)) {
+                    throw CompilerMessage(InfiniteType(actual, expected, section.toCodePoint()))
+                }
                 solutions.add(actual to expected)
                 val replacer = VariableReplacer(actual, expected)
                 queue = ArrayDeque(queue.map { it.withReplacedVariable(replacer) })
