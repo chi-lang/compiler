@@ -205,13 +205,28 @@ class LuaEmitter(val program: Program) {
         name.replace(".", "_")
 
 
+    private fun escapeLuaString(value: String): String {
+        val sb = StringBuilder(value.length)
+        for (ch in value) {
+            when (ch) {
+                '\\' -> sb.append("\\\\")
+                '\'' -> sb.append("\\'")
+                '\n' -> sb.append("\\n")
+                '\r' -> sb.append("\\r")
+                '\t' -> sb.append("\\t")
+                '\u0000' -> sb.append("\\0")
+                else -> sb.append(ch)
+            }
+        }
+        return sb.toString()
+    }
+
+
     private fun emitAtom(term: Atom): String {
         val value = when (term.type) {
             string -> {
-                // TODO: this should escape all the escaped codes like \n, ...
-                //"\"${term.value}\""
                 val tmp = nextTmpName()
-                emitCode("local $tmp = java.new(String,'${term.value}');")
+                emitCode("local $tmp = java.new(String,'${escapeLuaString(term.value)}');")
                 tmp
             }
             Type.unit -> {

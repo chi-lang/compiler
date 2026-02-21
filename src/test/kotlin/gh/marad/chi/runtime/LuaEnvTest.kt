@@ -139,4 +139,40 @@ class LuaEnvTest {
 
     }
 
+    @Test
+    fun `string with newline should evaluate correctly`() {
+        eval("""
+            "hello\nworld"
+        """.trimIndent()) shouldBe "hello\nworld"
+    }
+
+    @Test
+    fun `string with backslash should evaluate correctly`() {
+        eval("""
+            "path\\to\\file"
+        """.trimIndent()) shouldBe "path\\to\\file"
+    }
+
+    @Test
+    fun `string with tab should evaluate correctly`() {
+        eval("""
+            "col1\tcol2"
+        """.trimIndent()) shouldBe "col1\tcol2"
+    }
+
+    @Test
+    fun `string with single quote character should evaluate correctly`() {
+        // Chi strings use double quotes, so a single quote is just a regular character
+        eval("""
+            "it's a test"
+        """.trimIndent()) shouldBe "it's a test"
+    }
+
+    @Test
+    fun `plain string without special characters should work unchanged`() {
+        eval("""
+            "hello world"
+        """.trimIndent()) shouldBe "hello world"
+    }
+
 }

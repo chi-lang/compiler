@@ -78,7 +78,7 @@ internal object AtomReader {
                 part.ESCAPED_CR() != null -> sb.append("\r")
                 part.ESCAPED_SLASH() != null -> sb.append("\\")
                 part.ESCAPED_TAB() != null -> sb.append("\t")
-                else -> CompilerMessage.from("Unsupported string part: $part!", getSection(source, ctx))
+                else -> throw CompilerMessage.from("Unsupported string part: $part!", getSection(source, ctx))
             }
         }
 
