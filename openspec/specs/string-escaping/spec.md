@@ -1,5 +1,3 @@
-## ADDED Requirements
-
 ### Requirement: Lua emitter SHALL escape special characters in string literals
 When emitting a Chi string literal as a Lua single-quoted string, the emitter SHALL escape all characters that would break Lua string syntax or produce incorrect values. At minimum: backslash, single quote, newline, carriage return, tab, and null byte.
 
