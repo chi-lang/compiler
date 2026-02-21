@@ -56,6 +56,7 @@ class CheckNamesVisitor(private val node: ParseAst, val compileTables: CompileTa
         super.visitEffectDefinition(parseEffectDefinition)
     }
     override fun visitHandle(parseHandle: ParseHandle) {
+        parseHandle.body.accept(this)
         parseHandle.cases.forEach { case ->
             withNewScope {
                 definedNames.add("resume")

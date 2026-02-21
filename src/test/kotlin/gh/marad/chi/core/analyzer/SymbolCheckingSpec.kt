@@ -154,6 +154,57 @@ class SymbolCheckingSpec {
             .name shouldBe "x"
     }
 
+    @Test
+    fun `should detect undefined name in handle body`() {
+        // when
+        val result = messages("""
+            effect myEffect(x: int): int
+            handle {
+                undefinedVar
+            } with {
+                myEffect(a) -> resume(a)
+            }
+        """.trimIndent())
+
+        // then
+        result shouldHaveSize 1
+        result.first().shouldBeTypeOf<UnrecognizedName>()
+            .name shouldBe "undefinedVar"
+    }
+
+    @Test
+    fun `should accept defined name in handle body`() {
+        // when
+        val result = messages("""
+            effect myEffect(x: int): int
+            val x = 5
+            handle {
+                x
+            } with {
+                myEffect(a) -> resume(a)
+            }
+        """.trimIndent())
+
+        // then
+        result shouldHaveSize 0
+    }
+
+    @Test
+    fun `should accept resume and case argument names inside handler cases`() {
+        // when
+        val result = messages("""
+            effect myEffect(arg: int): int
+            handle {
+                myEffect(42)
+            } with {
+                myEffect(a) -> resume(a)
+            }
+        """.trimIndent())
+
+        // then
+        result shouldHaveSize 0
+    }
+
     //@Test
     fun `should not allow using non-public fields in type from other module`() {
         val ns = TestCompilationEnv()
