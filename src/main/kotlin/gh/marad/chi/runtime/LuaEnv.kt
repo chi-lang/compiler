@@ -250,23 +250,20 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                 }
             end
             
-            function chi_handle_effect(co, args, handlers)
-                local ignored, effectName, args = coroutine.resume(co, args)
-                if (coroutine.status(co) == "dead") then
-                    -- in this case it's a result array
-                    print(effectName)
-                    return effectName[1] 
+            function chi_handle_effect(co, resumeValue, handlers)
+                local ok, effectName, effectArgs = coroutine.resume(co, resumeValue)
+                if not ok then error(effectName) end
+                if coroutine.status(co) == "dead" then
+                    return effectName
                 end
-
                 local handler = handlers[effectName]
-                local newArgs
-                if (handler ~= nil) then 
-                    isResult, newArgs = handler(args)
-                    if isResult then return newArgs[1] end
+                if handler ~= nil then
+                    local result = handler(effectArgs)
+                    return chi_handle_effect(co, result, handlers)
                 else
-                    newArgs = coroutine.yield(effectName, args)
+                    local outerResult = coroutine.yield(effectName, effectArgs)
+                    return chi_handle_effect(co, outerResult, handlers)
                 end
-                return chi_handle_effect(co, newArgs, handlers)
             end    
         """.trimIndent())
         if (result != Lua.LuaError.OK) {

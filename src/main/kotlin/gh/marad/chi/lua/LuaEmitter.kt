@@ -153,49 +153,44 @@ class LuaEmitter(val program: Program) {
                 }
                 "nil"
             }
-//            is Handle -> {
-//                val tmpName = nextTmpName()
-//
-//                emitCode("local ${tmpName}_handlers={")
-//                val iter = term.cases.iterator()
-//                while (iter.hasNext()) {
-//                    val case = iter.next()
-//                    val name = normaliseEffectName(qualifiedName(case.moduleName, case.packageName, case.effectName))
-//                    emitCode(name)
-//                    emitCode("=function(args) ")
-//                    emitCode("local function resume(x) return false, x end;")
-//                    case.argumentNames.forEachIndexed { index, name ->
-//                        emitCode("local $name=args[${index}];")
-//                    }
-//
-//                    insideFunction {
-//                        val result = emitExpr(case.body, needResult = true)
-//                        emitCode("return $result")
-//                    }
-//                    emitCode(" end")
-//                    if (iter.hasNext()) {
-//                        emitCode(",")
-//                    }
-//                }
-//                emitCode("};")
-//
-//                emitCode("local ${tmpName}_body=coroutine.create(function() ")
-//                val result = emitExpr(term.body, needResult = true)
-//                emitCode("return $result;")
-//                emitCode(" end);")
-//                emitCode("local ${tmpName}=chi_handle_effect(${tmpName}_body,{},${tmpName}_handlers);")
-//                tmpName
-//            }
-//            is EffectDefinition -> {
-//                val name = qualifiedName(term.moduleName, term.packageName, term.name)
-//                emitCode("function ")
-//                emitCode(name)
-//                emitCode("(...) return coroutine.yield(\"")
-//                emitCode(normaliseEffectName(name))
-//                emitCode("\", {...})")
-//                emitCode(" end;")
-//                "nil"
-//            }
+            is Handle -> {
+                val tmpName = nextTmpName()
+
+                emitCode("local ${tmpName}_handlers={")
+                val iter = term.cases.iterator()
+                while (iter.hasNext()) {
+                    val case = iter.next()
+                    val name = normaliseEffectName(localQualifiedName(case.moduleName, case.packageName, case.effectName))
+                    emitCode("$name=function(args) ")
+                    emitCode("local function resume(x) return x end;")
+                    case.argumentNames.forEachIndexed { index, argName ->
+                        emitCode("local $argName=args[${index + 1}];")
+                    }
+
+                    insideFunction {
+                        val result = emitExpr(case.body)
+                        emitCode("return $result")
+                    }
+                    emitCode(" end")
+                    if (iter.hasNext()) {
+                        emitCode(",")
+                    }
+                }
+                emitCode("};")
+
+                emitCode("local ${tmpName}_body=coroutine.create(function() ")
+                val result = emitExpr(term.body)
+                emitCode("return $result;")
+                emitCode(" end);")
+                emitCode("local ${tmpName}=chi_handle_effect(${tmpName}_body,nil,${tmpName}_handlers);")
+                tmpName
+            }
+            is EffectDefinition -> {
+                val varName = topLevelName(term.name)
+                val yieldKey = normaliseEffectName(localQualifiedName(term.moduleName, term.packageName, term.name))
+                emitCode("function $varName(...) return coroutine.yield(\"$yieldKey\", {...}) end;")
+                "nil"
+            }
             else -> TODO("Term $term not supported yet!")
         }
     }
