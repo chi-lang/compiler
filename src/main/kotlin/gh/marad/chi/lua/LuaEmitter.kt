@@ -297,7 +297,9 @@ class LuaEmitter(val program: Program) {
             val codeParam = term.parameters.first()
             if (codeParam is Atom && codeParam.type == string) {
                 val luaCode = codeParam.value.replace("\n", ";")
-                return luaCode
+                val tmpName = nextTmpName()
+                emitCode("local $tmpName=$luaCode;")
+                return tmpName
             } else {
                 TODO("luaExpr function requires string parameter verbatim (not a variable)")
             }
