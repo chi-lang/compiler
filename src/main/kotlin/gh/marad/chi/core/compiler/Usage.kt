@@ -68,7 +68,7 @@ class UsageMarker : ExpressionVisitor<Unit> {
 
     override fun visitBlock(block: Block) {
         block.body.lastOrNull()?.let {
-            it.used = true
+            it.used = block.used
         }
         visitChildren(block)
     }

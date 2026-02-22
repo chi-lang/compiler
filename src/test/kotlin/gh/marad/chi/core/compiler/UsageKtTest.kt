@@ -4,6 +4,7 @@ import gh.marad.chi.addSymbolInDefaultPackage
 import gh.marad.chi.addTypeDefinition
 import gh.marad.chi.ast
 import gh.marad.chi.core.*
+import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.namespace.TestCompilationEnv
 import gh.marad.chi.core.types.Type
 import gh.marad.chi.core.types.TypeId
@@ -11,24 +12,36 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 
 
 class UsageKtTest {
     @Test
-    fun `blocks should mark last expression as used`() {
-        // given
+    fun `used block should mark last expression as used`() {
+        // given: if-else assigned to variable - both branches are used blocks
         val expr = ast(
             """
-                {
-                   5
-                   "hello"
+                val x = if (true) {
+                    5
+                    "hello"
+                } else {
+                    "world"
                 }
             """.trimIndent()
-        ).shouldBeTypeOf<Fn>()
+        ).shouldBeTypeOf<NameDeclaration>()
 
-        // then
-        expr.body.body[0].used shouldBe false
-        expr.body.body[1].used shouldBe true
+        // when
+        val ifElse = expr.value.shouldBeTypeOf<IfElse>()
+        val thenBlock = ifElse.thenBranch.shouldBeTypeOf<Block>()
+        val elseBlock = ifElse.elseBranch.shouldBeTypeOf<Block>()
+
+        // then: branches are used, so last expression in each branch should be used
+        thenBlock.used shouldBe true
+        thenBlock.body[0].used shouldBe false
+        thenBlock.body[1].used shouldBe true
+        elseBlock.used shouldBe true
+        elseBlock.body.last().used shouldBe true
     }
 
     @Test
@@ -109,5 +122,50 @@ class UsageKtTest {
         // when
         val ret = expr.body.body.last().shouldBeTypeOf<Return>()
         ret.value?.used shouldBe true
+    }
+
+    // BUG-12 regression: visitBlock should propagate block.used, not unconditionally set true
+    @Test
+    fun `unused block should not mark last expression as used`() {
+        // given: a bare lambda `{ ... }` parses as Fn whose body Block has used=false
+        val expr = ast(
+            """
+                {
+                   5
+                   "hello"
+                }
+            """.trimIndent()
+        ).shouldBeTypeOf<Fn>()
+
+        // then: the Fn body block is not used, so last expression should also be not used
+        expr.body.used shouldBe false
+        expr.body.body[0].used shouldBe false
+        expr.body.body[1].used shouldBe false  // BUG: currently true due to unconditional assignment
+    }
+
+    @Test
+    fun `empty block should not error`() {
+        // given: if-else with empty blocks should not crash in visitBlock
+        assertDoesNotThrow {
+            ast("val x = if (true) {} else {}").shouldBeTypeOf<NameDeclaration>()
+        }
+    }
+
+    @Test
+    fun `is check on type variable in unused block should compile without error`() {
+        // given: function body block is not used, so 'x is T' (last expr) gets used=false
+        // visitIs should NOT throw because the result is not consumed
+        assertDoesNotThrow {
+            ast("fn foo[T](x: T): bool { x is T }")
+        }
+    }
+
+    @Test
+    fun `is check on type variable in used context should still error`() {
+        // given: 'x is T' assigned to a variable, so Is.used=true
+        // visitIs should throw CompilerMessage because type variable check result is consumed
+        assertThrows<CompilerMessage> {
+            ast("fn foo[T](x: T): unit { val y: bool = x is T }")
+        }
     }
 }
