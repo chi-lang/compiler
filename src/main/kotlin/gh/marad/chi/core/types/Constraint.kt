@@ -2,7 +2,7 @@ package gh.marad.chi.core.types
 
 import gh.marad.chi.core.parser.ChiSource
 
-private const val debug = true
+private const val debug = false
 
 data class Constraint(val expected: Type, val actual: Type, val section: ChiSource.Section?, val history: List<Constraint>) {
     private var from: StackTraceElement? = run {
