@@ -4,6 +4,7 @@ $GRAALVM_HOME/bin/native-image \
     -H:+ReportExceptionStackTraces \
     --report-unsupported-elements-at-runtime \
     --initialize-at-run-time=party.iroiro \
+    --enable-native-access=ALL-UNNAMED \
     --no-fallback \
     -Ob \
     -march=native \
