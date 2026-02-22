@@ -164,7 +164,7 @@ data class Sum(val ids: List<TypeId>, val lhs: Type, val rhs: Type, val typePara
             return types.reduce { a, b -> Sum(finalId.toMutableList(), a, b, typeParams)}
         }
 
-        private fun listTypes(type: Type): Set<Type> = when(type) {
+        internal fun listTypes(type: Type): Set<Type> = when(type) {
             is Sum -> listTypes(type.lhs) + listTypes(type.rhs)
             else -> setOf(type)
         }

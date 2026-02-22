@@ -188,4 +188,73 @@ class OccursCheckTest {
         // TestEnv.eval returns null when compilation fails (ErrorStrategy.PRINT)
         TestEnv.eval("val f = { x -> x(x) }").shouldBeNull()
     }
+
+    // ========================================
+    // Sum-type widening tests
+    // ========================================
+
+    @Test
+    fun `unify should accept variable as direct branch of sum type (widening)`() {
+        val v = Variable("T", 0)
+        // 'T = Sum('T, unit) — variable is a direct branch, valid widening
+        val sumType = Sum(emptyList(), v, Type.unit)
+        val constraint = Constraint(v, sumType, null, emptyList())
+        // Should NOT throw — this is valid widening
+        val solutions = unify(listOf(constraint))
+        solutions.any { it.first == v } shouldBe true
+    }
+
+    @Test
+    fun `asOption function should compile without errors`() {
+        messages("""
+            type Option[T] = T | unit
+            fn asOption[T](value: T): Option[T] { value }
+        """.trimIndent()).shouldBeEmpty()
+    }
+
+    @Test
+    fun `map over Option should compile without errors`() {
+        messages("""
+            type Option[T] = T | unit
+            fn map[T,R](opt: Option[T], f: (T) -> R): Option[R] {
+                if opt is unit { unit } else { opt is T
+                f(opt) }
+            }
+        """.trimIndent()).shouldBeEmpty()
+    }
+
+    @Test
+    fun `ifPresent over Option should compile without errors`() {
+        messages("""
+            type Option[T] = T | unit
+            fn ifPresent[T](opt: Option[T], f: (T) -> unit) {
+                if opt is unit { unit } else { opt is T
+                f(opt) }
+            }
+        """.trimIndent()).shouldBeEmpty()
+    }
+
+    // ========================================
+    // Regression: genuine infinite types still rejected
+    // ========================================
+
+    @Test
+    fun `self-application should still produce infinite type error after widening fix`() {
+        messages("val f = { x -> x(x) }").should { msgs ->
+            msgs shouldHaveSize 1
+            msgs[0].shouldBeTypeOf<InfiniteType>()
+        }
+    }
+
+    @Test
+    fun `unify should reject variable nested inside function type within sum`() {
+        val v = Variable("T", 0)
+        // 'T = Sum(Function('T, int), unit) — variable nested in function, genuine infinite type
+        val fnType = Function(listOf(v, Type.int))
+        val sumType = Sum(emptyList(), fnType, Type.unit)
+        val constraint = Constraint(v, sumType, null, emptyList())
+        assertThrows<CompilerMessage> {
+            unify(listOf(constraint))
+        }.msg.shouldBeTypeOf<InfiniteType>()
+    }
 }

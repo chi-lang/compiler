@@ -7,6 +7,18 @@ fun occursIn(variable: Variable, type: Type): Boolean = when (type) {
     else -> type.children().any { occursIn(variable, it) }
 }
 
+fun occursInExcludingSumBranches(variable: Variable, type: Type): Boolean = when (type) {
+    is Variable -> type == variable
+    is Sum -> {
+        // Don't count the variable as "occurring" if it's just a direct branch.
+        // Only flag if it occurs INSIDE a non-sum child.
+        val branches = Sum.listTypes(type)
+        val otherBranches = branches - variable
+        otherBranches.any { occursIn(variable, it) }
+    }
+    else -> type.children().any { occursIn(variable, it) }
+}
+
 fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
     var queue = ArrayDeque(constraints.sortedBy { it.expected !is Variable })
     val solutions = mutableListOf<Pair<Variable, Type>>()
@@ -29,7 +41,7 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
                 queue.addFirst(Constraint(expected, actual.unfold(), section, constraint.toHistory()))
             }
             expected is Variable -> {
-                if (occursIn(expected, actual)) {
+                if (occursInExcludingSumBranches(expected, actual)) {
                     throw CompilerMessage(InfiniteType(expected, actual, section.toCodePoint()))
                 }
                 solutions.add(expected to actual)
@@ -38,7 +50,7 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
             }
 
             actual is Variable -> {
-                if (occursIn(actual, expected)) {
+                if (occursInExcludingSumBranches(actual, expected)) {
                     throw CompilerMessage(InfiniteType(actual, expected, section.toCodePoint()))
                 }
                 solutions.add(actual to expected)
