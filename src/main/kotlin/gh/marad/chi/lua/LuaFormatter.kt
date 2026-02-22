@@ -2,7 +2,7 @@ package gh.marad.chi.lua
 
 fun formatLuaCode(luaCode: String): String {
     val statements = luaCode
-        .replace("function[^(]*\\([^)]*\\)|do|then".toRegex()) { result ->
+        .replace("function[^(]*\\([^)]*\\)|\\bdo\\b|\\bthen\\b".toRegex()) { result ->
             result.value + "\n"
         }
         .replace("\\bend\\b".toRegex()) { result ->
