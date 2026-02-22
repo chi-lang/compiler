@@ -14,7 +14,7 @@ abstract class VariableMapper : TypeVisitor<Type> {
     override fun visitPrimitive(primitive: Primitive): Type = primitive
 
     override fun visitFunction(function: Function): Type =
-        Function(function.types.map { it.accept(this) })
+        function.copy(types = function.types.map { it.accept(this) })
 
     override fun visitRecord(record: Record): Type =
         record.copy(fields = record.fields.map {
