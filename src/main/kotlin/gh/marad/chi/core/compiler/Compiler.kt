@@ -179,6 +179,18 @@ object Compiler {
         )
     }
 
+    private fun findTypeVariables(type: Type, paramNames: List<String>): List<Variable> {
+        val found = mutableMapOf<String, Variable>()
+        fun walk(t: Type) {
+            if (t is Variable && t.name in paramNames && t.name !in found) {
+                found[t.name] = t
+            }
+            t.children().forEach { walk(it) }
+        }
+        walk(type)
+        return paramNames.map { found[it] ?: Variable(it, 1) }
+    }
+
     private fun createRecursiveVariable(id: TypeId) = Variable(id.toString(), -1)
     private fun resolveTypeAndWrapRecursive(typeTable: TypeTable, typeSchemeVariables: Collection<String>, ref: TypeRef, id: TypeId, level: Int): Type {
         val variable = createRecursiveVariable(id)
@@ -257,7 +269,7 @@ object Compiler {
                 if (params.isNotEmpty() && params.size != typeParamNames.size) {
                     throw CompilerMessage.from("Provided type parameters count (${params.size}) is different then expected (${typeParamNames.size})", ref.section)
                 }
-                val replacements = typeParamNames.map { Variable(it, level) }.zip(params)
+                val replacements = findTypeVariables(base, typeParamNames).zip(params)
                 mapType(base, replacements)
             }
             is FunctionTypeRef -> {

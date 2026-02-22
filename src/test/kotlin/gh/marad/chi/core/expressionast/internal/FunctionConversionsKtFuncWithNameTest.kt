@@ -95,7 +95,7 @@ class FunctionConversionsKtFuncWithNameTest {
         fn.shouldBeTypeOf<NameDeclaration>().value
             .shouldBeTypeOf<Fn>().should {
                 it.body.body.first().shouldBeTypeOf<NameDeclaration>()
-                    .expectedType shouldBe Variable("T", 3)
+                    .expectedType shouldBe Variable("T", 0)
             }
     }
 

@@ -38,6 +38,8 @@ class ExprConversionVisitor(
     private val typeTable = tables.localTypeTable
     private var currentFnSymbolTable: FnSymbolTable? = null
     private var currentTypeSchemeVariables = emptyList<String>()
+    private var typeSchemeLevel: Int? = null
+    private val effectiveTypeLevel get() = typeSchemeLevel ?: currentTypeLevel
     private var tempVarGenerator = TempVarGenerator()
     private var weaveContext = WeaveContext()
     private var currentTypeLevel = 0
@@ -73,7 +75,7 @@ class ExprConversionVisitor(
         val defaultArgs = mutableMapOf<String, Expression>()
         val (params, body) = withFnSymbolTable(fnSymbolTable) {
             val params = parseLambda.formalArguments.map { argument ->
-                val type = argument.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it, currentTypeLevel) }
+                val type = argument.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it, effectiveTypeLevel) }
                 argument.defaultValue?.let { defaultArgs.put(argument.name, visit(it)) }
                 fnSymbolTable.addArgument(argument.name, type)
                 FnParam(argument.name, type, argument.section)
@@ -107,13 +109,15 @@ class ExprConversionVisitor(
         val fnSymbolTable = FnSymbolTable(currentFnSymbolTable)
 
         val prevTypeSchemeVariables = currentTypeSchemeVariables
+        val prevTypeSchemeLevel = typeSchemeLevel
         currentTypeSchemeVariables = parseFuncWithName.typeParameters.map { it.name }
+        typeSchemeLevel = currentTypeLevel
 
         val defaultArgs = mutableMapOf<String, Expression>()
 
         val (params, body) = withFnSymbolTable(fnSymbolTable) {
             val params = parseFuncWithName.formalArguments.map { argument ->
-                val type = resolveType(typeTable, currentTypeSchemeVariables, argument.typeRef!!, currentTypeLevel)
+                val type = resolveType(typeTable, currentTypeSchemeVariables, argument.typeRef!!, effectiveTypeLevel)
                 argument.defaultValue?.let { defaultArgs.put(argument.name, visit(it)) }
                 fnSymbolTable.addArgument(argument.name, type)
                 FnParam(argument.name, type, argument.section)
@@ -132,7 +136,7 @@ class ExprConversionVisitor(
         )
 
         val returnType = parseFuncWithName.returnTypeRef
-            ?.let { resolveType(typeTable, currentTypeSchemeVariables, it, currentTypeLevel) }
+            ?.let { resolveType(typeTable, currentTypeSchemeVariables, it, effectiveTypeLevel) }
             ?: Type.unit
 
         val funcTypes = params.map { it.type!! } + returnType
@@ -140,6 +144,7 @@ class ExprConversionVisitor(
         val funcType = Function(types = funcTypes, defaultArgs = defaultArgs.size)
 
         currentTypeSchemeVariables = prevTypeSchemeVariables
+        typeSchemeLevel = prevTypeSchemeLevel
 
         return NameDeclaration(
             public = parseFuncWithName.public,
@@ -201,7 +206,7 @@ class ExprConversionVisitor(
             name = parseNameDeclaration.symbol.name,
             value = value,
             sourceSection = parseNameDeclaration.section,
-            expectedType = parseNameDeclaration.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it, currentTypeLevel) }
+            expectedType = parseNameDeclaration.typeRef?.let { resolveType(typeTable, currentTypeSchemeVariables, it, effectiveTypeLevel) }
         ).also {
             val type = if (value is Fn) value.type else null
             addLocalSymbol(it.name, it.mutable, it.public, type)
@@ -240,22 +245,25 @@ class ExprConversionVisitor(
 
     override fun visitEffectDefinition(parseEffectDefinition: ParseEffectDefinition): Expression {
         val prevTypeSchemeVariables = currentTypeSchemeVariables
+        val prevTypeSchemeLevel = typeSchemeLevel
         currentTypeSchemeVariables = parseEffectDefinition.typeParameters.map { it.name }
+        typeSchemeLevel = currentTypeLevel
 
         val params = parseEffectDefinition.formalArguments.map {
             FnParam(
                 it.name,
-                resolveType(typeTable, currentTypeSchemeVariables, it.typeRef!!, currentTypeLevel),
+                resolveType(typeTable, currentTypeSchemeVariables, it.typeRef!!, effectiveTypeLevel),
                 it.section
             )
         }
 
 
 
-        val types = params.map { it.type!! } + resolveType(typeTable, currentTypeSchemeVariables, parseEffectDefinition.returnTypeRef, currentTypeLevel)
+        val types = params.map { it.type!! } + resolveType(typeTable, currentTypeSchemeVariables, parseEffectDefinition.returnTypeRef, effectiveTypeLevel)
         val type = Function(types)
 
         currentTypeSchemeVariables = prevTypeSchemeVariables
+        typeSchemeLevel = prevTypeSchemeLevel
 
         return EffectDefinition(
             moduleName = pkg.moduleName,
@@ -319,7 +327,7 @@ class ExprConversionVisitor(
     }
 
     override fun visitCast(parseCast: ParseCast): Expression {
-        val targetType = resolveType(typeTable, currentTypeSchemeVariables, parseCast.typeRef, currentTypeLevel)
+        val targetType = resolveType(typeTable, currentTypeSchemeVariables, parseCast.typeRef, effectiveTypeLevel)
         return Cast(parseCast.value.accept(this), targetType, parseCast.section)
     }
 
@@ -327,7 +335,7 @@ class ExprConversionVisitor(
         parseGroup.value.accept(this)
 
     override fun visitIs(parseIs: ParseIs): Expression =
-        Is(parseIs.value.accept(this), resolveType(typeTable, currentTypeSchemeVariables, parseIs.typeRef, currentTypeLevel), parseIs.section)
+        Is(parseIs.value.accept(this), resolveType(typeTable, currentTypeSchemeVariables, parseIs.typeRef, effectiveTypeLevel), parseIs.section)
 
     override fun visitIfElse(parseIfElse: ParseIfElse): Expression =
         IfElse(
