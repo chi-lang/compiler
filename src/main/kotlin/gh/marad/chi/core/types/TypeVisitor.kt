@@ -25,7 +25,8 @@ abstract class VariableMapper : TypeVisitor<Type> {
         Sum.create(
             ids = sum.ids,
             lhs = sum.lhs.accept(this),
-            rhs = sum.rhs.accept(this)
+            rhs = sum.rhs.accept(this),
+            typeParams = sum.typeParams
         )
 
     override fun visitArray(array: Array): Type =
