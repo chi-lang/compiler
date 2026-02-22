@@ -45,8 +45,8 @@ sealed  interface Type : TypeScheme {
         @JvmStatic fun record(vararg fields: Pair<String, Type>): Record = Record(emptyList(), fields.map { Record.Field(it.first, it.second) })
         @JvmStatic fun record(id: TypeId, vararg fields: Pair<String, Type>): Record = Record(listOf(id), fields.map { Record.Field(it.first, it.second) })
         @JvmStatic fun array(elementType: Type) = Array(elementType)
-        @JvmStatic fun union(id: TypeId?, vararg types: Type): Sum =
-            types.reduceRight { lhs, rhs -> Sum.create(id?.let { listOf(id) } ?: emptyList(), lhs, rhs) } as Sum
+        @JvmStatic fun union(id: TypeId?, vararg types: Type): Type =
+            types.reduceRight { lhs, rhs -> Sum.create(id?.let { listOf(id) } ?: emptyList(), lhs, rhs) }
         @JvmStatic fun option(type: Type) = Sum.create(listOf(optionTypeId), type, unit)
     }
 }
