@@ -7,7 +7,7 @@ Bugs are ordered by severity: CRITICAL > HIGH > MEDIUM.
 
 ---
 
-## BUG-01 [CRITICAL] String literals break Lua emission — no escaping of special characters
+## BUG-01 [CRITICAL] ~~String literals break Lua emission — no escaping of special characters~~ FIXED
 
 **File:** `src/main/kotlin/gh/marad/chi/lua/LuaEmitter.kt:208-225`
 
@@ -33,7 +33,7 @@ note that it doesn't support escape sequences and has edge cases with nested `]]
 
 ---
 
-## BUG-02 [CRITICAL] Missing occurs check in unification — infinite types accepted silently
+## BUG-02 [CRITICAL] ~~Missing occurs check in unification — infinite types accepted silently~~ FIXED
 
 **File:** `src/main/kotlin/gh/marad/chi/core/types/Unification.kt:26-36`
 
@@ -89,7 +89,7 @@ future grammar changes introducing new string part token types.
 
 ---
 
-## BUG-04 [HIGH] `ForLoop.children()` omits `state` and `init` — invisible to all compiler passes
+## BUG-04 [HIGH] ~~`ForLoop.children()` omits `state` and `init` — invisible to all compiler passes~~ FIXED
 
 **Files:**
 - `src/main/kotlin/gh/marad/chi/core/Expressions.kt:265-266`
@@ -176,7 +176,7 @@ override fun visitFunction(function: Function): Type =
 
 ---
 
-## BUG-06 [HIGH] `&&` and `||` do not constrain operands to `bool`
+## BUG-06 [HIGH] ~~`&&` and `||` do not constrain operands to `bool`~~ FIXED
 
 **File:** `src/main/kotlin/gh/marad/chi/core/types/Typer.kt:350-352`
 
@@ -224,7 +224,7 @@ is InfixOp -> {
 
 ---
 
-## BUG-07 [HIGH] Anonymous functions/lambdas leak into Lua global scope
+## BUG-07 [HIGH] ~~Anonymous functions/lambdas leak into Lua global scope~~ FIXED
 
 **File:** `src/main/kotlin/gh/marad/chi/lua/LuaEmitter.kt:244-250`
 
@@ -262,7 +262,7 @@ Alternatively, emit `local $tmpName = function(` and close with `end;` instead o
 
 ---
 
-## BUG-08 [HIGH] `CheckNamesVisitor.visitHandle` does not visit the handle body
+## BUG-08 [HIGH] ~~`CheckNamesVisitor.visitHandle` does not visit the handle body~~ FIXED
 
 **File:** `src/main/kotlin/gh/marad/chi/core/compiler/checks/CheckNamesVisitor.kt:58-66`
 
@@ -304,7 +304,7 @@ override fun visitHandle(parseHandle: ParseHandle) {
 
 ---
 
-## BUG-09 [MEDIUM] `Recursive.withAddedTypeIds` unwraps the `Recursive` wrapper
+## BUG-09 [MEDIUM] ~~`Recursive.withAddedTypeIds` unwraps the `Recursive` wrapper~~ FIXED
 
 **File:** `src/main/kotlin/gh/marad/chi/core/types/Types3.kt:257-263`
 

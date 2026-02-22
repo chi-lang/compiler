@@ -159,3 +159,16 @@ There is no `.editorconfig`, ktlint, detekt, or spotless configuration.
 - `CompilationDefaults.defaultPacakge` is a known typo ("pacakge" instead of "package")
   that is used consistently throughout the codebase. Do not "fix" it without renaming
   all references.
+
+## Bug Fix Workflow
+
+When fixing a bug, always follow this order:
+
+1. **Write a failing test first.** Before changing any production code, create a test that
+   reproduces the incorrect behavior described in the bug report. Run it and confirm it
+   fails (or exhibits the wrong behavior) — this proves the bug exists.
+2. **Implement the fix.** Change the production code to correct the bug.
+3. **Re-run the test.** Confirm the previously failing test now passes.
+4. **Run the full test suite** (`./gradlew test`) to verify no regressions.
+
+Bug descriptions with fix guidance are in `specs/bugs.md`.
