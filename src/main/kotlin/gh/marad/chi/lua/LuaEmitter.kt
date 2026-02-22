@@ -439,7 +439,16 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitCast(term: Cast): String {
-        return emitExpr(term.expression)
+        val value = emitExpr(term.expression)
+        val sourceType = term.expression.type
+        val targetType = term.targetType
+        // string -> int or string -> float needs tonumber()
+        if (sourceType == Type.string && (targetType == Type.int || targetType == Type.float)) {
+            val tmpName = nextTmpName()
+            emitCode("local $tmpName=tonumber(java.luaify($value));")
+            return tmpName
+        }
+        return value
     }
 
     private fun emitFieldAccess(term: FieldAccess): String {
@@ -468,6 +477,10 @@ class LuaEmitter(val program: Program) {
         return valueVar
     }
 
+    private fun isBlockTerminator(expr: Expression?): Boolean {
+        return expr is Return || expr is Break || expr is Continue
+    }
+
     private fun emitIfElse(term: IfElse): String {
         val tmpName = nextTmpName()
         emitCode("local $tmpName;")
@@ -476,19 +489,19 @@ class LuaEmitter(val program: Program) {
         emitCode(condition)
         emitCode(" then ")
         val thenResultName = emitBlock(term.thenBranch as Block)
-        if (term.thenBranch.body.lastOrNull() !is Return) {
+        if (!isBlockTerminator(term.thenBranch.body.lastOrNull())) {
             emitCode("$tmpName = $thenResultName")
         }
         if (term.elseBranch != null) {
             emitCode(" else ")
             if (term.elseBranch is Block) {
                 val elseResultName = emitBlock(term.elseBranch)
-                if (term.elseBranch.body.lastOrNull() !is Return) {
+                if (!isBlockTerminator(term.elseBranch.body.lastOrNull())) {
                     emitCode("$tmpName = $elseResultName")
                 }
             } else {
                 val elseResultName = emitExpr(term.elseBranch)
-                if (term.elseBranch !is Return) {
+                if (!isBlockTerminator(term.elseBranch)) {
                     emitCode("$tmpName = $elseResultName")
                 }
             }

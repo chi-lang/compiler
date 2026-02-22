@@ -25,7 +25,12 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
         if (dryRun) {
             return true
         }
-        lua.load(luaCode)
+        val loadStatus = lua.load(luaCode)
+        if (loadStatus != Lua.LuaError.OK) {
+            val errorMessage = lua.get().toJavaObject()
+            println("Load error: $errorMessage")
+            return false
+        }
         val status = lua.pCall(0, 1)
         return if (status != Lua.LuaError.OK) {
             val errorMessage = lua.get().toJavaObject()
@@ -176,6 +181,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
         val result = lua.run("""
             chi = {}
             package.loaded['std/lang'] = {
+                _types = {},
                 _package = {
                     println    = { public=true, mutable=false, type='${encodeType(Type.fn(Type.any, Type.unit))}' },
                     print      = { public=true, mutable=false, type='${encodeType(Type.fn(Type.any, Type.unit))}' },
