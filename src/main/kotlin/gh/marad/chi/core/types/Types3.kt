@@ -146,7 +146,7 @@ data class Sum(val ids: List<TypeId>, val lhs: Type, val rhs: Type, val typePara
             val subtypes = listTypes(this) - Type.unit
             "$ids[${subtypes.joinToString("|")}]"
         } else {
-            ids.toString() ?: "$lhs | $rhs"
+            if (ids.isEmpty()) "$lhs | $rhs" else "$ids[$lhs | $rhs]"
         }
     }
     override val level: Int = max(lhs.level, rhs.level)
