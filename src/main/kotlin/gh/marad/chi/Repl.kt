@@ -6,7 +6,13 @@ import gh.marad.chi.core.types.Type
 import gh.marad.chi.lua.LuaEmitter
 import gh.marad.chi.runtime.LuaCompilationEnv
 import gh.marad.chi.runtime.LuaEnv
+import org.jline.reader.EndOfFileException
+import org.jline.reader.LineReader
+import org.jline.reader.LineReaderBuilder
+import org.jline.reader.UserInterruptException
+import org.jline.terminal.TerminalBuilder
 import party.iroiro.luajava.Lua.LuaError
+import java.nio.file.Path
 import kotlin.system.exitProcess
 
 class Repl(
@@ -16,10 +22,6 @@ class Repl(
     private val imports = mutableSetOf<Import>()
 
     private val commands: MutableMap<String, (Array<String>) -> Unit> = mutableMapOf(
-        ".exit" to { _: Array<String> ->
-            println("Thank you! Bye!")
-            exitProcess(0)
-        },
         ".toggleLuaCode" to { _: Array<String> ->
             println("Toggling compiled lua code visibility.")
             showCompiledLuaCode = !showCompiledLuaCode
@@ -39,13 +41,7 @@ class Repl(
             imports.clear()
             println("Imports cleared!")
         },
-
-    ).also {
-        it[".help"] = { _: Array<String> ->
-            println("Available commands:")
-            println("\t${it.keys.joinToString(" ")}")
-        }
-    }
+    )
 
     private fun handleCommands(command: String): Boolean {
         val parts = command.split("\\s+".toRegex())
@@ -59,6 +55,50 @@ class Repl(
     }
 
     fun run() {
+        val terminal = TerminalBuilder.builder().system(true).build()
+        val dotCommandKeys = commands.keys.toMutableList()
+
+        // .exit and .help are added here because they need terminal/lineReader references
+        // .vi and .emacs are added after lineReader is created
+        commands[".exit"] = { _: Array<String> ->
+            println("Thank you! Bye!")
+            terminal.close()
+            exitProcess(0)
+        }
+
+        // placeholder for .help — updated after .vi/.emacs are added
+        commands[".help"] = { _: Array<String> ->
+            println("Available commands:")
+            println("\t${commands.keys.sorted().joinToString(" ")}")
+        }
+
+        dotCommandKeys.add(".exit")
+        dotCommandKeys.add(".help")
+        dotCommandKeys.add(".vi")
+        dotCommandKeys.add(".emacs")
+
+        val lineReader = LineReaderBuilder.builder()
+            .terminal(terminal)
+            .parser(ChiReplParser())
+            .completer(ChiReplCompleter(dotCommandKeys))
+            .variable(LineReader.HISTORY_FILE, historyPath())
+            .variable(LineReader.HISTORY_SIZE, 1000)
+            .variable(LineReader.SECONDARY_PROMPT_PATTERN, ".. ")
+            .build()
+
+        // editing mode dot-commands
+        commands[".vi"] = { _: Array<String> ->
+            lineReader.keyMaps[LineReader.MAIN]?.let {
+                lineReader.keyMaps[LineReader.MAIN] = lineReader.keyMaps[LineReader.VIINS]
+            }
+            println("Switched to vi mode.")
+        }
+        commands[".emacs"] = { _: Array<String> ->
+            lineReader.keyMaps[LineReader.MAIN]?.let {
+                lineReader.keyMaps[LineReader.MAIN] = lineReader.keyMaps[LineReader.EMACS]
+            }
+            println("Switched to emacs mode.")
+        }
 
         env.lua.run("""
             function repl_print(value, chi_type)
@@ -73,11 +113,16 @@ class Repl(
             end
         """.trimIndent())
 
-        while (true) {
-            print("> ")
-            val code = readlnOrNull()?.replace(";", "\n")?.trim()
+        try {
+            while (true) {
+                val code: String
+                try {
+                    code = lineReader.readLine("> ").trim()
+                } catch (_: UserInterruptException) {
+                    continue
+                }
 
-            if (!code.isNullOrBlank()) {
+                if (code.isBlank()) continue
 
                 if (handleCommands(code)) {
                     continue
@@ -125,6 +170,20 @@ class Repl(
                     }
                     env.lua.pCall(2, 0)
                 }
+            }
+        } catch (_: EndOfFileException) {
+            println("\nThank you! Bye!")
+        } finally {
+            terminal.close()
+        }
+    }
+
+    companion object {
+        internal fun historyPath(chiHome: String? = System.getenv("CHI_HOME")): Path {
+            return if (chiHome != null) {
+                Path.of(chiHome, "repl_history")
+            } else {
+                Path.of(System.getProperty("user.home"), ".chi_repl_history")
             }
         }
     }
