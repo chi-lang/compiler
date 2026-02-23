@@ -4,6 +4,6 @@ build/
 src/main/gen
 src/main/antlr/gen
 src/main/java/gh/marad/chi/core/antlr
-chi
+/chi
 config/
 kls_database.db
