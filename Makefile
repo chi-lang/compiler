@@ -31,6 +31,10 @@ native-config: $(FAT_JAR)
 
 # Build the native image
 native: $(FAT_JAR)
+	@if [ ! -d "$(CONFIG_DIR)" ]; then \
+		echo "Error: $(CONFIG_DIR) does not exist. Run 'make native-config' first to generate native-image configuration."; \
+		exit 1; \
+	fi
 	$(GRAALVM_HOME)/bin/native-image \
 		-H:+ReportExceptionStackTraces \
 		--initialize-at-run-time=party.iroiro \
