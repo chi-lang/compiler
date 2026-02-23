@@ -4,7 +4,12 @@ SHELL := /bin/bash
 
 GRAALVM_HOME ?= $(JAVA_HOME)
 FAT_JAR := build/libs/chi-all.jar
-CONFIG_DIR := config/linux
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    CONFIG_DIR := config/macos
+else
+    CONFIG_DIR := config/linux
+endif
 BINARY := chi
 INSTALL_DIR := $(HOME)/.local/bin
 
@@ -28,7 +33,6 @@ native-config: $(FAT_JAR)
 native: $(FAT_JAR)
 	$(GRAALVM_HOME)/bin/native-image \
 		-H:+ReportExceptionStackTraces \
-		--report-unsupported-elements-at-runtime \
 		--initialize-at-run-time=party.iroiro \
 		--enable-native-access=ALL-UNNAMED \
 		--no-fallback \
@@ -36,11 +40,7 @@ native: $(FAT_JAR)
 		-march=native \
 		--gc=serial \
 		-H:+UnlockExperimentalVMOptions \
-		-H:ReflectionConfigurationFiles=$(CONFIG_DIR)/reflect-config.json \
-		-H:JNIConfigurationFiles=$(CONFIG_DIR)/jni-config.json \
-		-H:DynamicProxyConfigurationFiles=$(CONFIG_DIR)/proxy-config.json \
-		-H:SerializationConfigurationFiles=$(CONFIG_DIR)/serialization-config.json \
-		-H:ResourceConfigurationFiles=$(CONFIG_DIR)/resource-config.json \
+		-H:ConfigurationFileDirectories=$(CONFIG_DIR) \
 		-cp $(FAT_JAR) \
 		gh.marad.chi.MainKt \
 		$(BINARY)
