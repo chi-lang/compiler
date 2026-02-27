@@ -586,19 +586,18 @@ class LuaEmitter(val program: Program) {
         }
     }
 
-    private fun foo(term: Expression, bar: MutableList<NameDeclaration>): String {
+    private fun extractConditionThunks(term: Expression, thunkDeclarations: MutableList<NameDeclaration>): String {
         return when (term) {
             is InfixOp -> {
-                val left = foo(term.left, bar)
-                val right = foo(term.right, bar)
-                //InfixOp(term.op, left, right, term.sourceSection)
+                val left = extractConditionThunks(term.left, thunkDeclarations)
+                val right = extractConditionThunks(term.right, thunkDeclarations)
                 mapInfixOperation(left, right, term.op, term.left.type)
             }
             else -> {
                 val tmpName = nextTmpName()
                 // create val $tmpName = { term }
                 // and add it to the list of declarations
-                bar.add(
+                thunkDeclarations.add(
                     NameDeclaration(false, tmpName, mutable = false, expectedType = null, sourceSection = null,
                         value = Fn(emptyList(), emptyMap(), sourceSection = null, body = Block(sourceSection = null, body = listOf(term))))
                 )
@@ -634,7 +633,7 @@ class LuaEmitter(val program: Program) {
 
 
         val declarations = mutableListOf<NameDeclaration>()
-        val condition = foo(term.condition, declarations)
+        val condition = extractConditionThunks(term.condition, declarations)
 
         insideFunction {
             declarations.forEach {
