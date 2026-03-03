@@ -7,3 +7,7 @@ src/main/java/gh/marad/chi/core/antlr
 /chi
 config/
 kls_database.db
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
