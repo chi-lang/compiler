@@ -37,21 +37,25 @@ class GoldenTestRunner {
         }
 
         /** `chi` executable resolved from PATH or from the known install location. */
-        private val CHI_EXE: String = resolveChiExecutable()
+        private val CHI_EXE: String? = resolveChiExecutable()
 
-        private fun resolveChiExecutable(): String {
+        private fun resolveChiExecutable(): String? {
             // Try PATH first
-            val fromPath = ProcessBuilder("which", "chi")
-                .redirectErrorStream(true)
-                .start()
-                .inputStream.bufferedReader().readText().trim()
-            if (fromPath.isNotBlank() && File(fromPath).exists()) {
-                return fromPath
+            try {
+                val fromPath = ProcessBuilder("which", "chi")
+                    .redirectErrorStream(true)
+                    .start()
+                    .inputStream.bufferedReader().readText().trim()
+                if (fromPath.isNotBlank() && File(fromPath).exists()) {
+                    return fromPath
+                }
+            } catch (_: Exception) {
+                // 'which' may not exist on some platforms
             }
             // Fall back to home-local install
             val homeLocal = Paths.get(System.getProperty("user.home"), ".local", "bin", "chi")
             if (homeLocal.exists()) return homeLocal.absolutePathString()
-            error("Cannot locate `chi` executable. Make sure it is on PATH or installed at ~/.local/bin/chi")
+            return null
         }
     }
 
@@ -80,8 +84,12 @@ class GoldenTestRunner {
 
     @TestFactory
     fun goldenTests(): List<DynamicTest> {
+        if (CHI_EXE == null) {
+            println("[GoldenTests] chi executable not found — skipping golden tests")
+            return emptyList()
+        }
         if (!GOLDEN_DIR.exists()) {
-            println("[GoldenTests] golden/ directory not found at $GOLDEN_DIR — no tests generated")
+            println("[GoldenTests] golden/ directory not found at $GOLDEN_DIR — skipping golden tests")
             return emptyList()
         }
 
@@ -127,7 +135,7 @@ class GoldenTestRunner {
     }
 
     private fun runChiProgram(chiFile: File): String {
-        val process = ProcessBuilder(CHI_EXE, chiFile.absolutePath)
+        val process = ProcessBuilder(CHI_EXE!!, chiFile.absolutePath)
             .redirectErrorStream(false)
             .start()
 
