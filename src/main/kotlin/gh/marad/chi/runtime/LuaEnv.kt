@@ -64,6 +64,11 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
             .bufferedReader().readText()
         evalLua("utf8 = (function()\n$utf8Lua\nend)()")
 
+        // Load chistr.lua (Chi string utilities, uses global utf8)
+        val chistrLua = LuaEnv::class.java.getResourceAsStream("/chistr.lua")!!
+            .bufferedReader().readText()
+        evalLua("chistr = (function()\n$chistrLua\nend)()")
+
         lua.register("chi_compile") {
             val code = it.get().toJavaObject() as String
             val luaCode = LuaCompiler(this).compileToLua(code, LuaCompiler.ErrorStrategy.PRINT)
@@ -75,25 +80,21 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
             1
         }
 
-        evalLua("String = java.import('java.lang.String')")
-        evalLua("chistr = require('gh.marad.chi.runtime.ChiString.open')")
         evalLua("""
-            function chi_new_string(value)
-                return java.new(String,value)
-            end
-            function chi_tostring(value)
-                local t = type(value)
-                if t == 'function' then
-                    return '<function>'
-                elseif t == 'nil' then
-                    return 'unit'
-                elseif t == 'userdata' then
-                    return value
-                else 
+                function chi_new_string(value)
                     return tostring(value)
                 end
-            end
-        """.trimIndent())
+                function chi_tostring(value)
+                    local t = type(value)
+                    if t == 'function' then
+                        return '<function>'
+                    elseif t == 'nil' then
+                        return 'unit'
+                    else
+                        return tostring(value)
+                    end
+                end
+            """.trimIndent())
 
         evalLua("""
             function chi_is_float(value)
@@ -134,16 +135,16 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
         """.trimIndent())
 
         evalLua("""
-            chi_print = function(to_show, flush)
-                io.write(java.luaify(chi_tostring(to_show)))
-                if not flush then io.flush() end
-            end
-            
-            chi_println = function(to_show, flush)
-                io.write(java.luaify(chi_tostring(to_show)), "\n")
-                if not flush then io.flush() end
-            end
-        """.trimIndent())
+                chi_print = function(to_show, flush)
+                    io.write(chi_tostring(to_show))
+                    if not flush then io.flush() end
+                end
+                
+                chi_println = function(to_show, flush)
+                    io.write(chi_tostring(to_show), "\n")
+                    if not flush then io.flush() end
+                end
+            """.trimIndent())
 
         evalLua("""
             chi_reload_module = function(module)
@@ -169,19 +170,21 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
         """.trimIndent())
 
         evalLua("""
-            function chi_record_pairs(record)
-                f,s,i = pairs(record)
-                local next = function(state,last)
-                    k,v = f(state,java.luaify(last))
-                    if k then 
-                        return chi_new_string(k),v
-                    else 
-                        return k,v
+                function chi_record_pairs(record)
+                    f,s,i = pairs(record)
+                    local next = function(state, last)
+                        k,v = f(state, last)
+                        if k then
+                            return k, v
+                        else
+                            return k, v
+                        end
                     end
+                    return next, s, i
                 end
-                return next,s,i
-            end
-        """.trimIndent())
+            """.trimIndent())
+
+        evalLua("__use_native_strings = true")
 
         val result = lua.run("""
             chi = {}
@@ -228,7 +231,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                 __tostring = function(arr)
                     local s = {}
                     for _, v in ipairs(arr) do
-                        table.insert(s, java.luaify(chi_tostring(v)))
+                        table.insert(s, chi_tostring(v))
                     end
                     return "[" .. table.concat(s, ", ") .. "]"
                 end
@@ -245,7 +248,7 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                 __tostring = function(rec)
                     local s = {}
                     for k, v in pairs(rec) do
-                        table.insert(s, java.luaify(chi_tostring(k)) .. ": " .. java.luaify(chi_tostring(v)))
+                        table.insert(s, chi_tostring(k) .. ": " .. chi_tostring(v))
                     end
                     return "{" .. table.concat(s, ", ") .. "}"
                 end

@@ -202,16 +202,29 @@ class LuaEmitter(val program: Program) {
 
     private fun escapeLuaString(value: String): String {
         val sb = StringBuilder(value.length)
-        for (ch in value) {
-            when (ch) {
-                '\\' -> sb.append("\\\\")
-                '\'' -> sb.append("\\'")
-                '\n' -> sb.append("\\n")
-                '\r' -> sb.append("\\r")
-                '\t' -> sb.append("\\t")
-                '\u0000' -> sb.append("\\0")
+        var i = 0
+        while (i < value.length) {
+            val ch = value[i]
+            when {
+                ch == '\\' -> sb.append("\\\\")
+                ch == '\'' -> sb.append("\\'")
+                ch == '\n' -> sb.append("\\n")
+                ch == '\r' -> sb.append("\\r")
+                ch == '\t' -> sb.append("\\t")
+                ch == '\u0000' -> sb.append("\\0")
+                // Handle surrogate pairs (characters above U+FFFF)
+                ch.isHighSurrogate() && i + 1 < value.length && value[i + 1].isLowSurrogate() -> {
+                    val codePoint = Character.toCodePoint(ch, value[i + 1])
+                    // Encode as UTF-8 byte escapes for Lua
+                    val bytes = String(intArrayOf(codePoint), 0, 1).toByteArray(Charsets.UTF_8)
+                    for (b in bytes) {
+                        sb.append("\\x${String.format("%02x", b.toInt() and 0xFF)}")
+                    }
+                    i++ // skip the low surrogate
+                }
                 else -> sb.append(ch)
             }
+            i++
         }
         return sb.toString()
     }
@@ -221,7 +234,7 @@ class LuaEmitter(val program: Program) {
         val value = when (term.type) {
             string -> {
                 val tmp = nextTmpName()
-                emitCode("local $tmp = java.new(String,'${escapeLuaString(term.value)}');")
+                emitCode("local $tmp = '${escapeLuaString(term.value)}';")
                 tmp
             }
             Type.unit -> {
@@ -447,7 +460,7 @@ class LuaEmitter(val program: Program) {
         // string -> int or string -> float needs tonumber()
         if (sourceType == Type.string && (targetType == Type.int || targetType == Type.float)) {
             val tmpName = nextTmpName()
-            emitCode("local $tmpName=tonumber(java.luaify($value));")
+            emitCode("local $tmpName=tonumber($value);")
             return tmpName
         }
         return value
@@ -524,10 +537,10 @@ class LuaEmitter(val program: Program) {
             "&&" -> "and"
             "||" -> "or"
             "+" -> if (leftType == string) {
-                return "chistr.concat($leftVar, $rightVar)"
+                return "($leftVar .. $rightVar)"
             } else op
             "==" -> if (leftType == string) {
-                return "$leftVar:equals($rightVar)"
+                return "($leftVar == $rightVar)"
             } else op
             else -> op
         }
@@ -555,7 +568,7 @@ class LuaEmitter(val program: Program) {
         }
         val resultName = nextTmpName()
         emitCode("local $resultName=")
-        emitCode("chistr.concat(${partVars.joinToString(",")})")
+        emitCode(partVars.joinToString(" .. "))
         emitCode(";")
         return resultName
     }
@@ -570,7 +583,7 @@ class LuaEmitter(val program: Program) {
                 float -> "chi_is_float($value)"
                 int -> "chi_is_int($value)"
                 Type.bool -> "type($value) == \"boolean\""
-                string -> "type($value) == \"userdata\""
+                string -> "type($value) == \"string\""
                 // TODO: check the element type
                 is Array -> "chi_is_array($value)"
                 // TODO: checking field and field types

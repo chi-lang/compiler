@@ -117,7 +117,7 @@ class GoldenTestRunner {
             return
         }
 
-        val expectedOutput = expectedFile.readText()
+        val expectedOutput = expectedFile.readText().trimEnd('\n')
         assertEquals(
             expectedOutput,
             actualOutput,
@@ -140,7 +140,8 @@ class GoldenTestRunner {
             error("chi exited with code $exitCode for ${chiFile.name}\nstderr: $errorDetail\nstdout: $stdout")
         }
 
-        // Normalise line endings (Windows safety) and trim trailing whitespace
-        return stdout.replace("\r\n", "\n")
+        // Normalise line endings (Windows safety) and strip trailing newlines
+        // to match shell command substitution behavior used by the Makefile test runner
+        return stdout.replace("\r\n", "\n").trimEnd('\n')
     }
 }
