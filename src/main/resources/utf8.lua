@@ -16,7 +16,8 @@ local function char_len(b)
     elseif b < 0xC0 then return nil  -- continuation byte — error
     elseif b < 0xE0 then return 2
     elseif b < 0xF0 then return 3
-    else return 4 end
+    elseif b < 0xF8 then return 4
+    else return nil end  -- 0xF8+ are invalid UTF-8
 end
 
 -- Decodes codepoint at position i (1-based byte position)
@@ -39,6 +40,7 @@ local function decode(s, i)
     end
     for j = 1, len - 1 do
         local cb = string.byte(s, i + j)
+        if not cb or cb < 0x80 or cb >= 0xC0 then return nil end
         cp = bor(lshift(cp, 6), band(cb, 0x3F))
     end
     return cp, i + len
@@ -51,6 +53,9 @@ M.codes = function(s)
     return function()
         if i > #s then return nil end
         local cp, next_i = decode(s, i)
+        if not cp then
+            error("invalid UTF-8 byte at position " .. i)
+        end
         local pos = i
         i = next_i
         return pos, cp
@@ -158,15 +163,51 @@ end
 M.lower = function(s) return string.lower(s) end
 M.upper = function(s) return string.upper(s) end
 
--- utf8.offset(s, n, i) — byte offset of n-th codepoint (optional, for completeness)
+-- utf8.offset(s, n, i) — byte offset of n-th codepoint
+-- Compatible with Lua 5.3 semantics:
+--   n > 0: n-th codepoint starting from byte i (default 1)
+--   n = 0: start of codepoint containing byte i
+--   n < 0: |n|-th codepoint counting backwards from byte i (default #s+1)
 M.offset = function(s, n, i)
-    i = i or (n >= 0 and 1 or #s + 1)
-    local idx = 0
-    for pos, _ in M.codes(s) do
-        idx = idx + 1
-        if idx == n then return pos end
+    local slen = #s
+    i = i or (n >= 0 and 1 or slen + 1)
+    if n == 0 then
+        -- find start of codepoint containing byte i
+        while i > 1 do
+            local b = string.byte(s, i)
+            if not b or b < 0x80 or b >= 0xC0 then break end
+            i = i - 1
+        end
+        return i
+    elseif n > 0 then
+        -- count n codepoints forward from byte i
+        local count = 0
+        local pos = i
+        while pos <= slen do
+            count = count + 1
+            if count == n then return pos end
+            local b = string.byte(s, pos)
+            local clen = char_len(b) or 1
+            pos = pos + clen
+        end
+        -- one past the end is valid for n == count + 1
+        if count + 1 == n then return slen + 1 end
+        return nil
+    else -- n < 0
+        -- count |n| codepoints backward from byte i
+        local count = 0
+        local pos = i - 1
+        while pos >= 1 do
+            local b = string.byte(s, pos)
+            if b < 0x80 or b >= 0xC0 then
+                -- this is a codepoint start (ASCII or lead byte)
+                count = count - 1
+                if count == n then return pos end
+            end
+            pos = pos - 1
+        end
+        return nil
     end
-    return nil
 end
 
 return M
