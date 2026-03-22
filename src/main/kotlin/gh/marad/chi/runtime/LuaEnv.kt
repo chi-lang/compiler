@@ -59,6 +59,11 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
     private fun init() {
         lua.openLibraries()
 
+        // Load utf8.lua as global module (pure Lua UTF-8 implementation for LuaJIT 2.1)
+        val utf8Lua = LuaEnv::class.java.getResourceAsStream("/utf8.lua")!!
+            .bufferedReader().readText()
+        evalLua("utf8 = (function()\n$utf8Lua\nend)()")
+
         lua.register("chi_compile") {
             val code = it.get().toJavaObject() as String
             val luaCode = LuaCompiler(this).compileToLua(code, LuaCompiler.ErrorStrategy.PRINT)

@@ -175,4 +175,17 @@ class LuaEnvTest {
         """.trimIndent()) shouldBe "hello world"
     }
 
+    @Test
+    fun `utf8 module is available`() {
+        val env = LuaEnv()
+        env.evalLua("assert(utf8.len('hello') == 5, 'utf8.len ASCII')")
+        env.evalLua("assert(utf8.sub('hello', 2, 3) == 'el', 'utf8.sub')")
+        env.evalLua("assert(utf8.reverse('abc') == 'cba', 'utf8.reverse')")
+        env.evalLua("assert(utf8.char(65) == 'A', 'utf8.char')")
+        env.evalLua("assert(utf8.codepoint('A') == 65, 'utf8.codepoint')")
+        // Multi-byte UTF-8 codepoint via raw bytes (4-byte emoji 😀 = F0 9F 98 80)
+        env.evalLua("local emoji = string.char(0xF0, 0x9F, 0x98, 0x80); assert(utf8.len(emoji) == 1, 'utf8.len emoji')")
+        env.evalLua("local emoji = string.char(0xF0, 0x9F, 0x98, 0x80); assert(utf8.reverse(emoji) == emoji, 'utf8.reverse emoji')")
+    }
+
 }
