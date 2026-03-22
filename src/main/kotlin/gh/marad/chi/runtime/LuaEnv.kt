@@ -184,8 +184,6 @@ class LuaEnv(val prelude: MutableList<Import> = mutableListOf()) {
                 end
             """.trimIndent())
 
-        evalLua("__use_native_strings = true")
-
         val result = lua.run("""
             chi = {}
             package.loaded['std/lang'] = {

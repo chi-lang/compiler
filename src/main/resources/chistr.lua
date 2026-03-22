@@ -1,10 +1,12 @@
 -- chistr.lua — Chi string utilities, pure Lua
--- Assumes 'utf8' is available as a global variable
+-- Depends on the project's custom 'utf8' global (see utf8.lua),
+-- loaded by LuaEnv.kt before this module. Targets LuaJIT 2.1.
 
 local chistr = {}
 
--- Iterator codepoints — returns function yielding successive codepoints (int)
--- Contract compatible with ChiString.kt: iterator() -> int | nil
+-- Iterator codepoints — returns function yielding successive codepoints (int).
+-- Wraps utf8.codes (which returns pos, cp) and strips the byte position,
+-- returning only the codepoint or nil when iteration ends.
 chistr.codePoints = function(s)
     local iter = utf8.codes(s)
     return function()
@@ -22,7 +24,7 @@ chistr.trimStart = function(s)
 end
 
 chistr.trimEnd = function(s)
-    return s:match('^(.-)%s*$')
+    return (s:gsub('%s+$', ''))
 end
 
 chistr.trim = function(s)
@@ -46,7 +48,9 @@ chistr.concat = function(...)
     return table.concat({...})
 end
 
--- Plain split (not regex) — equivalent of Java String.split with literal separator
+-- Plain split (not regex) — equivalent of Java String.split with literal separator.
+-- Note: #sep is byte length, but s:find with plain=true does byte-level search,
+-- so byte-level advancement (from = i + sep_len) is correct even for multi-byte UTF-8.
 chistr.split = function(s, sep)
     local result = {}
     if sep == '' then
