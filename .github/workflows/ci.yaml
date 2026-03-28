@@ -2,14 +2,88 @@ on: push
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CHI_HOME: /home/runner/chi
     steps:
     - uses: actions/checkout@v4
+      with:
+        path: compiler
+
+    - name: Checkout stdlib
+      id: checkout-stdlib
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository_owner }}/chi-stdlib
+        path: stdlib
+      continue-on-error: true
+
+    - name: Checkout stdlib (fallback to main)
+      if: steps.checkout-stdlib.outcome == 'failure'
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository_owner }}/chi-stdlib
+        path: stdlib
+        ref: main
+
+    - name: Checkout golden tests
+      id: checkout-golden
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository_owner }}/chi-golden
+        path: golden
+      continue-on-error: true
+
+    - name: Checkout golden (fallback to main)
+      if: steps.checkout-golden.outcome == 'failure'
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository_owner }}/chi-golden
+        path: golden
+        ref: main
+
     - name: Setup JDK
       uses: actions/setup-java@v3
       with:
         java-version: '17'
         distribution: 'temurin'
+
     - name: Setup Gradle
       uses: gradle/gradle-build-action@v2
-    - name: Run build with gradle
-      run: ./gradlew build
+
+    - name: Install LuaJIT
+      run: sudo apt-get install -y luajit
+
+    - name: Verify LuaJIT
+      run: luajit -v
+
+    - name: Build compiler
+      run: cd compiler && ./gradlew build
+
+    - name: Build shadow JAR
+      run: cd compiler && ./gradlew shadowJar
+
+    - name: Install chi
+      run: |
+        mkdir -p $HOME/.local/bin
+        echo '#!/bin/sh' > $HOME/.local/bin/chi
+        echo "exec java -jar $(pwd)/compiler/build/libs/chi-all.jar \"\$@\"" >> $HOME/.local/bin/chi
+        chmod +x $HOME/.local/bin/chi
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Setup CHI_HOME
+      run: mkdir -p $CHI_HOME/lib $CHI_HOME/bin
+
+    - name: Compile and install stdlib
+      run: cd stdlib && make install
+
+    - name: Run golden tests
+      run: cd golden && make test
+
+    - name: Run runtime unit tests
+      run: cd golden && make test-runtime
+
+    - name: Run standalone tests
+      run: cd golden && make test-standalone
+
+    - name: Run dual execution tests
+      run: cd golden && make test-dual
