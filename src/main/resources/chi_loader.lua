@@ -16,7 +16,7 @@ for _, name in ipairs(required) do
     local f = io.open(lib .. name, "r")
     if not f then
         io.stderr:write("Error: Missing " .. lib .. name .. "\n")
-        io.stderr:write("Run 'make install' in stdlib/ to install runtime files\n")
+        io.stderr:write("Install the compiler runtime and stdlib to CHI_HOME\n")
         os.exit(1)
     end
     f:close()

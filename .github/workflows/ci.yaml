@@ -73,6 +73,9 @@ jobs:
     - name: Setup CHI_HOME
       run: mkdir -p $CHI_HOME/lib $CHI_HOME/bin
 
+    - name: Install compiler runtime
+      run: cd compiler && make install-runtime
+
     - name: Compile and install stdlib
       run: cd stdlib && make install
 

@@ -4,6 +4,7 @@ import gh.marad.chi.core.parser.readers.Import
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
 import java.io.File
+import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.io.path.exists
 
@@ -23,7 +24,11 @@ import kotlin.io.path.exists
 class LuaSnapshotTest {
 
     companion object {
-        private val GOLDEN_DIR = Paths.get("..").resolve("golden").toAbsolutePath().normalize()
+        private val GOLDEN_DIR: Path = run {
+            val env = System.getenv("GOLDEN_DIR")
+            if (env != null) Paths.get(env).toAbsolutePath().normalize()
+            else Paths.get("..").resolve("golden").toAbsolutePath().normalize()
+        }
 
         /** Subset of golden programs for Lua snapshots — one per category. */
         private val SNAPSHOT_PROGRAMS = listOf(

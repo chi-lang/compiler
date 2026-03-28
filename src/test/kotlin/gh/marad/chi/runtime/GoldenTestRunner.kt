@@ -27,13 +27,16 @@ class GoldenTestRunner {
     companion object {
         /** Root of the golden test programs, relative to the compiler project root. */
         private val GOLDEN_DIR: Path = run {
-            // When Gradle runs tests the working directory is the compiler/ folder.
-            Paths.get("..").resolve("golden").toAbsolutePath().normalize()
+            val env = System.getenv("GOLDEN_DIR")
+            if (env != null) Paths.get(env).toAbsolutePath().normalize()
+            else Paths.get("..").resolve("golden").toAbsolutePath().normalize()
         }
 
         /** Path to the stdlib Makefile, used to (re)compile std.chim before tests. */
         private val STDLIB_DIR: Path = run {
-            Paths.get("..").resolve("stdlib").toAbsolutePath().normalize()
+            val env = System.getenv("STDLIB_DIR")
+            if (env != null) Paths.get(env).toAbsolutePath().normalize()
+            else Paths.get("..").resolve("stdlib").toAbsolutePath().normalize()
         }
 
         /** `chi` executable resolved from PATH or from the known install location. */

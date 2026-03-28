@@ -1,4 +1,4 @@
-.PHONY: all shadow-jar native-config native clean install
+.PHONY: all shadow-jar native-config native clean install install-runtime
 
 SHELL := /bin/bash
 
@@ -54,6 +54,19 @@ install: native
 	mkdir -p $(INSTALL_DIR)
 	cp $(BINARY) $(INSTALL_DIR)/$(BINARY)
 	@echo "Installed $(BINARY) to $(INSTALL_DIR)/$(BINARY)"
+
+# Install runtime resource files to CHI_HOME
+install-runtime:
+ifndef CHI_HOME
+	$(error CHI_HOME is not set)
+endif
+	mkdir -p $(CHI_HOME)/lib $(CHI_HOME)/bin
+	cp src/main/resources/utf8.lua $(CHI_HOME)/lib/utf8.lua
+	cp src/main/resources/chistr.lua $(CHI_HOME)/lib/chistr.lua
+	cp src/main/resources/chi_runtime.lua $(CHI_HOME)/lib/chi_runtime.lua
+	cp src/main/resources/chi_loader.lua $(CHI_HOME)/lib/chi_loader.lua
+	cp src/main/resources/chi-run $(CHI_HOME)/bin/chi-run
+	chmod +x $(CHI_HOME)/bin/chi-run
 
 clean:
 	./gradlew clean
