@@ -31,9 +31,9 @@ class LuaEmitter(val program: Program) {
         emitPackageInfo()
 
         program.typeAliases.forEach {
-            emitCode("__T_.${it.typeId.name}=\"")
+            emitCode("__T_.${it.typeId.name}='")
             emitCode(encodeType(it.type))
-            emitCode("\";")
+            emitCode("';")
         }
 
         // Requires must be after _package and _types declarations to avoid circular dependencies
@@ -90,7 +90,7 @@ class LuaEmitter(val program: Program) {
             emitCode("mutable=${it.mutable},")
             val type = it.type
             if (type != null) {
-                emitCode("type=\"${encodeType(type)}\"")
+                emitCode("type='${encodeType(type)}'")
             }
             emitCode("};")
         }
@@ -102,7 +102,7 @@ class LuaEmitter(val program: Program) {
             emitCode("mutable=false,")
             val type = it.type
             if (type != null) {
-                emitCode("type=\"${encodeType(type)}\"")
+                emitCode("type='${encodeType(type)}'")
             }
             emitCode("};")
         }
