@@ -113,6 +113,22 @@ class ExprConversionVisitor(
         currentTypeSchemeVariables = parseFuncWithName.typeParameters.map { it.name }
         typeSchemeLevel = currentTypeLevel + 1
 
+        // Compute function type from annotations BEFORE compiling the body.
+        // Named functions require type annotations, so all info is available.
+        val paramTypes = parseFuncWithName.formalArguments.map { argument ->
+            resolveType(typeTable, currentTypeSchemeVariables, argument.typeRef!!, effectiveTypeLevel)
+        }
+
+        val returnType = parseFuncWithName.returnTypeRef
+            ?.let { resolveType(typeTable, currentTypeSchemeVariables, it, effectiveTypeLevel) }
+            ?: Type.unit
+
+        val defaultArgCount = parseFuncWithName.formalArguments.count { it.defaultValue != null }
+        val funcType = Function(types = paramTypes + returnType, defaultArgs = defaultArgCount)
+
+        // Register the symbol BEFORE compiling the body so self-recursive calls resolve.
+        addLocalSymbol(parseFuncWithName.name, false, parseFuncWithName.public, funcType)
+
         val defaultArgs = mutableMapOf<String, Expression>()
 
         val (params, body) = withFnSymbolTable(fnSymbolTable) {
@@ -135,14 +151,6 @@ class ExprConversionVisitor(
             parseFuncWithName.body.section
         )
 
-        val returnType = parseFuncWithName.returnTypeRef
-            ?.let { resolveType(typeTable, currentTypeSchemeVariables, it, effectiveTypeLevel) }
-            ?: Type.unit
-
-        val funcTypes = params.map { it.type!! } + returnType
-
-        val funcType = Function(types = funcTypes, defaultArgs = defaultArgs.size)
-
         currentTypeSchemeVariables = prevTypeSchemeVariables
         typeSchemeLevel = prevTypeSchemeLevel
 
@@ -153,9 +161,7 @@ class ExprConversionVisitor(
             mutable = false,
             expectedType = funcType,
             sourceSection = parseFuncWithName.section
-        ).also {
-            addLocalSymbol(it.name, it.mutable, it.public, funcType)
-        }
+        )
     }
 
     override fun visitFnCall(parseFnCall: ParseFnCall): Expression {
