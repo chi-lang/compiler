@@ -14,6 +14,8 @@ import gh.marad.chi.runtime.TypeWriter.encodeType
 
 class LuaEmitter(val program: Program) {
     private var sb = StringBuilder()
+    private var nextLoopId = 0
+    private var currentLoopId = 0
 
     /**
      * @param emitModule Tells the emitter to create LUA module. False means it should return the last value
@@ -141,7 +143,7 @@ class LuaEmitter(val program: Program) {
                 "nil"
             }
             is Continue -> {
-                emitCode("continue;")
+                emitCode("goto __continue_${currentLoopId};")
                 "nil"
             }
             is Return -> {
@@ -626,24 +628,8 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitWhile(term: WhileLoop): String {
-//        val visitor = object : DefaultMappingVisitor() {
-//            override fun visitInfixOp(infixOp: InfixOp): Expression {
-//                return super.visitInfixOp(infixOp)
-//            }
-//        }
-
-        // TODO: each condition should be separate function
-        //   otherwise we loose the special treatment of 'or' and 'and'
-        //   operators. This is more related to the infix operators
-        //   than while or if expressions
-
-//        val condFunName = nextTmpName()
-//        emitCode("local $condFunName = function() ")
-//        val result = emitExpr(term.condition, true)
-//        emitCode(" return $result end;")
-
-//        emitCode("while ($condFunName()) do ")
-
+        val prevLoopId = currentLoopId
+        currentLoopId = nextLoopId++
 
         val declarations = mutableListOf<NameDeclaration>()
         val condition = extractConditionThunks(term.condition, declarations)
@@ -655,11 +641,17 @@ class LuaEmitter(val program: Program) {
         }
         emitCode("while $condition do ")
         emitExpr(term.loop)
+        emitCode("::__continue_${currentLoopId}::;")
         emitCode("end;")
+
+        currentLoopId = prevLoopId
         return "nil"
     }
 
     private fun emitForLoop(term: ForLoop): String {
+        val prevLoopId = currentLoopId
+        currentLoopId = nextLoopId++
+
         val iterable = emitExpr(term.iterable)
         val (vars, elements) = if (term.iterable.type is Array) {
             val vars = if (term.vars.size == 1) {
@@ -687,7 +679,10 @@ class LuaEmitter(val program: Program) {
         insideFunction {
             emitExpr(term.body)
         }
+        emitCode("::__continue_${currentLoopId}::;")
         emitCode(" end;")
+
+        currentLoopId = prevLoopId
         return "nil"
     }
 
