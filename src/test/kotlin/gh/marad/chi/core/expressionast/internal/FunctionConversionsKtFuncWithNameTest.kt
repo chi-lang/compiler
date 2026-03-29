@@ -64,7 +64,7 @@ class FunctionConversionsKtFuncWithNameTest {
         val fn = convertAst(funcWithName)
 
         // then
-        val T = Variable("T", 0)
+        val T = Variable("T", 1)
         fn.shouldBeTypeOf<NameDeclaration>().should {
             it.value.shouldBeTypeOf<Fn>()
             it.expectedType shouldBe Function(
@@ -95,7 +95,7 @@ class FunctionConversionsKtFuncWithNameTest {
         fn.shouldBeTypeOf<NameDeclaration>().value
             .shouldBeTypeOf<Fn>().should {
                 it.body.body.first().shouldBeTypeOf<NameDeclaration>()
-                    .expectedType shouldBe Variable("T", 0)
+                    .expectedType shouldBe Variable("T", 1)
             }
     }
 
@@ -113,7 +113,7 @@ class FunctionConversionsKtFuncWithNameTest {
             .shouldBeTypeOf<Fn>()
 
         // then
-        fn.parameters.first().type shouldBe Variable("T", 0)
+        fn.parameters.first().type shouldBe Variable("T", 1)
     }
 
 
