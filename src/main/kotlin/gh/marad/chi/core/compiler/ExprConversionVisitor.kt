@@ -111,7 +111,7 @@ class ExprConversionVisitor(
         val prevTypeSchemeVariables = currentTypeSchemeVariables
         val prevTypeSchemeLevel = typeSchemeLevel
         currentTypeSchemeVariables = parseFuncWithName.typeParameters.map { it.name }
-        typeSchemeLevel = currentTypeLevel
+        typeSchemeLevel = currentTypeLevel + 1
 
         val defaultArgs = mutableMapOf<String, Expression>()
 
