@@ -129,10 +129,12 @@ object Compiler {
 
         val constraints = mutableListOf<Constraint>()
         try {
+            val uf = UnionFind()
             for (expression in code) {
-                typer.typeTerm(expression, 0, constraints)
+                typer.typeTerm(expression, 0, constraints, uf)
             }
-            val solutions = unify(constraints)
+            unify(constraints, uf)
+            val solutions = uf.allBindings()
             for (expression in code) {
                 replaceTypes(expression, solutions)
             }
@@ -143,8 +145,10 @@ object Compiler {
         functions.forEach {
             try {
                 val constraints = mutableListOf<Constraint>()
-                typer.typeTerm(it, 0, constraints)
-                val solutions = unify(constraints)
+                val uf = UnionFind()
+                typer.typeTerm(it, 0, constraints, uf)
+                unify(constraints, uf)
+                val solutions = uf.allBindings()
                 replaceTypes(it, solutions)
             } catch (ex: CompilerMessage) {
                 resultMessages.add(ex.msg)

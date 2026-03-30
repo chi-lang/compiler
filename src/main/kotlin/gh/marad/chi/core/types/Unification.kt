@@ -31,8 +31,21 @@ fun tryUnify(constraints: List<Constraint>): List<Pair<Variable, Type>>? {
     }
 }
 
+/**
+ * Unify constraints, creating a fresh UnionFind. Returns all bindings.
+ */
 fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
     val uf = UnionFind()
+    unify(constraints, uf)
+    return uf.allBindings()
+}
+
+/**
+ * Unify constraints using a pre-existing UnionFind, adding new bindings to it.
+ * Returns the new bindings found during this call (not all bindings in the UnionFind).
+ */
+fun unify(constraints: List<Constraint>, uf: UnionFind): List<Pair<Variable, Type>> {
+    val bindingsBefore = uf.allBindings().toSet()
     val queue = ArrayDeque(constraints.sortedBy { it.expected !is Variable })
 
     while (queue.isNotEmpty()) {
@@ -122,5 +135,5 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
         }
     }
 
-    return uf.allBindings()
+    return uf.allBindings().filter { it !in bindingsBefore }
 }
