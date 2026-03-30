@@ -37,41 +37,60 @@ class UnionFind {
     /**
      * Deeply resolve a type, replacing all bound variables with their values.
      * Unbound variables are left as-is. This does a single structural traversal.
+     *
+     * Uses [resolving] to track variables currently being resolved, preventing
+     * infinite recursion for self-referential bindings (e.g., T -> Sum(T, unit)
+     * which is valid for sum type widening).
      */
-    fun resolve(type: Type): Type = when (type) {
+    fun resolve(type: Type): Type = resolveWith(type, mutableSetOf())
+
+    private fun resolveWith(type: Type, resolving: MutableSet<Variable>): Type = when (type) {
         is Variable -> {
-            val found = find(type)
-            if (found is Variable && found == type) type
-            else if (found is Variable) found
-            else resolve(found)  // resolve the bound type too, in case it contains variables
+            if (type in resolving) {
+                // Self-referential binding — return the variable as-is to break the cycle
+                type
+            } else {
+                val found = find(type)
+                if (found is Variable && found == type) type
+                else if (found is Variable) {
+                    // found is a different variable — resolve it too
+                    resolveWith(found, resolving)
+                }
+                else {
+                    resolving.add(type)
+                    val result = resolveWith(found, resolving)
+                    resolving.remove(type)
+                    result
+                }
+            }
         }
         is Primitive -> type
         is Function -> {
-            val newTypes = type.types.map { resolve(it) }
+            val newTypes = type.types.map { resolveWith(it, resolving) }
             if (newTypes.zip(type.types).all { (a, b) -> a === b }) type
             else type.copy(types = newTypes)
         }
         is Record -> {
             val newFields = type.fields.map { field ->
-                val resolved = resolve(field.type)
+                val resolved = resolveWith(field.type, resolving)
                 if (resolved === field.type) field else field.copy(type = resolved)
             }
             if (newFields.zip(type.fields).all { (a, b) -> a === b }) type
             else type.copy(fields = newFields)
         }
         is Sum -> {
-            val newLhs = resolve(type.lhs)
-            val newRhs = resolve(type.rhs)
+            val newLhs = resolveWith(type.lhs, resolving)
+            val newRhs = resolveWith(type.rhs, resolving)
             if (newLhs === type.lhs && newRhs === type.rhs) type
             else Sum.create(type.ids, newLhs, newRhs, type.typeParams)
         }
         is Array -> {
-            val newElem = resolve(type.elementType)
+            val newElem = resolveWith(type.elementType, resolving)
             if (newElem === type.elementType) type
             else type.copy(elementType = newElem)
         }
         is Recursive -> {
-            val newInner = resolve(type.type)
+            val newInner = resolveWith(type.type, resolving)
             if (newInner === type.type) type
             else type.copy(type = newInner)
         }

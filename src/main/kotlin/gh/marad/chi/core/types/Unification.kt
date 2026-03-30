@@ -19,18 +19,32 @@ fun occursInExcludingSumBranches(variable: Variable, type: Type): Boolean = when
     else -> type.children().any { occursIn(variable, it) }
 }
 
-fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
-    var queue = ArrayDeque(constraints.sortedBy { it.expected !is Variable })
-    val solutions = mutableListOf<Pair<Variable, Type>>()
+/**
+ * Attempt to unify without throwing on failure. Returns null if unification fails.
+ * Used for method resolution probing in InferenceContext.
+ */
+fun tryUnify(constraints: List<Constraint>): List<Pair<Variable, Type>>? {
+    return try {
+        unify(constraints)
+    } catch (ex: CompilerMessage) {
+        null
+    }
+}
 
-    while(queue.isNotEmpty()) {
-        val constraint = queue.removeFirst()
+fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
+    val uf = UnionFind()
+    val queue = ArrayDeque(constraints.sortedBy { it.expected !is Variable })
+
+    while (queue.isNotEmpty()) {
+        val rawConstraint = queue.removeFirst()
+        // Resolve both sides through the union-find to get current bindings
+        val constraint = uf.resolveConstraint(rawConstraint)
         val (expected, actual, section) = constraint
         when {
             expected == actual -> {}
             expected == Type.any -> {}
             expected is Primitive && actual is Primitive -> {
-                if(expected.ids.intersect(actual.ids.toSet()).isEmpty()) {
+                if (expected.ids.intersect(actual.ids.toSet()).isEmpty()) {
                     throw CompilerMessage(TypeMismatch(expected, actual, section.toCodePoint()))
                 }
             }
@@ -44,18 +58,14 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
                 if (occursInExcludingSumBranches(expected, actual)) {
                     throw CompilerMessage(InfiniteType(expected, actual, section.toCodePoint()))
                 }
-                solutions.add(expected to actual)
-                val replacer = VariableReplacer(expected, actual)
-                queue = ArrayDeque(queue.map { it.withReplacedVariable(replacer) })
+                uf.bind(expected, actual)
             }
 
             actual is Variable -> {
                 if (occursInExcludingSumBranches(actual, expected)) {
                     throw CompilerMessage(InfiniteType(actual, expected, section.toCodePoint()))
                 }
-                solutions.add(actual to expected)
-                val replacer = VariableReplacer(actual, expected)
-                queue = ArrayDeque(queue.map { it.withReplacedVariable(replacer) })
+                uf.bind(actual, expected)
             }
 
             expected is Function && actual is Function -> {
@@ -90,11 +100,10 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
                 try {
                     // try to unify the *right* side because sum type associates left
                     val partialSolution = unify(listOf(Constraint(expected.rhs, actual, section, constraint.toHistory())))
-                    val replacers = partialSolution.map { VariableReplacer(it.first, it.second) }
-                    val updatedQueue = replacers.fold(queue.toList()) { q, replacer ->
-                        q.map { it.withReplacedVariable(replacer) }
+                    // Merge partial solutions into our union-find
+                    for ((v, t) in partialSolution) {
+                        uf.bind(v, t)
                     }
-                    queue = ArrayDeque(updatedQueue)
                 } catch (ex: CompilerMessage) {
                     // FIXME: this causes weird errors when it finishes because it
                     //        says the first type of the sum type does not match the actual
@@ -108,10 +117,10 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
                 throw CompilerMessage(NotAFunction(section.toCodePoint()))
             }
 
-            else -> //err("Type mismatch. Expected: $expected, actual: $actual")
+            else ->
                 throw CompilerMessage(TypeMismatch(expected, actual, section.toCodePoint()))
         }
     }
 
-    return solutions
+    return uf.allBindings()
 }
