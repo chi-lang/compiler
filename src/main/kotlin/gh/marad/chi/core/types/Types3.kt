@@ -269,5 +269,5 @@ data class Recursive(
     override fun typeParams(): List<String> = type.typeParams()
     override fun toString(): String = "${variable.name}.$type"
 
-    fun unfold(): Type = mapType(type, listOf(variable to this))
+    fun unfold(): Type = VariableReplacer(variable, this).replace(type)
 }

@@ -61,6 +61,14 @@ fun unify(constraints: List<Constraint>, uf: UnionFind): List<Pair<Variable, Typ
                     throw CompilerMessage(TypeMismatch(expected, actual, section.toCodePoint()))
                 }
             }
+            expected is Recursive && actual is Recursive -> {
+                // When both sides are Recursive, bind their sentinel variables together
+                // and compare the bodies. The sentinels are self-reference placeholders
+                // that represent "the whole recursive type", so binding them makes
+                // corresponding self-references resolve to the same thing.
+                uf.bind(expected.variable, actual.variable)
+                queue.addFirst(Constraint(expected.type, actual.type, section, constraint.toHistory()))
+            }
             expected is Recursive -> {
                 queue.addFirst(Constraint(expected.unfold(), actual, section, history = constraint.toHistory()))
             }
@@ -109,6 +117,13 @@ fun unify(constraints: List<Constraint>, uf: UnionFind): List<Pair<Variable, Typ
                 queue.addFirst(Constraint(expected.elementType, actual.elementType, section, constraint.toHistory()))
             }
 
+            expected is Sum && actual is Sum -> {
+                // When both sides are Sum types, unify their branches directly.
+                // This avoids the exponential backtracking from trying to match
+                // one Sum's branches against the whole other Sum.
+                queue.addFirst(Constraint(expected.lhs, actual.lhs, section, constraint.toHistory()))
+                queue.addFirst(Constraint(expected.rhs, actual.rhs, section, constraint.toHistory()))
+            }
             expected is Sum -> {
                 try {
                     // try to unify the *right* side because sum type associates left
