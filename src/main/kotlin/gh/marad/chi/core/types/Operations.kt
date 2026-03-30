@@ -3,15 +3,18 @@ package gh.marad.chi.core.types
 import gh.marad.chi.core.Expression
 
 fun replaceTypes(expr: Expression, solutions: List<Pair<Variable, Type>>) {
-    if (expr.type != null) {
-        expr.type = mapType(expr.type!!, solutions)
+    if (solutions.isEmpty()) return
+    val replacer = BulkVariableReplacer(solutions.toMap())
+    fun walk(e: Expression) {
+        if (e.type != null) {
+            e.type = replacer.replace(e.type!!)
+        }
+        e.children().forEach { walk(it) }
     }
-    expr.children().forEach { replaceTypes(it, solutions) }
+    walk(expr)
 }
 
 fun mapType(type: Type, solution: List<Pair<Variable, Type>>): Type {
-    return solution.fold(type) { t, subs ->
-        VariableReplacer(subs.first, subs.second).replace(t)
-    }
+    if (solution.isEmpty()) return type
+    return BulkVariableReplacer(solution.toMap()).replace(type)
 }
-

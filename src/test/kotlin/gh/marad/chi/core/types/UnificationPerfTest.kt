@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Tag
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.longs.shouldBeLessThan
+import io.kotest.matchers.types.shouldBeTypeOf
 
 @Tag("perf")
 class UnificationPerfTest {
@@ -86,5 +87,25 @@ class UnificationPerfTest {
         val solutions = unify(constraints)
         val elapsed = (System.nanoTime() - start) / 1_000_000
         println("100 sum constraints: ${elapsed}ms")
+    }
+
+    @Test
+    fun `mapType with many solutions should complete quickly`() {
+        // Create a deeply nested function type
+        val vars = (1..200).map { Variable("v$it", 0) }
+        val fnType = Function(vars + Type.int)
+
+        // Create solutions mapping each variable to Type.int
+        val solutions = vars.map { it to Type.int as Type }
+
+        val start = System.nanoTime()
+        val result = mapType(fnType, solutions)
+        val elapsed = (System.nanoTime() - start) / 1_000_000
+
+        result.shouldBeTypeOf<Function>()
+        (result as Function).types.forEach {
+            it shouldBe Type.int
+        }
+        println("mapType with 200 solutions: ${elapsed}ms")
     }
 }
