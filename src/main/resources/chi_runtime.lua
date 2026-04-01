@@ -197,7 +197,7 @@ package.loaded['std/lang'] = {
     },
     print = chi_print,
     println = chi_println,
-    compileLua = chi_compile,
+    compileLua = function(chi_code) return chi_compile(chi_code) end,
     eval = function(chi_code)
         code = chi_compile(chi_code)
         local f = load(code)
