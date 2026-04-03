@@ -19,20 +19,55 @@ fun occursInExcludingSumBranches(variable: Variable, type: Type): Boolean = when
     else -> type.children().any { occursIn(variable, it) }
 }
 
-fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
-    var queue = ArrayDeque(constraints.sortedBy { it.expected !is Variable })
-    val solutions = mutableListOf<Pair<Variable, Type>>()
+/**
+ * Attempt to unify without throwing on failure. Returns null if unification fails.
+ * Used for method resolution probing in InferenceContext.
+ */
+fun tryUnify(constraints: List<Constraint>): List<Pair<Variable, Type>>? {
+    return try {
+        unify(constraints)
+    } catch (ex: CompilerMessage) {
+        null
+    }
+}
 
-    while(queue.isNotEmpty()) {
-        val constraint = queue.removeFirst()
+/**
+ * Unify constraints, creating a fresh UnionFind. Returns all bindings.
+ */
+fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
+    val uf = UnionFind()
+    unify(constraints, uf)
+    return uf.allBindings()
+}
+
+/**
+ * Unify constraints using a pre-existing UnionFind, adding new bindings to it.
+ * Returns the new bindings found during this call (not all bindings in the UnionFind).
+ */
+fun unify(constraints: List<Constraint>, uf: UnionFind): List<Pair<Variable, Type>> {
+    val bindingsBefore = uf.allBindings().toSet()
+    val queue = ArrayDeque(constraints.sortedBy { it.expected !is Variable })
+
+    while (queue.isNotEmpty()) {
+        val rawConstraint = queue.removeFirst()
+        // Resolve both sides through the union-find to get current bindings
+        val constraint = uf.resolveConstraint(rawConstraint)
         val (expected, actual, section) = constraint
         when {
             expected == actual -> {}
             expected == Type.any -> {}
             expected is Primitive && actual is Primitive -> {
-                if(expected.ids.intersect(actual.ids.toSet()).isEmpty()) {
+                if (expected.ids.intersect(actual.ids.toSet()).isEmpty()) {
                     throw CompilerMessage(TypeMismatch(expected, actual, section.toCodePoint()))
                 }
+            }
+            expected is Recursive && actual is Recursive -> {
+                // When both sides are Recursive, bind their sentinel variables together
+                // and compare the bodies. The sentinels are self-reference placeholders
+                // that represent "the whole recursive type", so binding them makes
+                // corresponding self-references resolve to the same thing.
+                uf.bind(expected.variable, actual.variable)
+                queue.addFirst(Constraint(expected.type, actual.type, section, constraint.toHistory()))
             }
             expected is Recursive -> {
                 queue.addFirst(Constraint(expected.unfold(), actual, section, history = constraint.toHistory()))
@@ -44,18 +79,14 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
                 if (occursInExcludingSumBranches(expected, actual)) {
                     throw CompilerMessage(InfiniteType(expected, actual, section.toCodePoint()))
                 }
-                solutions.add(expected to actual)
-                val replacer = VariableReplacer(expected, actual)
-                queue = ArrayDeque(queue.map { it.withReplacedVariable(replacer) })
+                uf.bind(expected, actual)
             }
 
             actual is Variable -> {
                 if (occursInExcludingSumBranches(actual, expected)) {
                     throw CompilerMessage(InfiniteType(actual, expected, section.toCodePoint()))
                 }
-                solutions.add(actual to expected)
-                val replacer = VariableReplacer(actual, expected)
-                queue = ArrayDeque(queue.map { it.withReplacedVariable(replacer) })
+                uf.bind(actual, expected)
             }
 
             expected is Function && actual is Function -> {
@@ -86,15 +117,21 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
                 queue.addFirst(Constraint(expected.elementType, actual.elementType, section, constraint.toHistory()))
             }
 
+            expected is Sum && actual is Sum -> {
+                // When both sides are Sum types, unify their branches directly.
+                // This avoids the exponential backtracking from trying to match
+                // one Sum's branches against the whole other Sum.
+                queue.addFirst(Constraint(expected.lhs, actual.lhs, section, constraint.toHistory()))
+                queue.addFirst(Constraint(expected.rhs, actual.rhs, section, constraint.toHistory()))
+            }
             expected is Sum -> {
                 try {
                     // try to unify the *right* side because sum type associates left
                     val partialSolution = unify(listOf(Constraint(expected.rhs, actual, section, constraint.toHistory())))
-                    val replacers = partialSolution.map { VariableReplacer(it.first, it.second) }
-                    val updatedQueue = replacers.fold(queue.toList()) { q, replacer ->
-                        q.map { it.withReplacedVariable(replacer) }
+                    // Merge partial solutions into our union-find
+                    for ((v, t) in partialSolution) {
+                        uf.bind(v, t)
                     }
-                    queue = ArrayDeque(updatedQueue)
                 } catch (ex: CompilerMessage) {
                     // FIXME: this causes weird errors when it finishes because it
                     //        says the first type of the sum type does not match the actual
@@ -108,10 +145,10 @@ fun unify(constraints: List<Constraint>): List<Pair<Variable, Type>> {
                 throw CompilerMessage(NotAFunction(section.toCodePoint()))
             }
 
-            else -> //err("Type mismatch. Expected: $expected, actual: $actual")
+            else ->
                 throw CompilerMessage(TypeMismatch(expected, actual, section.toCodePoint()))
         }
     }
 
-    return solutions
+    return uf.allBindings().filter { it !in bindingsBefore }
 }

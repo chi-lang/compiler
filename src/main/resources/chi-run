@@ -1,0 +1,6 @@
+#!/bin/sh
+# chi-run — Run compiled Chi programs on standalone LuaJIT
+# Usage: chi-run program.lua [args...]
+
+CHI_HOME="${CHI_HOME:?CHI_HOME environment variable not set}"
+exec luajit "$CHI_HOME/lib/chi_loader.lua" "$@"

@@ -12,6 +12,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.assertTimeout
+import java.time.Duration
 import gh.marad.chi.core.analyzer.CompilerMessage
 
 class OccursCheckTest {
@@ -256,5 +258,102 @@ class OccursCheckTest {
         assertThrows<CompilerMessage> {
             unify(listOf(constraint))
         }.msg.shouldBeTypeOf<InfiniteType>()
+    }
+
+    // ========================================
+    // Recursive type unification tests
+    // ========================================
+
+    @Test
+    fun `unify two identical Recursive types should terminate`() {
+        assertTimeout(Duration.ofSeconds(5)) {
+            // Simulate: type List = { head: int, tail: List | unit }
+            // Two instances with the same sentinel variable (same type alias, no freshening)
+            val sentinel = Variable("List", -1)
+            val body = Record(
+                emptyList(),
+                listOf(
+                    Record.Field("head", Type.int),
+                    Record.Field("tail", Sum(emptyList(), sentinel, Type.unit))
+                )
+            )
+            val recType = Recursive(sentinel, body)
+
+            // Unifying a Recursive with itself should succeed trivially
+            val constraint = Constraint(recType, recType, null, emptyList())
+            val solutions = unify(listOf(constraint))
+            // No variable bindings expected since both sides are identical
+            solutions.shouldBeEmpty()
+        }
+    }
+
+    @Test
+    fun `unify two Recursive types with different sentinel variables should terminate`() {
+        assertTimeout(Duration.ofSeconds(5)) {
+            // This simulates what happens after PolyType.instantiate() freshens variables:
+            // The same recursive type alias produces two Recursive wrappers with different
+            // sentinel variables but structurally identical bodies.
+            // Use multiple self-referential fields to create exponential branching (like chicc's Type)
+            val sentinel1 = Variable("Type_1", -1)
+            val body1 = Record(
+                emptyList(),
+                listOf(
+                    Record.Field("tag", Type.string),
+                    Record.Field("types", Array(sentinel1)),
+                    Record.Field("lhs", Sum(emptyList(), sentinel1, Type.unit)),
+                    Record.Field("rhs", Sum(emptyList(), sentinel1, Type.unit)),
+                    Record.Field("inner", Sum(emptyList(), sentinel1, Type.unit))
+                )
+            )
+            val recType1 = Recursive(sentinel1, body1)
+
+            val sentinel2 = Variable("Type_2", -1)
+            val body2 = Record(
+                emptyList(),
+                listOf(
+                    Record.Field("tag", Type.string),
+                    Record.Field("types", Array(sentinel2)),
+                    Record.Field("lhs", Sum(emptyList(), sentinel2, Type.unit)),
+                    Record.Field("rhs", Sum(emptyList(), sentinel2, Type.unit)),
+                    Record.Field("inner", Sum(emptyList(), sentinel2, Type.unit))
+                )
+            )
+            val recType2 = Recursive(sentinel2, body2)
+
+            // These represent the same type but with different internal variable names.
+            // Unification must terminate (not infinite-loop by repeatedly unfolding).
+            val constraint = Constraint(recType1, recType2, null, emptyList())
+            val solutions = unify(listOf(constraint))
+            // Should bind sentinel1 to sentinel2 (or vice versa) when unifying the bodies
+        }
+    }
+
+    @Test
+    fun `unify Recursive type inside Array should terminate`() {
+        assertTimeout(Duration.ofSeconds(5)) {
+            // Simulates: array[Type] = array[Type] where Type is recursive
+            val sentinel1 = Variable("Type_1", -1)
+            val body1 = Record(
+                emptyList(),
+                listOf(
+                    Record.Field("tag", Type.string),
+                    Record.Field("children", Array(sentinel1))
+                )
+            )
+            val recType1 = Recursive(sentinel1, body1)
+
+            val sentinel2 = Variable("Type_2", -1)
+            val body2 = Record(
+                emptyList(),
+                listOf(
+                    Record.Field("tag", Type.string),
+                    Record.Field("children", Array(sentinel2))
+                )
+            )
+            val recType2 = Recursive(sentinel2, body2)
+
+            val constraint = Constraint(Array(recType1), Array(recType2), null, emptyList())
+            val solutions = unify(listOf(constraint))
+        }
     }
 }

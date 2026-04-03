@@ -14,6 +14,8 @@ import gh.marad.chi.runtime.TypeWriter.encodeType
 
 class LuaEmitter(val program: Program) {
     private var sb = StringBuilder()
+    private var nextLoopId = 0
+    private var currentLoopId = 0
 
     /**
      * @param emitModule Tells the emitter to create LUA module. False means it should return the last value
@@ -31,9 +33,9 @@ class LuaEmitter(val program: Program) {
         emitPackageInfo()
 
         program.typeAliases.forEach {
-            emitCode("__T_.${it.typeId.name}=\"")
+            emitCode("__T_.${it.typeId.name}='")
             emitCode(encodeType(it.type))
-            emitCode("\";")
+            emitCode("';")
         }
 
         // Requires must be after _package and _types declarations to avoid circular dependencies
@@ -90,7 +92,7 @@ class LuaEmitter(val program: Program) {
             emitCode("mutable=${it.mutable},")
             val type = it.type
             if (type != null) {
-                emitCode("type=\"${encodeType(type)}\"")
+                emitCode("type='${encodeType(type)}'")
             }
             emitCode("};")
         }
@@ -102,7 +104,7 @@ class LuaEmitter(val program: Program) {
             emitCode("mutable=false,")
             val type = it.type
             if (type != null) {
-                emitCode("type=\"${encodeType(type)}\"")
+                emitCode("type='${encodeType(type)}'")
             }
             emitCode("};")
         }
@@ -141,7 +143,7 @@ class LuaEmitter(val program: Program) {
                 "nil"
             }
             is Continue -> {
-                emitCode("continue;")
+                emitCode("goto __continue_${currentLoopId};")
                 "nil"
             }
             is Return -> {
@@ -202,16 +204,29 @@ class LuaEmitter(val program: Program) {
 
     private fun escapeLuaString(value: String): String {
         val sb = StringBuilder(value.length)
-        for (ch in value) {
-            when (ch) {
-                '\\' -> sb.append("\\\\")
-                '\'' -> sb.append("\\'")
-                '\n' -> sb.append("\\n")
-                '\r' -> sb.append("\\r")
-                '\t' -> sb.append("\\t")
-                '\u0000' -> sb.append("\\0")
+        var i = 0
+        while (i < value.length) {
+            val ch = value[i]
+            when {
+                ch == '\\' -> sb.append("\\\\")
+                ch == '\'' -> sb.append("\\'")
+                ch == '\n' -> sb.append("\\n")
+                ch == '\r' -> sb.append("\\r")
+                ch == '\t' -> sb.append("\\t")
+                ch == '\u0000' -> sb.append("\\0")
+                // Handle surrogate pairs (characters above U+FFFF)
+                ch.isHighSurrogate() && i + 1 < value.length && value[i + 1].isLowSurrogate() -> {
+                    val codePoint = Character.toCodePoint(ch, value[i + 1])
+                    // Encode as UTF-8 byte escapes for Lua
+                    val bytes = String(intArrayOf(codePoint), 0, 1).toByteArray(Charsets.UTF_8)
+                    for (b in bytes) {
+                        sb.append("\\x${String.format("%02x", b.toInt() and 0xFF)}")
+                    }
+                    i++ // skip the low surrogate
+                }
                 else -> sb.append(ch)
             }
+            i++
         }
         return sb.toString()
     }
@@ -221,7 +236,7 @@ class LuaEmitter(val program: Program) {
         val value = when (term.type) {
             string -> {
                 val tmp = nextTmpName()
-                emitCode("local $tmp = java.new(String,'${escapeLuaString(term.value)}');")
+                emitCode("local $tmp = '${escapeLuaString(term.value)}';")
                 tmp
             }
             Type.unit -> {
@@ -447,7 +462,7 @@ class LuaEmitter(val program: Program) {
         // string -> int or string -> float needs tonumber()
         if (sourceType == Type.string && (targetType == Type.int || targetType == Type.float)) {
             val tmpName = nextTmpName()
-            emitCode("local $tmpName=tonumber(java.luaify($value));")
+            emitCode("local $tmpName=tonumber($value);")
             return tmpName
         }
         return value
@@ -524,10 +539,10 @@ class LuaEmitter(val program: Program) {
             "&&" -> "and"
             "||" -> "or"
             "+" -> if (leftType == string) {
-                return "chistr.concat($leftVar, $rightVar)"
+                return "($leftVar .. $rightVar)"
             } else op
             "==" -> if (leftType == string) {
-                return "$leftVar:equals($rightVar)"
+                return "($leftVar == $rightVar)"
             } else op
             else -> op
         }
@@ -555,7 +570,7 @@ class LuaEmitter(val program: Program) {
         }
         val resultName = nextTmpName()
         emitCode("local $resultName=")
-        emitCode("chistr.concat(${partVars.joinToString(",")})")
+        emitCode(partVars.joinToString(" .. "))
         emitCode(";")
         return resultName
     }
@@ -570,7 +585,7 @@ class LuaEmitter(val program: Program) {
                 float -> "chi_is_float($value)"
                 int -> "chi_is_int($value)"
                 Type.bool -> "type($value) == \"boolean\""
-                string -> "type($value) == \"userdata\""
+                string -> "type($value) == \"string\""
                 // TODO: check the element type
                 is Array -> "chi_is_array($value)"
                 // TODO: checking field and field types
@@ -613,24 +628,8 @@ class LuaEmitter(val program: Program) {
     }
 
     private fun emitWhile(term: WhileLoop): String {
-//        val visitor = object : DefaultMappingVisitor() {
-//            override fun visitInfixOp(infixOp: InfixOp): Expression {
-//                return super.visitInfixOp(infixOp)
-//            }
-//        }
-
-        // TODO: each condition should be separate function
-        //   otherwise we loose the special treatment of 'or' and 'and'
-        //   operators. This is more related to the infix operators
-        //   than while or if expressions
-
-//        val condFunName = nextTmpName()
-//        emitCode("local $condFunName = function() ")
-//        val result = emitExpr(term.condition, true)
-//        emitCode(" return $result end;")
-
-//        emitCode("while ($condFunName()) do ")
-
+        val prevLoopId = currentLoopId
+        currentLoopId = nextLoopId++
 
         val declarations = mutableListOf<NameDeclaration>()
         val condition = extractConditionThunks(term.condition, declarations)
@@ -642,11 +641,17 @@ class LuaEmitter(val program: Program) {
         }
         emitCode("while $condition do ")
         emitExpr(term.loop)
+        emitCode("::__continue_${currentLoopId}::;")
         emitCode("end;")
+
+        currentLoopId = prevLoopId
         return "nil"
     }
 
     private fun emitForLoop(term: ForLoop): String {
+        val prevLoopId = currentLoopId
+        currentLoopId = nextLoopId++
+
         val iterable = emitExpr(term.iterable)
         val (vars, elements) = if (term.iterable.type is Array) {
             val vars = if (term.vars.size == 1) {
@@ -674,7 +679,10 @@ class LuaEmitter(val program: Program) {
         insideFunction {
             emitExpr(term.body)
         }
+        emitCode("::__continue_${currentLoopId}::;")
         emitCode(" end;")
+
+        currentLoopId = prevLoopId
         return "nil"
     }
 

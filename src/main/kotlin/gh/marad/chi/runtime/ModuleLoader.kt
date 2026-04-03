@@ -1,7 +1,5 @@
 package gh.marad.chi.runtime
 
-import gh.marad.chi.core.parser.readers.Import
-import gh.marad.chi.lua.formatLuaCode
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
@@ -41,27 +39,4 @@ class ModuleLoader(
         return luaCode
     }
 
-}
-
-fun main() {
-    val imports = mutableListOf<Import>()
-    imports.add(
-        Import("std", "lang", packageAlias = null, entries = listOf(
-        Import.Entry("println", alias = null, section = null),
-        Import.Entry("eval", alias = null, section = null)
-    ), null)
-    )
-    val env = LuaEnv(imports)
-    val luaCompiler = LuaCompiler(env)
-    val loader = ModuleLoader(luaCompiler, Path.of("D:/dev/chi-stdlib"))
-    try {
-        val code = loader.load("std", "lang.string")
-        println(formatLuaCode(code))
-        val result = env.lua.run(code)
-        println(result)
-    } catch (ex: LuaCompiler.Error) {
-        ex.messages.forEach {
-            println(it.message)
-        }
-    }
 }

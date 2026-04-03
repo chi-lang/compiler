@@ -2,7 +2,6 @@ package gh.marad.chi.core.types
 
 import gh.marad.chi.core.*
 import gh.marad.chi.core.Target
-import gh.marad.chi.core.analyzer.CompilerMessage
 import gh.marad.chi.core.compiler.CompileTables
 import gh.marad.chi.core.namespace.CompilationEnv
 import gh.marad.chi.core.parser.ChiSource
@@ -82,14 +81,8 @@ class InferenceContext(
                 is Type -> typeScheme
                 null -> TODO()
             }
-            val fitsRequirements = symbolType is Function && symbolType.types.size >= 2 && run {
-                try {
-                    unify(listOf(Constraint(symbolType.types.first(), type, null, emptyList())))
-                    true
-                } catch (ex: CompilerMessage) {
-                    false
-                }
-            }
+            val fitsRequirements = symbolType is Function && symbolType.types.size >= 2 &&
+                tryUnify(listOf(Constraint(symbolType.types.first(), type, null, emptyList()))) != null
             if (fitsRequirements) {
                 listOf(DotTarget.PackageFunction(symbol.moduleName, symbol.packageName, symbol.name) to symbolType)
             } else {
@@ -109,19 +102,15 @@ class InferenceContext(
                         is PolyType -> typeScheme.body
                         is Type -> typeScheme
                     }
-                    if (symbolType is Function && symbolType.types.size >= 2) {
-                        try {
-                            unify(listOf(Constraint(symbolType.types.first(), type, null, listOf())))
-                            listOf(
-                                DotTarget.PackageFunction(
-                                    symbol.moduleName,
-                                    symbol.packageName,
-                                    symbol.name
-                                ) to symbol.type
-                            )
-                        } catch (ex: CompilerMessage) {
-                            emptyList()
-                        }
+                    if (symbolType is Function && symbolType.types.size >= 2 &&
+                        tryUnify(listOf(Constraint(symbolType.types.first(), type, null, emptyList()))) != null) {
+                        listOf(
+                            DotTarget.PackageFunction(
+                                symbol.moduleName,
+                                symbol.packageName,
+                                symbol.name
+                            ) to symbol.type
+                        )
                     } else {
                         emptyList()
                     }
